@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   ArrayUnique,
   IsArray,
@@ -50,7 +51,12 @@ export class CreateProjectDto {
   @IsNotEmpty()
   comentario: string;
 
+  // El cliente lo manda a veces como number (ej. 3) y la columna es String:
+  // se normaliza antes de validar para no rechazarlo con un 400.
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'number' ? String(value) : value,
+  )
   @IsString()
   @MaxLength(50)
   diasSinResponder?: string;

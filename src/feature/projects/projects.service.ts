@@ -77,6 +77,20 @@ export class ProjectsService {
     return proyectos.map((proyecto) => this.aplanar(proyecto));
   }
 
+  /** Cola del admin: lo trabado por el cliente (B) y lo que no pagó (C). */
+  async findByAdmin(): Promise<ProyectoCompleto[]> {
+    const proyectos = await this.prisma.proyecto.findMany({
+      where: {
+        deletedAt: null,
+        grupo: { in: ['B', 'C'] },
+      },
+      orderBy: { id: 'asc' },
+      include: proyectoInclude,
+    });
+
+    return proyectos.map((proyecto) => this.aplanar(proyecto));
+  }
+
   async findByDiseno(): Promise<ProyectoCompleto[]> {
     const proyectos = await this.prisma.proyecto.findMany({
       where: {

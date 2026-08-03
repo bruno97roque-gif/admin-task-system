@@ -29,7 +29,7 @@ export class ProjectsController {
   }
 
   // Las rutas con segmento fijo deben declararse antes de @Get(':id'), o
-  // Express interpreta 'programador' / 'diseno' como un id de proyecto.
+  // Express interpreta 'programador' / 'diseno' / 'admin' como un id de proyecto.
   @Get('programador')
   findByProgramer(
     @Query('id', new ParseIntPipe({ optional: true }))
@@ -41,6 +41,11 @@ export class ProjectsController {
   @Get('diseno')
   findByDiseno() {
     return this.projectsService.findByDiseno();
+  }
+
+  @Get('admin')
+  findByAdmin() {
+    return this.projectsService.findByAdmin();
   }
 
   @Get(':id')

@@ -1,12 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { IoAddOutline, IoPeopleOutline, IoRefreshOutline } from 'react-icons/io5'
+import {
+  IoAddOutline,
+  IoEyeOffOutline,
+  IoEyeOutline,
+  IoPeopleOutline,
+  IoRefreshOutline,
+  IoShuffleOutline,
+} from 'react-icons/io5'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { Select } from '../components/ui/Select'
+import { generatePassword } from '../utils/password'
 
 interface UserForm {
   name: string
@@ -34,11 +42,13 @@ export function UsersPage() {
   const fetchRoles = useRolesStore((s) => s.fetchRoles)
 
   const [modalOpen, setModalOpen] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
     setError,
   } = useForm<UserForm>({ defaultValues: emptyForm })
@@ -60,12 +70,19 @@ export function UsersPage() {
 
   const openCreate = () => {
     reset(emptyForm)
+    setShowPassword(false)
     setModalOpen(true)
   }
 
   const closeModal = () => {
     setModalOpen(false)
     reset(emptyForm)
+    setShowPassword(false)
+  }
+
+  const handleGeneratePassword = () => {
+    setValue('password', generatePassword(), { shouldValidate: true })
+    setShowPassword(true)
   }
 
   const onSubmit = async (data: UserForm) => {
@@ -193,16 +210,52 @@ export function UsersPage() {
             {...register('user', { required: 'El usuario es obligatorio' })}
           />
 
-          <Input
-            label="Contraseña"
-            type="password"
-            placeholder="••••••••"
-            error={errors.password?.message}
-            {...register('password', {
-              required: 'La contraseña es obligatoria',
-              minLength: { value: 6, message: 'Mínimo 6 caracteres' },
-            })}
-          />
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="password"
+              className="text-sm font-medium text-slate-300"
+            >
+              Contraseña
+            </label>
+            <div className="flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  className={`w-full rounded-lg border border-border bg-surface-raised py-2 pr-10 pl-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-accent focus:ring-1 focus:ring-accent ${errors.password ? 'border-red-500' : ''}`}
+                  {...register('password', {
+                    required: 'La contraseña es obligatoria',
+                    minLength: { value: 6, message: 'Mínimo 6 caracteres' },
+                  })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-200"
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  {showPassword ? (
+                    <IoEyeOffOutline size={18} />
+                  ) : (
+                    <IoEyeOutline size={18} />
+                  )}
+                </button>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleGeneratePassword}
+                className="shrink-0 px-3"
+              >
+                <IoShuffleOutline size={16} />
+                Generar
+              </Button>
+            </div>
+            {errors.password && (
+              <p className="text-xs text-red-400">{errors.password.message}</p>
+            )}
+          </div>
 
           <Select
             label="Rol"

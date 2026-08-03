@@ -21,4 +21,8 @@ COPY . .
 
 RUN pnpm build
 
+# Railway deduce de EXPOSE a que puerto enrutar el trafico cuando el build
+# es por Dockerfile. Sin esto responde 502 aunque la app este viva.
+EXPOSE 3000
+
 CMD ["node", "dist/main"]

@@ -13,7 +13,7 @@ import { useRecordatoriosStore } from '../stores/recordatoriosStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 
-const FINALIZED_STATUS = 'proyecto finalizado'
+const FINALIZED_STATUS = 'ProyectoFinalizado'
 
 export function DashboardPage() {
   const users = useUsersStore((s) => s.users)
@@ -32,8 +32,7 @@ export function DashboardPage() {
     fetchRecordatorios()
   }, [fetchUsers, fetchRoles, fetchProjects, fetchRecordatorios])
 
-  const isFinalized = (estado: string) =>
-    estado.toLowerCase() === FINALIZED_STATUS
+  const isFinalized = (estado: string) => estado === FINALIZED_STATUS
 
   const activeProjects = projects.filter((p) => !isFinalized(p.estadoProyecto))
   const pendingRecordatorios = recordatorios.filter((r) => r.estado)

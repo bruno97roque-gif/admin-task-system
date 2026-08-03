@@ -3,6 +3,7 @@ import {
   IsArray,
   IsEnum,
   IsInt,
+  IsISO8601,
   IsNotEmpty,
   IsOptional,
   IsPositive,
@@ -53,6 +54,13 @@ export class CreateProjectDto {
   @IsString()
   @MaxLength(50)
   diasSinResponder?: string;
+
+  // Se acepta como string ISO-8601 ("2026-09-30" o con hora) porque el
+  // ValidationPipe global no tiene transform: el servicio la convierte a Date.
+  // null la deja sin fecha de entrega.
+  @IsOptional()
+  @IsISO8601()
+  fechaEntrega?: string | null;
 
   @IsOptional()
   @IsArray()

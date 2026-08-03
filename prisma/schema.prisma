@@ -75,6 +75,7 @@ model Proyecto {
   seguimientoId    Int            @map("seguimiento_id")
   comentario       String         @db.Text
   diasSinResponder String?        @map("dias_sin_responder")
+  fechaEntrega     DateTime?      @map("fecha_entrega")
   createdAt        DateTime       @default(now()) @map("created_at")
   updatedAt        DateTime       @updatedAt @map("updated_at")
   deletedAt        DateTime?      @map("deleted_at")

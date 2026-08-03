@@ -33,7 +33,7 @@ export class ProjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createProjectDto: CreateProjectDto): Promise<ProyectoCompleto> {
-    const { usuariosIds, ...data } = createProjectDto;
+    const { usuariosIds, fechaEntrega, ...data } = createProjectDto;
 
     await this.validarSeguimiento(data.seguimientoId);
     await this.validarUsuarios(usuariosIds);
@@ -41,6 +41,7 @@ export class ProjectsService {
     const proyecto = await this.prisma.proyecto.create({
       data: {
         ...data,
+        fechaEntrega: this.aFecha(fechaEntrega),
         usuarios: {
           create: (usuariosIds ?? []).map((usuarioId) => ({ usuarioId })),
         },
@@ -124,7 +125,7 @@ export class ProjectsService {
   ): Promise<ProyectoCompleto> {
     await this.findOne(id);
 
-    const { usuariosIds, ...data } = updateProjectDto;
+    const { usuariosIds, fechaEntrega, ...data } = updateProjectDto;
 
     if (data.seguimientoId !== undefined) {
       await this.validarSeguimiento(data.seguimientoId);
@@ -136,6 +137,9 @@ export class ProjectsService {
       where: { id },
       data: {
         ...data,
+        ...(fechaEntrega !== undefined && {
+          fechaEntrega: this.aFecha(fechaEntrega),
+        }),
         ...(usuariosIds !== undefined && {
           usuarios: {
             deleteMany: {},
@@ -193,6 +197,11 @@ export class ProjectsService {
     });
 
     return this.aplanar(proyecto);
+  }
+
+  /** El ValidationPipe no transforma, así que la fecha llega como string ISO. */
+  private aFecha(valor?: string | null): Date | null {
+    return valor ? new Date(valor) : null;
   }
 
   private aplanar(proyecto: ProyectoConRelaciones): ProyectoCompleto {

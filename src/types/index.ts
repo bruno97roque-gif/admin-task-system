@@ -18,6 +18,7 @@ export interface Project {
   seguimientoId: number
   comentario: string
   diasSinResponder: number | null
+  fechaEntrega: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null

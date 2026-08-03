@@ -8,18 +8,19 @@ import {
 
 function buildUpdatePayloadFromProject(
   project: Project,
-  comentario: string,
+  overrides: { comentario: string; fechaEntrega: string | null },
 ): UpdateProjectRequest {
   return {
     name: project.name,
     descripcion: project.descripcion,
     grupo: project.grupo,
     seguimientoId: project.seguimientoId,
-    comentario,
+    comentario: overrides.comentario,
     tecnologia: project.tecnologia,
     estadoPago: project.estadoPago,
     estadoProyecto: project.estadoProyecto,
     diasSinResponder: project.diasSinResponder,
+    fechaEntrega: overrides.fechaEntrega,
   }
 }
 
@@ -31,7 +32,7 @@ interface ProjectsByProgramadorState {
   fetchProjectsByProgramador: (programadorId?: number) => Promise<void>
   updateProjectComentario: (
     project: Project,
-    comentario: string,
+    data: { comentario: string; fechaEntrega: string | null },
   ) => Promise<{ success: boolean; error?: string }>
 }
 
@@ -57,12 +58,15 @@ export const useProjectsByProgramadorStore = create<ProjectsByProgramadorState>(
     }
   },
 
-  updateProjectComentario: async (project, comentario) => {
+  updateProjectComentario: async (project, data) => {
     set({ saving: true, error: null })
     try {
       const updated = await updateProjectRequest(
         project.id,
-        buildUpdatePayloadFromProject(project, comentario.trim()),
+        buildUpdatePayloadFromProject(project, {
+          comentario: data.comentario.trim(),
+          fechaEntrega: data.fechaEntrega,
+        }),
       )
       set((state) => ({
         projects: state.projects.map((p) => (p.id === project.id ? updated : p)),

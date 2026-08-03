@@ -100,6 +100,7 @@ export interface UpdateProjectRequest {
   estadoPago: string
   estadoProyecto: string
   diasSinResponder: number | null
+  fechaEntrega: string | null
 }
 
 export interface UpdateProjectUsuariosRequest {

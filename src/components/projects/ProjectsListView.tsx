@@ -13,8 +13,10 @@ import {
   toSelectOptions,
 } from '../../utils/assignableUsers'
 import { getProjectUserIds, getProjectUserNames } from '../../utils/projectUsers'
+import { toDateInputValue } from '../../utils/date'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
+import { DateInput } from '../ui/DateInput'
 import { Modal } from '../ui/Modal'
 import { SearchableMultiSelect } from '../ui/SearchableMultiSelect'
 import { Select } from '../ui/Select'
@@ -50,6 +52,7 @@ interface ProjectForm {
   estadoPago: string
   estadoProyecto: string
   diasSinResponder: string
+  fechaEntrega: string
   programadoresIds: string[]
   disenadoresIds: string[]
 }
@@ -64,6 +67,7 @@ const emptyForm: ProjectForm = {
   estadoPago: '',
   estadoProyecto: '',
   diasSinResponder: '',
+  fechaEntrega: '',
   programadoresIds: [],
   disenadoresIds: [],
 }
@@ -203,6 +207,7 @@ export function ProjectsListView({
       estadoProyecto: project.estadoProyecto ?? '',
       diasSinResponder:
         project.diasSinResponder !== null ? String(project.diasSinResponder) : '',
+      fechaEntrega: toDateInputValue(project.fechaEntrega),
       programadoresIds,
       disenadoresIds,
     })
@@ -231,6 +236,7 @@ export function ProjectsListView({
     diasSinResponder: data.diasSinResponder.trim()
       ? Number(data.diasSinResponder)
       : null,
+    fechaEntrega: data.fechaEntrega.trim() || null,
   })
 
   const getUsuariosIds = (data: ProjectForm) =>
@@ -468,6 +474,22 @@ export function ProjectsListView({
                   error={errors.tecnologia?.message}
                   {...register('tecnologia')}
                 />
+                <Controller
+                  name="fechaEntrega"
+                  control={control}
+                  render={({ field }) => (
+                    <DateInput
+                      label="Fecha de entrega"
+                      name={field.name}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   label="Días sin responder"
                   type="number"

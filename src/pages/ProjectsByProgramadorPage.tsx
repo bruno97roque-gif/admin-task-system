@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import {
   IoBriefcaseOutline,
   IoCashOutline,
@@ -17,11 +17,14 @@ import { useUsersStore } from '../stores/usersStore'
 import { getUsersByRoleName } from '../utils/assignableUsers'
 import { getProjectUserIds } from '../utils/projectUsers'
 import { Button } from '../components/ui/Button'
+import { DateInput } from '../components/ui/DateInput'
 import { Modal } from '../components/ui/Modal'
 import { Textarea } from '../components/ui/Textarea'
+import { formatDateDisplay, toDateInputValue } from '../utils/date'
 
-interface ComentarioForm {
+interface ProjectEditForm {
   comentario: string
+  fechaEntrega: string
 }
 
 type ProjectUsuarioItem = Project['usuarios'][number]
@@ -120,6 +123,12 @@ function ProjectCard({
             <span>{project.diasSinResponder} días sin responder</span>
           </div>
         )}
+        {project.fechaEntrega && (
+          <div className="flex items-center gap-1.5">
+            <IoTimeOutline size={12} className="text-slate-500" />
+            <span>Entrega: {formatDateDisplay(project.fechaEntrega)}</span>
+          </div>
+        )}
       </dl>
 
       {project.comentario && (
@@ -212,9 +221,10 @@ export function ProjectsByProgramadorPage() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
     setError,
-  } = useForm<ComentarioForm>({ defaultValues: { comentario: '' } })
+  } = useForm<ProjectEditForm>({ defaultValues: { comentario: '', fechaEntrega: '' } })
 
   const users = useUsersStore((s) => s.users)
   const fetchUsers = useUsersStore((s) => s.fetchUsers)
@@ -254,18 +264,24 @@ export function ProjectsByProgramadorPage() {
 
   const openEditComentario = (project: Project) => {
     setEditingProject(project)
-    reset({ comentario: project.comentario ?? '' })
+    reset({
+      comentario: project.comentario ?? '',
+      fechaEntrega: toDateInputValue(project.fechaEntrega),
+    })
   }
 
   const closeEditComentario = () => {
     setEditingProject(null)
-    reset({ comentario: '' })
+    reset({ comentario: '', fechaEntrega: '' })
   }
 
-  const onSubmitComentario = async (data: ComentarioForm) => {
+  const onSubmitComentario = async (data: ProjectEditForm) => {
     if (!editingProject) return
 
-    const result = await updateProjectComentario(editingProject, data.comentario)
+    const result = await updateProjectComentario(editingProject, {
+      comentario: data.comentario,
+      fechaEntrega: data.fechaEntrega.trim() || null,
+    })
     if (result.success) {
       closeEditComentario()
     } else {
@@ -331,7 +347,7 @@ export function ProjectsByProgramadorPage() {
       <Modal
         open={editingProject !== null}
         onClose={closeEditComentario}
-        title={editingProject ? `Comentario — ${editingProject.name}` : 'Comentario'}
+        title={editingProject ? `Editar — ${editingProject.name}` : 'Editar proyecto'}
       >
         <form onSubmit={handleSubmit(onSubmitComentario)} className="space-y-4">
           {errors.root && (
@@ -339,6 +355,19 @@ export function ProjectsByProgramadorPage() {
               {errors.root.message}
             </div>
           )}
+          <Controller
+            name="fechaEntrega"
+            control={control}
+            render={({ field }) => (
+              <DateInput
+                label="Fecha de entrega"
+                name={field.name}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
+          />
           <Textarea
             label="Comentario"
             placeholder="Escribe un comentario..."

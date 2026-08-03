@@ -236,20 +236,19 @@ export function ProjectsPage() {
               <th className="px-4 py-3 font-medium">Seguimiento</th>
               <th className="px-4 py-3 font-medium">Tecnología</th>
               <th className="px-4 py-3 font-medium">Usuarios</th>
-              <th className="px-4 py-3 font-medium">Comentario</th>
               <th className="px-4 py-3 font-medium text-right">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {loading && projects.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
                   Cargando proyectos...
                 </td>
               </tr>
             ) : projects.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
                   No hay proyectos registrados
                 </td>
               </tr>
@@ -281,9 +280,6 @@ export function ProjectsPage() {
                   </td>
                   <td className="px-4 py-3 text-slate-400">
                     {getProjectUserNames(project)}
-                  </td>
-                  <td className="max-w-[200px] truncate px-4 py-3 text-slate-400">
-                    {project.comentario || '—'}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end">

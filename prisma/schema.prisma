@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/lib/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EstadoProyecto {
+  Brief
+  Taxonomia
+  Diseno             @map("Diseño")
+  Desarrollo
+  ProyectoFinalizado @map("Proyecto Finalizado")
+}
+
+enum Tecnologia {
+  Shopify
+  WordPress
+  Personalizado @map("personalizado")
+}
+
+enum Grupo {
+  A
+  B
+  C
+}
+
+model Rol {
+  id    Int    @id @default(autoincrement())
+  name  String
+  users User[]
+
+  @@map("rols")
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  name     String
+  user     String  @unique
+  password String
+  active   Boolean @default(true)
+  roleId   Int     @map("role_id")
+
+  rol       Rol               @relation(fields: [roleId], references: [id])
+  proyectos UsuarioProyecto[]
+
+  @@index([roleId])
+  @@map("users")
+}
+
+model Seguimiento {
+  id        Int        @id @default(autoincrement())
+  name      String
+  proyectos Proyecto[]
+
+  @@map("seguimientos")
+}
+
+model Proyecto {
+  id               Int            @id @default(autoincrement())
+  name             String
+  estadoPago       String         @default("50%") @map("estado_pago")
+  estadoProyecto   EstadoProyecto @default(Brief) @map("estado_proyecto")
+  descripcion      String         @db.Text
+  tecnologia       Tecnologia?
+  grupo            Grupo
+  seguimientoId    Int            @map("seguimiento_id")
+  comentario       String         @db.Text
+  diasSinResponder String?        @map("dias_sin_responder")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  deletedAt        DateTime?      @map("deleted_at")
+
+  seguimiento Seguimiento       @relation(fields: [seguimientoId], references: [id])
+  usuarios    UsuarioProyecto[]
+
+  @@index([seguimientoId])
+  @@map("proyectos")
+}
+
+model UsuarioProyecto {
+  usuarioId  Int      @map("usuario_id")
+  proyectoId Int      @map("proyecto_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  usuario  User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  proyecto Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+
+  @@id([usuarioId, proyectoId])
+  @@index([usuarioId])
+  @@index([proyectoId])
+  @@map("usuarios_proyectos")
+}
+
+model Recordatorio {
+  id          Int     @id @default(autoincrement())
+  descripcion String  @db.Text
+  estado      Boolean @default(true)
+
+  @@map("recordatorios")
+}

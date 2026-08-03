@@ -57,6 +57,10 @@ export function getProjectsRequest() {
   return apiFetch<import('../types').Project[]>('/projects')
 }
 
+export function getProjectsAdminRequest() {
+  return apiFetch<import('../types').Project[]>('/projects/admin')
+}
+
 export function getProjectsByProgramadorRequest(programadorId?: number) {
   const query = programadorId != null ? `?id=${programadorId}` : ''
   return apiFetch<import('../types').Project[]>(`/projects/programador${query}`)

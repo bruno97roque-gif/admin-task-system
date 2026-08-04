@@ -67,6 +67,7 @@ export class ProjectsService {
       where: {
         deletedAt: null,
         grupo: 'A',
+        estadoProyecto: { not: 'ProyectoFinalizado' },
         ...(idProgramador !== undefined && {
           usuarios: { some: { usuarioId: idProgramador } },
         }),

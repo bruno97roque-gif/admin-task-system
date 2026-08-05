@@ -45,6 +45,7 @@ const TECNOLOGIA_OPTIONS = [
 interface ProjectForm {
   name: string
   descripcion: string
+  tipoProyecto: string
   grupo: string
   seguimientoId: string
   comentario: string
@@ -60,6 +61,7 @@ interface ProjectForm {
 const emptyForm: ProjectForm = {
   name: '',
   descripcion: '',
+  tipoProyecto: '',
   grupo: '',
   seguimientoId: '',
   comentario: '',
@@ -76,6 +78,7 @@ interface ProjectsListViewProps {
   title: string
   description: string
   grupoOptions?: { value: string; label: string }[]
+  showTipoProyecto?: boolean
   projects: Project[]
   loading: boolean
   saving: boolean
@@ -93,6 +96,7 @@ export function ProjectsListView({
   title,
   description,
   grupoOptions = DEFAULT_GRUPO_OPTIONS,
+  showTipoProyecto = true,
   projects,
   loading,
   saving,
@@ -160,6 +164,7 @@ export function ProjectsListView({
       const haystack = [
         project.name,
         project.descripcion,
+        showTipoProyecto ? project.tipoProyecto : '',
         getProjectUserNames(project),
         String(project.id),
       ]
@@ -168,7 +173,7 @@ export function ProjectsListView({
 
       return haystack.includes(query)
     })
-  }, [projects, searchQuery, grupoFilter, estadoProyectoFilter])
+  }, [projects, searchQuery, grupoFilter, estadoProyectoFilter, showTipoProyecto])
 
   const clearFilters = () => {
     setSearchQuery('')
@@ -199,6 +204,7 @@ export function ProjectsListView({
     reset({
       name: project.name,
       descripcion: project.descripcion,
+      tipoProyecto: project.tipoProyecto ?? '',
       grupo: project.grupo,
       seguimientoId: String(project.seguimientoId),
       comentario: project.comentario ?? '',
@@ -226,10 +232,16 @@ export function ProjectsListView({
     grupo: data.grupo,
     seguimientoId: Number(data.seguimientoId),
     comentario: data.comentario.trim(),
+    ...(showTipoProyecto && {
+      tipoProyecto: data.tipoProyecto.trim() || null,
+    }),
   })
 
   const buildUpdatePayload = (data: ProjectForm) => ({
     ...buildCreatePayload(data),
+    tipoProyecto: showTipoProyecto
+      ? data.tipoProyecto.trim() || null
+      : (editingProject?.tipoProyecto ?? null),
     tecnologia: data.tecnologia.trim() || null,
     estadoPago: data.estadoPago.trim(),
     estadoProyecto: data.estadoProyecto.trim(),
@@ -329,6 +341,9 @@ export function ProjectsListView({
             <tr>
               <th className="px-4 py-3 font-medium">ID</th>
               <th className="px-4 py-3 font-medium">Nombre</th>
+              {showTipoProyecto && (
+                <th className="px-4 py-3 font-medium">Tipo proyecto</th>
+              )}
               <th className="px-4 py-3 font-medium">Estado pago</th>
               <th className="px-4 py-3 font-medium">Estado proyecto</th>
               <th className="px-4 py-3 font-medium">Grupo</th>
@@ -341,19 +356,19 @@ export function ProjectsListView({
           <tbody className="divide-y divide-border">
             {loading && projects.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={showTipoProyecto ? 10 : 9} className="px-4 py-8 text-center text-slate-500">
                   Cargando proyectos...
                 </td>
               </tr>
             ) : projects.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={showTipoProyecto ? 10 : 9} className="px-4 py-8 text-center text-slate-500">
                   No hay proyectos registrados
                 </td>
               </tr>
             ) : filteredProjects.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={showTipoProyecto ? 10 : 9} className="px-4 py-8 text-center text-slate-500">
                   No hay proyectos que coincidan con los filtros
                 </td>
               </tr>
@@ -370,6 +385,17 @@ export function ProjectsListView({
                       {project.descripcion}
                     </p>
                   </td>
+                  {showTipoProyecto && (
+                    <td className="px-4 py-3">
+                      {project.tipoProyecto ? (
+                        <span className="inline-flex rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs font-medium text-violet-300 ring-1 ring-violet-500/25">
+                          {project.tipoProyecto}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">—</span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-4 py-3 text-slate-400">{project.estadoPago}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-medium text-accent-hover">
@@ -430,6 +456,17 @@ export function ProjectsListView({
             error={errors.descripcion?.message}
             {...register('descripcion', { required: 'La descripción es obligatoria' })}
           />
+
+          {showTipoProyecto && (
+            <Input
+              label="Tipo Proyecto"
+              placeholder="Ej. E-commerce, Landing, Rediseño..."
+              error={errors.tipoProyecto?.message}
+              {...register('tipoProyecto', {
+                maxLength: { value: 100, message: 'Máximo 100 caracteres' },
+              })}
+            />
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Select

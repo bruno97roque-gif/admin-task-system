@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import {
   IoBriefcaseOutline,
+  IoBookmarkOutline,
   IoCashOutline,
   IoCodeSlashOutline,
   IoLayersOutline,
@@ -92,6 +93,15 @@ function ProjectCard({
 
       {project.descripcion && (
         <p className="mb-3 line-clamp-2 text-xs text-slate-400">{project.descripcion}</p>
+      )}
+
+      {project.tipoProyecto && (
+        <div className="mb-3">
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
+            <IoBookmarkOutline size={13} className="text-violet-300" />
+            {project.tipoProyecto}
+          </span>
+        </div>
       )}
 
       <div className="mb-3 flex flex-wrap gap-1.5">

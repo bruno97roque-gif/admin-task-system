@@ -14,6 +14,7 @@ export interface Project {
   estadoProyecto: string
   descripcion: string
   tecnologia: string | null
+  tipoProyecto: string | null
   grupo: string
   seguimientoId: number
   comentario: string

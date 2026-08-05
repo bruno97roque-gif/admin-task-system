@@ -80,6 +80,7 @@ export interface CreateProjectRequest {
   grupo: string
   seguimientoId: number
   comentario: string
+  tipoProyecto?: string | null
   usuariosIds?: number[]
 }
 
@@ -97,6 +98,7 @@ export interface UpdateProjectRequest {
   seguimientoId: number
   comentario: string
   tecnologia: string | null
+  tipoProyecto: string | null
   estadoPago: string
   estadoProyecto: string
   diasSinResponder: number | null

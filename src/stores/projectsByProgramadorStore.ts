@@ -17,6 +17,7 @@ function buildUpdatePayloadFromProject(
     seguimientoId: project.seguimientoId,
     comentario: overrides.comentario,
     tecnologia: project.tecnologia,
+    tipoProyecto: project.tipoProyecto,
     estadoPago: project.estadoPago,
     estadoProyecto: project.estadoProyecto,
     diasSinResponder: project.diasSinResponder,

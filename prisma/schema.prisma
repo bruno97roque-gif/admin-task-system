@@ -71,6 +71,7 @@ model Proyecto {
   estadoProyecto   EstadoProyecto @default(Brief) @map("estado_proyecto")
   descripcion      String         @db.Text
   tecnologia       Tecnologia?
+  tipoProyecto     String?        @map("tipo_proyecto")
   grupo            Grupo
   seguimientoId    Int            @map("seguimiento_id")
   comentario       String         @db.Text

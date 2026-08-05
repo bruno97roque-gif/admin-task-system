@@ -40,6 +40,11 @@ export class CreateProjectDto {
   @IsEnum(Tecnologia)
   tecnologia?: Tecnologia;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  tipoProyecto?: string;
+
   @IsEnum(Grupo)
   grupo: Grupo;
 

@@ -102,23 +102,24 @@ export function RecordatoriosPage() {
 
   return (
     <div>
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">Recordatorios</h1>
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">Recordatorios</h1>
           <p className="text-sm text-slate-400">
             Alertas cada 5 minutos hasta marcar como finalizado
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <Button
             variant="secondary"
+            className="w-full sm:w-auto"
             onClick={() => fetchRecordatorios()}
             loading={loading}
           >
             <IoRefreshOutline size={18} />
             Actualizar
           </Button>
-          <Button onClick={openCreate}>
+          <Button className="w-full sm:w-auto" onClick={openCreate}>
             <IoAddOutline size={18} />
             Nuevo recordatorio
           </Button>
@@ -163,7 +164,7 @@ export function RecordatoriosPage() {
           displayed.map((item) => (
             <article
               key={item.id}
-              className={`flex flex-wrap items-start justify-between gap-4 rounded-xl border p-4 ${
+              className={`flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-start sm:justify-between ${
                 !item.estado
                   ? 'border-border/50 bg-surface-raised/50 opacity-60'
                   : 'border-border bg-surface-raised'
@@ -186,10 +187,11 @@ export function RecordatoriosPage() {
                 </p>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
                 {item.estado && (
                   <Button
                     variant="success"
+                    className="w-full sm:w-auto"
                     onClick={() => handleFinalize(item.id)}
                   >
                     <IoCheckmarkCircleOutline size={16} />
@@ -230,11 +232,11 @@ export function RecordatoriosPage() {
             error={errors.descripcion?.message}
             {...register('descripcion', { required: 'La descripción es obligatoria' })}
           />
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={closeModal}>
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={closeModal}>
               Cancelar
             </Button>
-            <Button type="submit" loading={saving || isSubmitting}>
+            <Button type="submit" className="w-full sm:w-auto" loading={saving || isSubmitting}>
               {editingId ? 'Guardar cambios' : 'Crear recordatorio'}
             </Button>
           </div>

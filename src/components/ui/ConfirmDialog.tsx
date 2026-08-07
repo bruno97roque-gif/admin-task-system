@@ -28,11 +28,11 @@ export function ConfirmDialog({
           </div>
           <p className="text-sm text-slate-300">{message}</p>
         </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onCancel}>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="secondary" className="w-full sm:w-auto" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button variant="danger" onClick={onConfirm}>
+          <Button variant="danger" className="w-full sm:w-auto" onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </div>

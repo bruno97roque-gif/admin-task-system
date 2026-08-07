@@ -29,10 +29,12 @@ src/
   routes/
     AppRouter.tsx        # Rutas (login + protegidas con Layout)
     ProtectedRoute.tsx   # Guard de auth basado en useAuthStore
+    RoleGuard.tsx        # Restringe rutas según rol (Programador / Diseñador)
   components/
-    layout/Layout.tsx             # Sidebar + outlet + alertas de recordatorios
+    layout/Layout.tsx             # Sidebar drawer (móvil) + outlet + alertas
+    projects/ProjectsListView.tsx # Tabla + filtros + modal CRUD de proyectos (reutilizable)
     reminders/ReminderAlert.tsx   # Modal de alerta con lista de activos
-    ui/                           # Button, Input, Select, Textarea, Modal,
+    ui/                           # Button, Input, DateInput, Select, Textarea, Modal,
                                   #   ConfirmDialog, MultiSelect, SearchableMultiSelect
   pages/
     LoginPage.tsx
@@ -40,12 +42,16 @@ src/
     RolesPage.tsx
     UsersPage.tsx
     ProjectsPage.tsx
-    ProjectsByProgramadorPage.tsx  # Vista canvas (kanban por programador)
+    ProjectsAdminPage.tsx           # Proyectos grupos B y C (/projects/admin)
+    ProjectsByProgramadorPage.tsx   # Vista canvas (kanban por programador)
+    ProjectsByDisenoPage.tsx        # Vista canvas (kanban por diseñador)
     RecordatoriosPage.tsx
   stores/                # zustand
     authStore.ts                    # persist solo `user` (clave "websy-user"); token en memoria
     projectsStore.ts                # sin persist
-    projectsByProgramadorStore.ts   # sin persist (vista canvas)
+    projectsAdminStore.ts           # sin persist; proyectos B/C
+    projectsByProgramadorStore.ts   # sin persist (vista canvas programador)
+    projectsByDisenoStore.ts        # sin persist (vista canvas diseño)
     usersStore.ts                   # sin persist
     rolesStore.ts                   # sin persist
     seguimientosStore.ts            # sin persist
@@ -54,31 +60,41 @@ src/
   lib/api.ts             # apiFetch + ApiError + getter de token inyectable
   config/app.ts          # API_URL desde env
   hooks/useRecordatoriosReminders.ts  # Alerta cada 5 min con recordatorios activos
-  utils/                 # assignableUsers, projectUsers, id
+  utils/                 # assignableUsers, projectUsers, roleAccess, date, password, id
   types/index.ts         # Tipos de dominio
 ```
 
 ## Rutas
 
-| Path                       | Página                    | Protegida |
-| -------------------------- | ------------------------- | --------- |
-| `/login`                   | LoginPage                 | no        |
-| `/`                        | Dashboard                 | sí        |
-| `/roles`                   | Roles                     | sí        |
-| `/usuarios`                | Users                     | sí        |
-| `/proyectos`               | Projects                  | sí        |
-| `/proyectos/programador`   | ProjectsByProgramadorPage  | sí        |
-| `/recordatorios`           | Recordatorios             | sí        |
+| Path                       | Página                    | Protegida | Roles restringidos |
+| -------------------------- | ------------------------- | --------- | ------------------ |
+| `/login`                   | LoginPage                 | no        | —                  |
+| `/`                        | Dashboard                 | sí        | admin              |
+| `/roles`                   | Roles                     | sí        | admin              |
+| `/usuarios`                | Users                     | sí        | admin              |
+| `/proyectos`               | Projects                  | sí        | admin              |
+| `/projects/admin`          | ProjectsAdminPage         | sí        | admin              |
+| `/proyectos/programador`   | ProjectsByProgramadorPage | sí        | admin, Programador |
+| `/proyectos/diseno`        | ProjectsByDisenoPage      | sí        | admin, Diseñador   |
+| `/recordatorios`           | Recordatorios             | sí        | admin              |
 
 Cualquier path desconocido redirige a `/`.
+
+### Acceso por rol (`utils/roleAccess.ts` + `RoleGuard`)
+
+- **Programador**: solo `/proyectos/programador` (home tras login). Sin recordatorios ni resto del menú.
+- **Diseñador**: solo `/proyectos/diseno` (home tras login). Sin recordatorios ni resto del menú.
+- **Admin / otros roles**: acceso completo según menú.
+- `getHomePathForRole(roleName)` define la redirección post-login y cuando `RoleGuard` bloquea una ruta.
 
 ## Tipos de dominio (`src/types/index.ts`)
 
 ```ts
 Seguimiento      { id: number, name: string }
 Project           { id, name, estadoPago, estadoProyecto, descripcion, tecnologia,
-                    grupo, seguimientoId, comentario, diasSinResponder, createdAt,
-                    updatedAt, deletedAt, seguimiento: Seguimiento,
+                    tipoProyecto, grupo, seguimientoId, comentario, diasSinResponder,
+                    fechaEntrega, createdAt, updatedAt, deletedAt,
+                    seguimiento: Seguimiento,
                     usuarios: (ProjectUsuarioAssignment | AppUser)[] }
 Recordatorio      { id: number, descripcion: string, estado: boolean }  // estado=true activo
 Role              { id: number, name: string }
@@ -139,9 +155,11 @@ Notas:
 
 Patrón uniforme: estado `{ loading, saving, error }` + acciones que devuelven `{ success: boolean; error?: string }`.
 
-- **`authStore`** (persist `websy-auth`): `user`, `accessToken`, `isAuthenticated`, `login(user, password)`, `logout()`.
+- **`authStore`** (persist `websy-user`, solo `user`): `accessToken` en memoria, `isAuthenticated`, `login(user, password)`, `logout()`.
+- **`projectsAdminStore`**: igual patrón que `projectsStore`, filtrado a grupos B/C.
 - **`projectsStore`**: `projects`, `fetchProjects()`, `createProject(data)`, `updateProject(id, data, usuariosIds)`, `getProjectById(id)`.
-- **`projectsByProgramadorStore`**: `projects`, `fetchProjectsByProgramador()`. Solo lectura.
+- **`projectsByProgramadorStore`**: `projects`, `fetchProjectsByProgramador(programadorId?)`, `updateProjectComentario()`. Canvas programador; edición limitada a comentario/fecha.
+- **`projectsByDisenoStore`**: `projects`, `fetchProjectsByDiseno()`. Canvas diseño, solo lectura.
 - **`usersStore`**: `users`, `fetchUsers()`, `createUser(data)`.
 - **`rolesStore`**: `roles`, `fetchRoles()`, `createRole(name)`.
 - **`seguimientosStore`**: `seguimientos`, `fetchSeguimientos()`.
@@ -155,7 +173,8 @@ Propios, minimalistas, usan tokens de `@theme`. No meter librerías externas; ex
 - **`Input`** — `forwardRef`. Props: `label`, `error` + nativos.
 - **`Textarea`** — `forwardRef`. Props: `label`, `error`. `min-h-[80px]`.
 - **`Select`** — `forwardRef`. Props: `label`, `options: { value, label }[]`, `placeholder`, `error`.
-- **`Modal`** — props: `open`, `onClose`, `title`, `size` (`sm`/`md`/`lg`). Backdrop con blur.
+- **`DateInput`** — input de fecha con `label`; integración vía `Controller`.
+- **`Modal`** — props: `open`, `onClose`, `title`, `size` (`sm`/`md`/`lg`). Backdrop con blur; en móvil ocupa ancho completo con scroll interno y esquinas superiores redondeadas (sheet-like).
 - **`ConfirmDialog`** — props: `open`, `title`, `message`, `onConfirm`, `onCancel`, `confirmLabel`.
 - **`MultiSelect`** / **`SearchableMultiSelect`** — selección múltiple con buscador.
 
@@ -172,6 +191,9 @@ Propios, minimalistas, usan tokens de `@theme`. No meter librerías externas; ex
   - `getProjectUserNames(project)` → string joinado (o "Sin asignar").
   - `getProjectUserIds(project)` → `number[]`.
   - Abstrae el formato dual de `project.usuarios`.
+- **`roleAccess.ts`**: `getHomePathForRole`, `isRestrictedRole`, `canAccessPath`, `canAccessNavPath`.
+- **`date.ts`**: `toDateInputValue`, `formatDateDisplay`.
+- **`password.ts`**: `generatePassword()` para alta de usuarios.
 - **`id.ts`**: `generateId()` → `crypto.randomUUID()`.
 
 ## Módulos / Páginas
@@ -187,20 +209,25 @@ Propios, minimalistas, usan tokens de `@theme`. No meter librerías externas; ex
 ### Usuarios (`/usuarios`)
 - Listado + creación (`POST /user` con `{ name, user, password, roleId }`).
 
-### Proyectos (`/proyectos`)
-- Tabla con todos los proyectos + modal de crear/editar.
-- Formulario con `react-hook-form` + `Controller` para los `SearchableMultiSelect` de programadores y diseñadores.
+### Proyectos (`/proyectos`, `/projects/admin`)
+- Componente compartido `ProjectsListView` con tabla, filtros (buscar, grupo, estado) y modal crear/editar.
+- `/proyectos`: todos los grupos (A/B/C). `/projects/admin`: solo grupos B y C (`projectsAdminStore`).
+- Formulario con `react-hook-form` + `Controller` para `SearchableMultiSelect`, `DateInput`, etc.
 - Al editar: `PATCH /projects/:id` + `POST /projects/:id/usuarios` (usuarios se asignan aparte).
-- Opciones hardcodeadas: `GRUPO_OPTIONS` (A/B/C), `ESTADO_PROYECTO_OPTIONS` (Brief/Taxonomia/Diseno/Desarollo/ProyectoFinalizado), `TECNOLOGIA_OPTIONS` (Shopify/WordPress/Personalizado).
+- Opciones hardcodeadas: grupos (A/B/C o B/C según vista), `ESTADO_PROYECTO_OPTIONS`, `TECNOLOGIA_OPTIONS`.
+- Tabla con scroll horizontal en pantallas estrechas (`overflow-x-auto`, `min-w-[1024px]`).
 
 ### Proyectos por Programador (`/proyectos/programador`) — Vista canvas
-- Tablero horizontal tipo Kanban: **una columna por programador**.
+- Tablero horizontal tipo Kanban: **una columna por programador** (rol Programador ve solo su columna).
 - Identifica programadores cruzando `users` + `roles` con `getUsersByRoleName(users, roles, 'Programador')`.
-- Columna: avatar (iniciales), nombre, `user`, contador de proyectos.
-- Card: nombre, grupo, descripción (2 líneas), badges de estado proyecto / tecnología / estado pago, seguimiento, días sin responder, comentario y **otros usuarios** asignados al mismo proyecto.
-- Layout full-height (`h-[calc(100vh-4rem)]`) con scroll horizontal entre columnas y scroll vertical dentro de cada columna.
-- Solo lectura + botón "Actualizar". Sin drag-and-drop.
-- Empty state claro si no hay programadores cargados.
+- Columna: avatar (iniciales), nombre, `user`, contador de proyectos. Ancho adaptable (`w-[min(100%,20rem)]` en móvil, `sm:w-80` en desktop).
+- Card clickeable: edición de comentario y fecha de entrega vía modal.
+- Layout `flex-1 min-h-0` dentro del shell del Layout; scroll horizontal entre columnas y vertical dentro de cada columna.
+- Sin drag-and-drop. Empty state si no hay programadores.
+
+### Diseño (`/proyectos/diseno`) — Vista canvas
+- Misma estructura que programador pero columnas por **Diseñador** (`projectsByDisenoStore`).
+- Solo lectura + botón "Actualizar".
 
 ### Recordatorios (`/recordatorios`)
 - CRUD completo contra `/recordatorio`.
@@ -221,6 +248,17 @@ Implementado en `src/hooks/useRecordatoriosReminders.ts`, montado en `Layout.tsx
 4. El modal lista los activos con botón **Finalizado** inline (cada uno hace `PATCH estado: false` con optimistic update). Al finalizar el último, el modal se cierra solo.
 5. Botones del modal: "Ir a recordatorios" (navega a `/recordatorios`) y "Cerrar (volverá en 5 min)".
 6. Si no hay activos, el intervalo se detiene.
+
+## Responsive / layout
+
+Breakpoint principal: **`lg` (1024px)** — sidebar fijo a la izquierda; por debajo, drawer deslizable.
+
+- **`Layout.tsx`**: barra superior móvil (`h-14`) con botón hamburguesa; sidebar off-canvas con overlay, cierre por backdrop/Escape y al navegar; `main` con padding `p-4 sm:p-6 lg:p-8`; cadena `flex min-h-dvh` + `min-h-0` para vistas canvas a altura completa.
+- **Cabeceras de página**: títulos `text-xl sm:text-2xl`; acciones en columna (`w-full`) en móvil y fila en `sm+`.
+- **Tablas**: envolver en `overflow-x-auto`; anchos mínimos donde haga falta (proyectos ~1024px, usuarios ~640px).
+- **Modales / diálogos**: scroll interno, botones apilados en móvil (`flex-col-reverse sm:flex-row`), sheet-like en pantallas pequeñas.
+- **Canvas (kanban)**: columnas más estrechas en móvil; scroll horizontal del tablero.
+- **`index.css`**: `min-height: 100dvh`, `overflow-x: hidden` en `html`/`body`.
 
 ## Convenciones
 
@@ -255,5 +293,6 @@ pnpm preview        # previsualizar el build
 - **Sin librería de UI externa**: componentes `ui/` propios. Si se necesita algo nuevo, extenderlos antes de meter una dependencia.
 - **Recordatorios en backend**: persisten en `/recordatorio`, no en localStorage. `estado=true` activo; "Finalizado" hace `PATCH estado: false`.
 - **Alertas de recordatorios**: `useRecordatoriosReminders` cada 5 min mientras haya activos, con sonido + notificación del browser + modal con botón "Finalizado" inline.
-- **Vista canvas (Proyectos por Programador)**: tablero horizontal con columnas por programador; identifica programadores cruzando `users` + `roles` (roleName === 'Programador').
+- **Vista canvas**: tableros horizontales por programador o diseñador; roles restringidos ven solo su vista.
+- **Responsive mobile-first**: drawer lateral, tablas con scroll horizontal, modales adaptados; sin librerías extra.
 - **Sin tests todavía**: si se agregan, preferir Vitest.

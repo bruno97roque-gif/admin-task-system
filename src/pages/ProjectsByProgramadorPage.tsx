@@ -50,6 +50,7 @@ const ESTADO_PROYECTO_COLORS: Record<string, string> = {
   Brief: 'bg-blue-500/20 text-blue-300',
   Taxonomia: 'bg-indigo-500/20 text-indigo-300',
   Diseno: 'bg-purple-500/20 text-purple-300',
+  Desarrollo: 'bg-amber-500/20 text-amber-300',
   Desarollo: 'bg-amber-500/20 text-amber-300',
   ProyectoFinalizado: 'bg-emerald-500/20 text-emerald-300',
 }
@@ -169,7 +170,7 @@ function ProgramadorColumn({
   onSelectProject: (project: Project) => void
 }) {
   return (
-    <section className="flex w-80 shrink-0 flex-col rounded-xl border border-border bg-surface-raised">
+    <section className="flex w-[min(100%,20rem)] shrink-0 flex-col rounded-xl border border-border bg-surface-raised sm:w-80">
       <header className="flex items-center gap-3 border-b border-border p-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/20 text-sm font-bold text-accent-hover">
           {getInitials(programador.name)}
@@ -300,10 +301,10 @@ export function ProjectsByProgramadorPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col">
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">
             {isProgramador ? 'Mis proyectos' : 'Proyectos por Programador'}
           </h1>
           <p className="text-sm text-slate-400">
@@ -313,6 +314,7 @@ export function ProjectsByProgramadorPage() {
         </div>
         <Button
           variant="secondary"
+          className="w-full sm:w-auto"
           onClick={() => fetchProjects(programadorId)}
           loading={loading}
         >
@@ -384,11 +386,11 @@ export function ProjectsByProgramadorPage() {
             rows={5}
             {...register('comentario')}
           />
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={closeEditComentario}>
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={closeEditComentario}>
               Cancelar
             </Button>
-            <Button type="submit" loading={saving}>
+            <Button type="submit" className="w-full sm:w-auto" loading={saving}>
               Guardar
             </Button>
           </div>

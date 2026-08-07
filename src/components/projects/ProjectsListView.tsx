@@ -13,8 +13,10 @@ import {
   toSelectOptions,
 } from '../../utils/assignableUsers'
 import { getProjectUserIds, getProjectUserNames } from '../../utils/projectUsers'
+import { projectMatchesSearch } from '../../utils/projectSearch'
 import { toDateInputValue } from '../../utils/date'
 import { Button } from '../ui/Button'
+import { ProjectSearchInput } from './ProjectSearchInput'
 import { Input } from '../ui/Input'
 import { DateInput } from '../ui/DateInput'
 import { Modal } from '../ui/Modal'
@@ -32,7 +34,7 @@ const ESTADO_PROYECTO_OPTIONS = [
   { value: 'Brief', label: 'Brief' },
   { value: 'Taxonomia', label: 'Taxonomia' },
   { value: 'Diseno', label: 'Diseno' },
-  { value: 'Desarollo', label: 'Desarollo' },
+  { value: 'Desarrollo', label: 'Desarrollo' },
   { value: 'ProyectoFinalizado', label: 'ProyectoFinalizado' },
 ]
 
@@ -152,26 +154,12 @@ export function ProjectsListView({
     searchQuery.trim() !== '' || grupoFilter !== '' || estadoProyectoFilter !== ''
 
   const filteredProjects = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
-
     return projects.filter((project) => {
       if (grupoFilter && project.grupo !== grupoFilter) return false
       if (estadoProyectoFilter && project.estadoProyecto !== estadoProyectoFilter) {
         return false
       }
-      if (!query) return true
-
-      const haystack = [
-        project.name,
-        project.descripcion,
-        showTipoProyecto ? project.tipoProyecto : '',
-        getProjectUserNames(project),
-        String(project.id),
-      ]
-        .join(' ')
-        .toLowerCase()
-
-      return haystack.includes(query)
+      return projectMatchesSearch(project, searchQuery, showTipoProyecto)
     })
   }, [projects, searchQuery, grupoFilter, estadoProyectoFilter, showTipoProyecto])
 
@@ -210,7 +198,10 @@ export function ProjectsListView({
       comentario: project.comentario ?? '',
       tecnologia: project.tecnologia ?? '',
       estadoPago: project.estadoPago ?? '',
-      estadoProyecto: project.estadoProyecto ?? '',
+      estadoProyecto:
+        project.estadoProyecto === 'Desarollo'
+          ? 'Desarrollo'
+          : (project.estadoProyecto ?? ''),
       diasSinResponder:
         project.diasSinResponder !== null ? String(project.diasSinResponder) : '',
       fechaEntrega: toDateInputValue(project.fechaEntrega),
@@ -272,17 +263,22 @@ export function ProjectsListView({
 
   return (
     <div>
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">{title}</h1>
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">{title}</h1>
           <p className="text-sm text-slate-400">{description}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => fetchProjects()} loading={loading}>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Button
+            variant="secondary"
+            className="w-full sm:w-auto"
+            onClick={() => fetchProjects()}
+            loading={loading}
+          >
             <IoRefreshOutline size={18} />
             Actualizar
           </Button>
-          <Button onClick={openCreate}>
+          <Button className="w-full sm:w-auto" onClick={openCreate}>
             <IoAddOutline size={18} />
             Agregar proyecto
           </Button>
@@ -297,11 +293,11 @@ export function ProjectsListView({
 
       <div className="mb-4 flex flex-wrap items-end gap-4">
         <div className="min-w-[220px] flex-1">
-          <Input
-            label="Buscar"
-            placeholder="Nombre, descripción, usuarios..."
+          <ProjectSearchInput
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={setSearchQuery}
+            projects={projects}
+            showTipoProyecto={showTipoProyecto}
           />
         </div>
         <div className="w-full sm:w-36">
@@ -576,11 +572,11 @@ export function ProjectsListView({
             {...register('comentario')}
           />
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={closeModal}>
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={closeModal}>
               Cancelar
             </Button>
-            <Button type="submit" loading={saving}>
+            <Button type="submit" className="w-full sm:w-auto" loading={saving}>
               {editingProject ? 'Guardar cambios' : 'Guardar'}
             </Button>
           </div>

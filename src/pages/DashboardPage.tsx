@@ -82,8 +82,8 @@ export function DashboardPage() {
 
   return (
     <div>
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-100">Dashboard</h1>
+      <header className="mb-6 sm:mb-8">
+        <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">Dashboard</h1>
         <p className="text-sm text-slate-400">
           Resumen general del sistema de proyectos
         </p>
@@ -122,13 +122,13 @@ export function DashboardPage() {
               {projects.slice(0, 5).map((project) => (
                 <li
                   key={project.id}
-                  className="flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-2.5"
+                  className="flex flex-col gap-1 rounded-lg border border-border bg-surface px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">{project.name}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-200">{project.name}</p>
                     <p className="text-xs text-slate-500">Grupo {project.grupo}</p>
                   </div>
-                  <span className="text-xs text-slate-400">{project.estadoProyecto}</span>
+                  <span className="shrink-0 text-xs text-slate-400">{project.estadoProyecto}</span>
                 </li>
               ))}
             </ul>

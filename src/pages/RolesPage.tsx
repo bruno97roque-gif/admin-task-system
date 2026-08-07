@@ -55,19 +55,24 @@ export function RolesPage() {
 
   return (
     <div>
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">Roles</h1>
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">Roles</h1>
           <p className="text-sm text-slate-400">
             Administra los roles del sistema
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => fetchRoles()} loading={loading}>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Button
+            variant="secondary"
+            className="w-full sm:w-auto"
+            onClick={() => fetchRoles()}
+            loading={loading}
+          >
             <IoRefreshOutline size={18} />
             Actualizar
           </Button>
-          <Button onClick={openCreate}>
+          <Button className="w-full sm:w-auto" onClick={openCreate}>
             <IoAddOutline size={18} />
             Agregar rol
           </Button>
@@ -80,8 +85,8 @@ export function RolesPage() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-surface-raised">
-        <table className="w-full text-left text-sm">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface-raised">
+        <table className="w-full min-w-[320px] text-left text-sm">
           <thead className="border-b border-border bg-surface text-slate-400">
             <tr>
               <th className="px-4 py-3 font-medium">ID</th>
@@ -126,11 +131,11 @@ export function RolesPage() {
             error={errors.nombre?.message}
             {...register('nombre', { required: 'El nombre es obligatorio' })}
           />
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={closeModal}>
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={closeModal}>
               Cancelar
             </Button>
-            <Button type="submit" loading={creating}>
+            <Button type="submit" className="w-full sm:w-auto" loading={creating}>
               Guardar
             </Button>
           </div>

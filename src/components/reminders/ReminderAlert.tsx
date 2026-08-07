@@ -50,14 +50,14 @@ export function ReminderAlert({ open, onDismiss, onGoToRecordatorios }: Reminder
           {displayItems.map((item) => (
             <li
               key={item.id}
-              className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface p-3"
+              className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-3 sm:flex-row sm:items-start sm:justify-between"
             >
-              <p className="whitespace-pre-wrap break-words text-sm text-slate-200">
+              <p className="min-w-0 whitespace-pre-wrap break-words text-sm text-slate-200">
                 {item.descripcion}
               </p>
               <Button
                 variant="success"
-                className="shrink-0"
+                className="w-full shrink-0 sm:w-auto"
                 onClick={() => handleFinalize(item.id)}
               >
                 <IoCheckmarkCircleOutline size={16} />
@@ -67,11 +67,11 @@ export function ReminderAlert({ open, onDismiss, onGoToRecordatorios }: Reminder
           ))}
         </ul>
 
-        <div className="flex justify-end gap-2 border-t border-border pt-4">
-          <Button variant="secondary" onClick={onGoToRecordatorios}>
+        <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
+          <Button variant="secondary" className="w-full sm:w-auto" onClick={onGoToRecordatorios}>
             Ir a recordatorios
           </Button>
-          <Button variant="ghost" onClick={onDismiss}>
+          <Button variant="ghost" className="w-full sm:w-auto" onClick={onDismiss}>
             Cerrar (volverá en 5 min)
           </Button>
         </div>

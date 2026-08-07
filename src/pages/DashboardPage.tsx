@@ -1,19 +1,107 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router'
 import {
   IoAlarmOutline,
   IoCheckmarkCircleOutline,
+  IoColorPaletteOutline,
   IoFolderOpenOutline,
   IoPeopleOutline,
   IoShieldOutline,
+  IoStatsChartOutline,
   IoTimeOutline,
 } from 'react-icons/io5'
 import { useProjectsStore } from '../stores/projectsStore'
 import { useRecordatoriosStore } from '../stores/recordatoriosStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
+import {
+  getActiveProjectCountsByRole,
+  type UserProjectCount,
+} from '../utils/assignableUsers'
 
 const FINALIZED_STATUS = 'ProyectoFinalizado'
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
+
+interface TeamColumnProps {
+  title: string
+  icon: typeof IoStatsChartOutline
+  iconColor: string
+  avatarBg: string
+  avatarText: string
+  roleLabel: string
+  items: UserProjectCount[]
+  emptyMessage: string
+  to: string
+}
+
+function TeamColumn({
+  title,
+  icon: Icon,
+  iconColor,
+  avatarBg,
+  avatarText,
+  roleLabel,
+  items,
+  emptyMessage,
+  to,
+}: TeamColumnProps) {
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+          <Icon className={iconColor} size={16} />
+          {title}
+        </h3>
+        <Link
+          to={to}
+          className="text-xs font-medium text-accent transition-colors hover:text-accent-hover"
+        >
+          Ver tablero →
+        </Link>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border bg-surface px-4 py-8 text-center text-sm text-slate-500">
+          {emptyMessage}
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {items.map(({ user, count }) => (
+            <li
+              key={user.id}
+              className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:border-accent/30"
+            >
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold ${avatarBg} ${avatarText}`}
+              >
+                {getInitials(user.name)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-slate-100">{user.name}</p>
+                <p className="text-xs text-slate-500">{roleLabel}</p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-2xl font-bold tabular-nums text-slate-100">{count}</p>
+                <p className="text-xs text-slate-500">
+                  {count === 1 ? 'proyecto' : 'proyectos'}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 export function DashboardPage() {
   const users = useUsersStore((s) => s.users)
@@ -34,7 +122,21 @@ export function DashboardPage() {
 
   const isFinalized = (estado: string) => estado === FINALIZED_STATUS
 
-  const activeProjects = projects.filter((p) => !isFinalized(p.estadoProyecto))
+  const activeProjects = useMemo(
+    () => projects.filter((p) => !isFinalized(p.estadoProyecto)),
+    [projects],
+  )
+
+  const programadorCounts = useMemo(
+    () => getActiveProjectCountsByRole(activeProjects, users, roles, 'Programador'),
+    [activeProjects, users, roles],
+  )
+
+  const disenadorCounts = useMemo(
+    () => getActiveProjectCountsByRole(activeProjects, users, roles, 'Diseñador'),
+    [activeProjects, users, roles],
+  )
+
   const pendingRecordatorios = recordatorios.filter((r) => r.estado)
 
   const stats = [
@@ -108,6 +210,38 @@ export function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      <section className="mb-8 rounded-xl border border-border bg-surface-raised p-5 sm:p-6">
+        <h2 className="mb-6 flex items-center gap-2 text-lg font-semibold text-slate-100">
+          <IoPeopleOutline className="text-accent" />
+          Proyectos activos por miembro
+        </h2>
+
+        <div className="grid gap-8 lg:grid-cols-2">
+          <TeamColumn
+            title="Programadores"
+            icon={IoStatsChartOutline}
+            iconColor="text-purple-400"
+            avatarBg="bg-purple-500/20"
+            avatarText="text-purple-300"
+            roleLabel="Programador"
+            items={programadorCounts}
+            emptyMessage="No hay programadores registrados"
+            to="/proyectos/programador"
+          />
+          <TeamColumn
+            title="Diseñadores"
+            icon={IoColorPaletteOutline}
+            iconColor="text-pink-400"
+            avatarBg="bg-pink-500/20"
+            avatarText="text-pink-300"
+            roleLabel="Diseñador"
+            items={disenadorCounts}
+            emptyMessage="No hay diseñadores registrados"
+            to="/proyectos/diseno"
+          />
+        </div>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-xl border border-border bg-surface-raised p-5">

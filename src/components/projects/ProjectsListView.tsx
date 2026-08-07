@@ -20,7 +20,6 @@ import { ProjectSearchInput } from './ProjectSearchInput'
 import { Input } from '../ui/Input'
 import { DateInput } from '../ui/DateInput'
 import { Modal } from '../ui/Modal'
-import { SearchableMultiSelect } from '../ui/SearchableMultiSelect'
 import { Select } from '../ui/Select'
 import { Textarea } from '../ui/Textarea'
 
@@ -56,8 +55,8 @@ interface ProjectForm {
   estadoProyecto: string
   diasSinResponder: string
   fechaEntrega: string
-  programadoresIds: string[]
-  disenadoresIds: string[]
+  programadorId: string
+  disenadorId: string
 }
 
 const emptyForm: ProjectForm = {
@@ -72,8 +71,8 @@ const emptyForm: ProjectForm = {
   estadoProyecto: '',
   diasSinResponder: '',
   fechaEntrega: '',
-  programadoresIds: [],
-  disenadoresIds: [],
+  programadorId: '',
+  disenadorId: '',
 }
 
 interface ProjectsListViewProps {
@@ -184,7 +183,7 @@ export function ProjectsListView({
     await loadFormData()
     const currentRoles = useRolesStore.getState().roles
     const currentUsers = useUsersStore.getState().users
-    const { programadoresIds, disenadoresIds } = splitUserIdsByRole(
+    const { programadorId, disenadorId } = splitUserIdsByRole(
       getProjectUserIds(project),
       currentRoles,
       currentUsers,
@@ -205,8 +204,8 @@ export function ProjectsListView({
       diasSinResponder:
         project.diasSinResponder !== null ? String(project.diasSinResponder) : '',
       fechaEntrega: toDateInputValue(project.fechaEntrega),
-      programadoresIds,
-      disenadoresIds,
+      programadorId,
+      disenadorId,
     })
     setModalOpen(true)
   }
@@ -243,7 +242,7 @@ export function ProjectsListView({
   })
 
   const getUsuariosIds = (data: ProjectForm) =>
-    mergeUserIds(data.programadoresIds, data.disenadoresIds)
+    mergeUserIds(data.programadorId, data.disenadorId)
 
   const onSubmit = async (data: ProjectForm) => {
     const usuariosIds = getUsuariosIds(data)
@@ -535,34 +534,18 @@ export function ProjectsListView({
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Controller
-              name="programadoresIds"
-              control={control}
-              render={({ field }) => (
-                <SearchableMultiSelect
-                  label="Programadores"
-                  options={programadorOptions}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Buscar programador..."
-                  emptyMessage="No hay programadores disponibles"
-                />
-              )}
+            <Select
+              label="Programador"
+              options={programadorOptions}
+              placeholder="Sin asignar"
+              {...register('programadorId')}
             />
 
-            <Controller
-              name="disenadoresIds"
-              control={control}
-              render={({ field }) => (
-                <SearchableMultiSelect
-                  label="Diseñadores"
-                  options={disenadorOptions}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Buscar diseñador..."
-                  emptyMessage="No hay diseñadores disponibles"
-                />
-              )}
+            <Select
+              label="Diseñador"
+              options={disenadorOptions}
+              placeholder="Sin asignar"
+              {...register('disenadorId')}
             />
           </div>
 

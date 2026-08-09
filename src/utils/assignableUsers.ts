@@ -1,5 +1,5 @@
 import type { AppUser, Project, Role } from '../types'
-import { getProjectUserIds } from './projectUsers'
+import { isProjectAssignee } from './projectUsers'
 
 export const ASSIGNABLE_ROLE_NAMES = ['Programador', 'Diseñador'] as const
 
@@ -26,35 +26,6 @@ export function toSelectOptions(users: AppUser[]) {
   }))
 }
 
-export function splitUserIdsByRole(
-  userIds: number[],
-  roles: Role[],
-  users: AppUser[],
-): { programadorId: string; disenadorId: string } {
-  const programadorRoleId = getRoleIdByName(roles, 'Programador')
-  const disenadorRoleId = getRoleIdByName(roles, 'Diseñador')
-
-  let programadorId = ''
-  let disenadorId = ''
-
-  userIds.forEach((id) => {
-    const user = users.find((item) => item.id === id)
-    if (!user) return
-
-    if (user.roleId === programadorRoleId && !programadorId) {
-      programadorId = String(id)
-    } else if (user.roleId === disenadorRoleId && !disenadorId) {
-      disenadorId = String(id)
-    }
-  })
-
-  return { programadorId, disenadorId }
-}
-
-export function mergeUserIds(programadorId: string, disenadorId: string): number[] {
-  return [programadorId, disenadorId].filter(Boolean).map(Number)
-}
-
 export interface UserProjectCount {
   user: AppUser
   count: number
@@ -70,7 +41,7 @@ export function getActiveProjectCountsByRole(
     .map((user) => ({
       user,
       count: activeProjects.filter((project) =>
-        getProjectUserIds(project).includes(user.id),
+        isProjectAssignee(project, roleName, user.id),
       ).length,
     }))
     .sort((a, b) => b.count - a.count || a.user.name.localeCompare(b.user.name, 'es'))

@@ -62,8 +62,8 @@ src/
   lib/api.ts                        # apiFetch + ApiError + refresh + handlers inyectables
   config/app.ts                     # API_URL desde env
   hooks/useRecordatoriosReminders.ts  # Alerta cada 5 min con recordatorios activos
-  utils/                            # assignableUsers, projectUsers, projectSearch, roleAccess,
-                                    #   date, password, id
+  utils/                            # assignableUsers, projectUsers, projectType, projectStatus,
+                                    #   projectSearch, roleAccess, date, password, id
   types/index.ts                    # Tipos de dominio
 vercel.json                         # SPA rewrites para deploy en Vercel
 ```
@@ -100,7 +100,9 @@ Project           { id, name, estadoPago, estadoProyecto, descripcion, tecnologi
                     tipoProyecto, grupo, seguimientoId, comentario, diasSinResponder,
                     fechaEntrega, createdAt, updatedAt, deletedAt,
                     seguimiento: Seguimiento,
-                    usuarios: (ProjectUsuarioAssignment | AppUser)[] }
+                    usuarios: (ProjectUsuarioAssignment | AppUser)[],
+                    desarrolladorId: number | null, disenadorId: number | null,
+                    desarrollador: AppUser | null, disenador: AppUser | null }
 Recordatorio      { id: number, descripcion: string, estado: boolean }  // estado=true activo
 Role              { id: number, name: string }
 AuthUser          { id, name, user, roleId, roleName }
@@ -108,10 +110,31 @@ AppUser           { id, name, user, active, roleId }
 ```
 
 Notas:
-- `Project.usuarios` puede venir como `AppUser` plano o como `{ usuario: AppUser }`. Usar `utils/projectUsers` que abstrae ambos formatos.
+- `Project.usuarios` puede venir como `AppUser` plano o como `{ usuario: AppUser }`. La asignación dedicada de un desarrollador/diseñador va en `desarrolladorId`/`disenadorId` (más `desarrollador`/`disenador`); `usuarios` es el equipo genérico (tabla `usuarios_proyectos`). Usar `utils/projectUsers` (`getProjectUserNames`, `getProjectUserIds`, `isProjectAssignee`).
 - `Recordatorio.estado`: `true` = activo, `false` = finalizado.
-- `tipoProyecto` y `tecnologia` pueden ser `null`.
-- El backend a veces devuelve `estadoProyecto: 'Desarollo'` (typo); el formulario de edición lo normaliza a `'Desarrollo'`.
+- `tipoProyecto` es enum `Informativa | Ecommerce | null` (NUNCA `"E-commerce"`). Display: «Web informativa» / «E-commerce» vía `utils/projectType`.
+- `estadoProyecto`: `Registro | Brief | Taxonomia | Diseno | Desarrollo | ProyectoFinalizado | Archivado`. El backend **valida las transiciones** (ver §flujo de etapas).
+- El backend a veces devolvía `estadoProyecto: 'Desarollo'` (typo); el formulario de edición lo normaliza a `'Desarrollo'`.
+
+## Roles
+
+`AuthUser.roleId`/`roleName` salen del login. IDs: `Admin=3`, `Programador=5`, `Owner=6`, `Ventas=7`, `Diseñador=8`.
+
+- **Programador** y **Diseñador**: roles restringidos (`utils/roleAccess.ts`), ven solo su vista canvas.
+- El resto (Admin, Owner, Ventas): menú completo.
+- El backend devuelve `403` para `Admin`/`Owner` **únicamente** en `plan-cobros`, `cobros/:hito`, `archivar`, `reactivar`. El front no debe decidir permisos por sí solo; solo ocultar botones que fallarían.
+
+## Flujo de etapas (valida el backend, `PATCH /projects/:id`)
+
+```
+Registro → Brief → Taxonomía → Diseño → Desarrollo → Proyecto Finalizado
+```
+
+- Avanzar de a **una** etapa; retroceder a cualquiera anterior; quedarse igual → OK.
+- Saltear hacia adelante → `409`. `Archivado` no se toca por PATCH (usar `POST /:id/archivar` / `/reactivar`).
+- **Excepción:** `Brief → Diseño` (sin Taxonomía) vale si el proyecto **no** es e-commerce.
+- `getEstadoProyectoOptions(current, tipoProyecto)` (`utils/projectStatus.ts`) arma las opciones legales para el `Select` de edición.
+- **Compuertas:** por proyecto con plan de cobros cargado (cobros `[]` = sin reglas). Los `409` traen `message` en español listo para mostrar (ya se muestra vía `ApiError.message`).
 
 ## Autenticación
 
@@ -147,12 +170,32 @@ Notas:
 | GET    | `/user`                       | lista de usuarios                                               |
 | POST   | `/user`                       | `{ name, user, password, roleId }`                             |
 | GET    | `/projects`                   | lista de proyectos (todos los grupos)                           |
-| GET    | `/projects/admin`             | proyectos de grupos B y C                                       |
-| POST   | `/projects`                   | `{ name, descripcion, grupo, seguimientoId, comentario, tipoProyecto?, usuariosIds? }` |
-| PATCH  | `/projects/:id`               | `{ name, descripcion, grupo, seguimientoId, comentario, tecnologia, tipoProyecto, estadoPago, estadoProyecto, diasSinResponder, fechaEntrega }` |
-| POST   | `/projects/:id/usuarios`       | `{ usuariosIds: number[] }`                                    |
+| GET    | `/projects/admin`             | proyectos de grupos B y C, sin archivados (incluye finalizados) |
 | GET    | `/projects/programador`       | proyectos con usuarios (vista canvas); query opcional `?id=` para filtrar por programador |
-| GET    | `/projects/diseno`            | proyectos con usuarios (vista canvas diseño)                    |
+| GET    | `/projects/diseno`            | proyectos con usuarios (vista canvas diseño); query opcional `?id=` filtra por disenadorId |
+| GET    | `/projects/archivados`        | solo archivados, más recientes primero                          |
+| GET    | `/projects/por-archivar`      | los que llevan ≥90 días esperando al cliente                    |
+| GET    | `/projects/:id/historial`     | trazabilidad de cambios, ascendente                             |
+| GET    | `/projects/:id/recordatorios` | todos (abiertos y resueltos)                                    |
+| POST   | `/projects`                   | `{ name, descripcion, comentario, seguimientoId, tipoProyecto? (Informativa\|Ecommerce), grupo?, estadoProyecto?, disenadorId?, desarrolladorId?, usuariosIds?, planCobros?, ... }`. Body estricto: campo desconocido → 400 |
+| PATCH  | `/projects/:id`               | mismos campos (todos opcionales) + bloqueos del cliente; **sin** planCobros/aprobadoPorJefatura/abonoInicialCobrado. Valida transición de etapa (409). `null`/`[]` borra la clave; `usuariosIds` hace reemplazo total |
+| POST   | `/projects/:id/usuarios`      | `{ usuariosIds: number[] }` — **AGREGA** sin tocar los existentes |
+| DELETE | `/projects/:id/usuarios/:usuarioId` | quita una asignación; 404 si no estaba |
+| PUT    | `/projects/:id/plan-cobros`   | Admin/Owner. `{ cobros:[3 hitos, suman 100], aprobadoPorJefatura }` |
+| PATCH  | `/projects/:id/cobros/:hito`  | Admin/Owner. `{ cobrado, fechaCobro? }`; hito = AbonoInicial\|AprobacionDiseno\|Entrega |
+| POST   | `/projects/:id/archivar`      | Admin/Owner. `{ motivo }`; 409 si archivado o finalizado. Cierra recordatorios |
+| POST   | `/projects/:id/reactivar`     | Admin/Owner. Respuesta distinta: `{ porcentajeAReactivar, diasArchivado, seRehaceInicioYDiseno, proyecto }` |
+| PATCH  | `/projects/:id/material-marca`| `{ recibido, motivo? }` — habilita paso a Diseño; falta → Grupo B |
+| PATCH  | `/projects/:id/catalogo`      | `{ recibido, motivo? }` — solo e-commerce (409 si no) |
+| PATCH  | `/projects/:id/hosting`       | `{ recibido, motivo? }` — falta → Grupo C |
+| POST   | `/projects/:id/factibilidad`  | F1, no bloquea nada                                            |
+| POST   | `/projects/:id/aprobar-diseno`| 409 si no está en Diseño                                        |
+| POST   | `/projects/:id/cargar-productos` | 409 si no es e-commerce o falta catálogo                     |
+| POST   | `/projects/:id/presentar`     | marca presentadoAt                                              |
+| POST   | `/projects/:id/produccion`    | 409 si no hay hosting contratado                                |
+| POST   | `/projects/:id/capacitacion`  | 409 si no se subió a producción                                 |
+| POST   | `/projects/:id/observaciones` | `{ detalle, dentroDelAlcance }`; dentroDelAlcance=false crea cotización adicional |
+| POST   | `/projects/:id/rondas-cambio` | responde `{ rondasUsadas, rondasIncluidas, requiereCotizacionAdicional, proyecto }` |
 | GET    | `/seguimiento`                | lista de seguimientos                                           |
 | GET    | `/recordatorio`               | lista de recordatorios                                          |
 | POST   | `/recordatorio`               | `{ descripcion }`                                               |
@@ -166,7 +209,7 @@ Patrón uniforme: estado `{ loading, saving, error }` + acciones que devuelven `
 
 - **`authStore`** (persist `websy-user`, solo `user`): `accessToken` en memoria, `isAuthenticated`, `sessionHydrated`, `setSession`, `clearSession`, `setSessionHydrated`, `login(user, password)`, `logout()`.
 - **`projectsAdminStore`**: igual patrón que `projectsStore`; carga vía `GET /projects/admin` (no filtra client-side).
-- **`projectsStore`**: `projects`, `fetchProjects()`, `createProject(data)`, `updateProject(id, data, usuariosIds)`, `getProjectById(id)`.
+- **`projectsStore`**: `projects`, `fetchProjects()`, `createProject(data)`, `updateProject(id, data)`, `getProjectById(id)`. Crear = `POST /projects`; editar = un solo `PATCH /projects/:id` (los asignados van como `disenadorId`/`desarrolladorId`, no por POST `/usuarios`).
 - **`projectsByProgramadorStore`**: `projects`, `fetchProjectsByProgramador(programadorId?)`, `updateProjectComentario()`. Canvas programador; edición limitada a comentario/fecha.
 - **`projectsByDisenoStore`**: `projects`, `fetchProjectsByDiseno()`. Canvas diseño, solo lectura.
 - **`usersStore`**: `users`, `fetchUsers()`, `createUser(data)`.
@@ -185,7 +228,7 @@ Propios, minimalistas, usan tokens de `@theme`. No meter librerías externas; ex
 - **`DateInput`** — input de fecha con `label`; integración vía `Controller`.
 - **`Modal`** — props: `open`, `onClose`, `title`, `size` (`sm`/`md`/`lg`). Backdrop con blur; en móvil ocupa ancho completo con scroll interno y esquinas superiores redondeadas (sheet-like).
 - **`ConfirmDialog`** — props: `open`, `title`, `message`, `onConfirm`, `onCancel`, `confirmLabel`.
-- **`MultiSelect`** / **`SearchableMultiSelect`** — selección múltiple con buscador.
+- **`MultiSelect`** / **`SearchableMultiSelect`** — selección múltiple con buscador. Actualmente **sin uso** (los proyectos asignan un solo programador/diseñador con `Select` simples), pero siguen disponibles.
 
 ## Componentes de proyectos (`src/components/projects/`)
 
@@ -198,15 +241,17 @@ Propios, minimalistas, usan tokens de `@theme`. No meter librerías externas; ex
   - `ASSIGNABLE_ROLE_NAMES = ['Programador', 'Diseñador']`
   - `getRoleIdByName(roles, 'Programador')`
   - `getUsersByRoleName(users, roles, 'Programador')` → filtra usuarios por rol.
-  - `splitUserIdsByRole(userIds, roles, users)` → `{ programadoresIds, disenadoresIds }`.
-  - `mergeUserIds(programadoresIds, disenadoresIds)` → `number[]`.
+  - `getActiveProjectCountsByRole(activeProjects, users, roles, roleName)` → `UserProjectCount[]` (para el Dashboard; matchea `desarrolladorId`/`disenadorId` + equipo genérico).
   - `toSelectOptions(users)` → `{ value, label }[]`.
 - **`projectUsers.ts`**:
-  - `getProjectUserNames(project)` → string joinado (o "Sin asignar").
-  - `getProjectUserIds(project)` → `number[]`.
+  - `getProjectUserNames(project)` → string joinado (dedicados `desarrollador`/`disenador` + equipo genérico; o "Sin asignar").
+  - `getProjectUserIds(project)` → `number[]` (solo equipo genérico).
+  - `isProjectAssignee(project, roleName, userId)` → matchea asignado dedicado **o** equipo genérico.
   - Abstrae el formato dual de `project.usuarios`.
+- **`projectType.ts`**: `TIPO_PROYECTO_OPTIONS` (Informativa/Ecommerce), `getTipoProyectoLabel` («Web informativa»/«E-commerce»). El enum NUNCA es `"E-commerce"`.
+- **`projectStatus.ts`**: `ESTADO_PROYECTO_ORDER`/`ESTADO_PROYECTO_OPTIONS` (con `Registro`), `getEstadoProyectoOptions(current, tipoProyecto)` — opciones legales para el `Select` de edición (actual + siguiente + anteriores + excepción Brief→Diseno sin e-commerce).
 - **`projectSearch.ts`**:
-  - `getProjectSearchHaystack(project, showTipoProyecto?)` → string normalizado para búsqueda.
+  - `getProjectSearchHaystack(project, showTipoProyecto?)` → string normalizado para búsqueda (incluye label visible del tipo de proyecto).
   - `projectMatchesSearch(project, query, showTipoProyecto?)` → boolean.
 - **`roleAccess.ts`**: `getHomePathForRole`, `isRestrictedRole`, `canAccessPath`, `canAccessNavPath`.
 - **`date.ts`**: `toDateInputValue`, `formatDateDisplay`.
@@ -217,6 +262,7 @@ Propios, minimalistas, usan tokens de `@theme`. No meter librerías externas; ex
 
 ### Dashboard (`/`)
 - Stats: usuarios, roles, proyectos activos, **recordatorios activos**, proyectos finalizados.
+- Sección "Proyectos activos por miembro": columnas de programadores y diseñadores con conteo de proyectos activos por usuario (vía `getActiveProjectCountsByRole`).
 - Sección "Proyectos recientes" (top 5) y "Recordatorios activos" (top 5).
 - Carga `users`, `roles`, `projects`, `recordatorios` al montar.
 - Proyecto activo = `estadoProyecto !== 'ProyectoFinalizado'`.
@@ -231,10 +277,10 @@ Propios, minimalistas, usan tokens de `@theme`. No meter librerías externas; ex
 - Componente compartido `ProjectsListView` con tabla, filtros y modal crear/editar.
 - `/proyectos`: todos los grupos (A/B/C) vía `GET /projects`. `/projects/admin`: solo B/C vía `GET /projects/admin` (`projectsAdminStore`).
 - Filtros: `ProjectSearchInput` (autocomplete), grupo, estado proyecto; botón "Limpiar filtros" y contador "Mostrando X de Y".
-- Formulario con `react-hook-form` + `Controller` para `SearchableMultiSelect`, `DateInput`, etc.
-- Campos: nombre, descripción, tipo proyecto, grupo, seguimiento, comentario, tecnología, estados, días sin responder, fecha entrega, programadores/diseñadores.
-- Al editar: `PATCH /projects/:id` + `POST /projects/:id/usuarios` (usuarios se asignan aparte).
-- Opciones hardcodeadas: grupos (A/B/C o B/C según vista), `ESTADO_PROYECTO_OPTIONS`, `TECNOLOGIA_OPTIONS`.
+- Formulario con `react-hook-form`; los 2 selects de usuarios son `Select` simples (un solo programador + un solo diseñador), `tipoProyecto` es `Select` enum (Informativa/Ecommerce) y `DateInput` vía `Controller`.
+- Campos: nombre, descripción, tipo proyecto, grupo, seguimiento, comentario, tecnología, estados, días sin responder, fecha entrega, programador, diseñador.
+- Al editar: **un solo** `PATCH /projects/:id` (programador/diseñador van como `desarrolladorId`/`disenadorId`; `null` limpia). El `Select` de estado solo habilita transiciones legales (`getEstadoProyectoOptions`), el back valida igual con `409`.
+- Opciones hardcodeadas: grupos (A/B/C o B/C según vista), `TECNOLOGIA_OPTIONS`; `ESTADO_PROYECTO_OPTIONS` y `TIPO_PROYECTO_OPTIONS` vienen de `utils/`.
 - Tabla con scroll horizontal en pantallas estrechas (`overflow-x-auto`, `min-w-[1024px]`). Columna "Tipo proyecto" opcional vía `showTipoProyecto`.
 
 ### Proyectos por Programador (`/proyectos/programador`) — Vista canvas
@@ -323,5 +369,7 @@ pnpm preview        # previsualizar el build
 - **Vista canvas**: tableros horizontales por programador o diseñador; roles restringidos ven solo su vista.
 - **Búsqueda de proyectos**: util compartido `projectSearch.ts` + componente `ProjectSearchInput` con autocomplete; reutilizado en `ProjectsListView`.
 - **Proyectos admin**: endpoint dedicado `/projects/admin` en lugar de filtrar client-side.
+- **`tipoProyecto` enum**: el back devuelve y exige `Informativa|Ecommerce` (el DB guarda `"E-commerce"` legado, la API traduce). El front nunca usa `"E-commerce"` como valor de envío/comparación; solo como label.
+- **Transiciones de etapa validadas en el back**: `PATCH` solo deja avanzar una etapa (o retroceder a una anterior); si el front manda un salto, el `409` del back ya trae `message` para mostrar. `Archivado` se maneja aparte (archivar/reactivar).
 - **Responsive mobile-first**: drawer lateral, tablas con scroll horizontal, modales adaptados; sin librerías extra.
 - **Sin tests todavía**: si se agregan, preferir Vitest.

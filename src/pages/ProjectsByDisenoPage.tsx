@@ -13,7 +13,7 @@ import { useProjectsByDisenoStore } from '../stores/projectsByDisenoStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 import { getUsersByRoleName } from '../utils/assignableUsers'
-import { getProjectUserIds } from '../utils/projectUsers'
+import { isProjectAssignee } from '../utils/projectUsers'
 import { Button } from '../components/ui/Button'
 
 type ProjectUsuarioItem = Project['usuarios'][number]
@@ -35,12 +35,14 @@ function getInitials(name: string): string {
 }
 
 const ESTADO_PROYECTO_COLORS: Record<string, string> = {
+  Registro: 'bg-slate-500/20 text-slate-300',
   Brief: 'bg-blue-500/20 text-blue-300',
   Taxonomia: 'bg-indigo-500/20 text-indigo-300',
   Diseno: 'bg-purple-500/20 text-purple-300',
   Desarrollo: 'bg-amber-500/20 text-amber-300',
   Desarollo: 'bg-amber-500/20 text-amber-300',
   ProyectoFinalizado: 'bg-emerald-500/20 text-emerald-300',
+  Archivado: 'bg-red-500/20 text-red-300',
 }
 
 function estadoProyectoClass(estado: string): string {
@@ -179,7 +181,7 @@ export function ProjectsByDisenoPage() {
     return disenadores.map((disenador) => ({
       disenador,
       projects: projects.filter((project) =>
-        getProjectUserIds(project).includes(disenador.id),
+        isProjectAssignee(project, 'Diseñador', disenador.id),
       ),
     }))
   }, [disenadores, projects])

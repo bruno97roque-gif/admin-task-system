@@ -1,12 +1,7 @@
 import { create } from 'zustand'
 import type { Project } from '../types'
 import type { CreateProjectRequest, UpdateProjectRequest } from '../services/api'
-import {
-  createProjectRequest,
-  getProjectsRequest,
-  updateProjectRequest,
-  updateProjectUsuariosRequest,
-} from '../services/api'
+import { createProjectRequest, getProjectsRequest, updateProjectRequest } from '../services/api'
 
 interface ProjectsState {
   projects: Project[]
@@ -18,7 +13,6 @@ interface ProjectsState {
   updateProject: (
     id: number,
     data: UpdateProjectRequest,
-    usuariosIds: number[],
   ) => Promise<{ success: boolean; error?: string }>
   getProjectById: (id: number) => Project | undefined
 }
@@ -57,11 +51,10 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     }
   },
 
-  updateProject: async (id, data, usuariosIds) => {
+  updateProject: async (id, data) => {
     set({ saving: true, error: null })
     try {
       await updateProjectRequest(id, data)
-      await updateProjectUsuariosRequest(id, { usuariosIds })
       await get().fetchProjects()
       set({ saving: false })
       return { success: true }

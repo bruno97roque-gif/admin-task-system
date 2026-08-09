@@ -81,6 +81,8 @@ export interface CreateProjectRequest {
   seguimientoId: number
   comentario: string
   tipoProyecto?: string | null
+  disenadorId?: number | null
+  desarrolladorId?: number | null
   usuariosIds?: number[]
 }
 
@@ -103,6 +105,8 @@ export interface UpdateProjectRequest {
   estadoProyecto: string
   diasSinResponder: number | null
   fechaEntrega: string | null
+  disenadorId?: number | null
+  desarrolladorId?: number | null
 }
 
 export interface UpdateProjectUsuariosRequest {

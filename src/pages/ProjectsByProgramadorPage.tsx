@@ -16,7 +16,8 @@ import { useProjectsByProgramadorStore } from '../stores/projectsByProgramadorSt
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 import { getUsersByRoleName } from '../utils/assignableUsers'
-import { getProjectUserIds } from '../utils/projectUsers'
+import { isProjectAssignee } from '../utils/projectUsers'
+import { getTipoProyectoLabel } from '../utils/projectType'
 import { Button } from '../components/ui/Button'
 import { DateInput } from '../components/ui/DateInput'
 import { Modal } from '../components/ui/Modal'
@@ -47,12 +48,14 @@ function getInitials(name: string): string {
 }
 
 const ESTADO_PROYECTO_COLORS: Record<string, string> = {
+  Registro: 'bg-slate-500/20 text-slate-300',
   Brief: 'bg-blue-500/20 text-blue-300',
   Taxonomia: 'bg-indigo-500/20 text-indigo-300',
   Diseno: 'bg-purple-500/20 text-purple-300',
   Desarrollo: 'bg-amber-500/20 text-amber-300',
   Desarollo: 'bg-amber-500/20 text-amber-300',
   ProyectoFinalizado: 'bg-emerald-500/20 text-emerald-300',
+  Archivado: 'bg-red-500/20 text-red-300',
 }
 
 function estadoProyectoClass(estado: string): string {
@@ -100,7 +103,7 @@ function ProjectCard({
         <div className="mb-3">
           <span className="inline-flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
             <IoBookmarkOutline size={13} className="text-violet-300" />
-            {project.tipoProyecto}
+            {getTipoProyectoLabel(project.tipoProyecto)}
           </span>
         </div>
       )}
@@ -263,7 +266,7 @@ export function ProjectsByProgramadorPage() {
     return programadores.map((programador) => ({
       programador,
       projects: projects.filter((project) =>
-        getProjectUserIds(project).includes(programador.id),
+        isProjectAssignee(project, 'Programador', programador.id),
       ),
     }))
   }, [programadores, projects])

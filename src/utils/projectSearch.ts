@@ -1,5 +1,6 @@
 import type { Project } from '../types'
 import { getProjectUserNames } from './projectUsers'
+import { getTipoProyectoLabel } from './projectType'
 
 export function getProjectSearchHaystack(
   project: Project,
@@ -9,6 +10,7 @@ export function getProjectSearchHaystack(
     project.name,
     project.descripcion,
     showTipoProyecto ? project.tipoProyecto : '',
+    showTipoProyecto ? getTipoProyectoLabel(project.tipoProyecto) : '',
     getProjectUserNames(project),
     String(project.id),
   ]

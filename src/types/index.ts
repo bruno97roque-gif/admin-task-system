@@ -25,6 +25,10 @@ export interface Project {
   deletedAt: string | null
   seguimiento: Seguimiento
   usuarios: (ProjectUsuarioAssignment | AppUser)[]
+  desarrolladorId: number | null
+  disenadorId: number | null
+  desarrollador: AppUser | null
+  disenador: AppUser | null
 }
 
 export interface Recordatorio {

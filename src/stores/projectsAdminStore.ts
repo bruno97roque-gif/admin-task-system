@@ -5,7 +5,6 @@ import {
   createProjectRequest,
   getProjectsAdminRequest,
   updateProjectRequest,
-  updateProjectUsuariosRequest,
 } from '../services/api'
 
 interface ProjectsAdminState {
@@ -18,7 +17,6 @@ interface ProjectsAdminState {
   updateProject: (
     id: number,
     data: UpdateProjectRequest,
-    usuariosIds: number[],
   ) => Promise<{ success: boolean; error?: string }>
   getProjectById: (id: number) => Project | undefined
 }
@@ -57,11 +55,10 @@ export const useProjectsAdminStore = create<ProjectsAdminState>((set, get) => ({
     }
   },
 
-  updateProject: async (id, data, usuariosIds) => {
+  updateProject: async (id, data) => {
     set({ saving: true, error: null })
     try {
       await updateProjectRequest(id, data)
-      await updateProjectUsuariosRequest(id, { usuariosIds })
       await get().fetchProjects()
       set({ saving: false })
       return { success: true }

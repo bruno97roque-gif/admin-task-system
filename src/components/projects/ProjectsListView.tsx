@@ -6,14 +6,11 @@ import type { CreateProjectRequest, UpdateProjectRequest } from '../../services/
 import { useRolesStore } from '../../stores/rolesStore'
 import { useSeguimientosStore } from '../../stores/seguimientosStore'
 import { useUsersStore } from '../../stores/usersStore'
-import {
-  getUsersByRoleName,
-  mergeUserIds,
-  splitUserIdsByRole,
-  toSelectOptions,
-} from '../../utils/assignableUsers'
-import { getProjectUserIds, getProjectUserNames } from '../../utils/projectUsers'
+import { getUsersByRoleName, toSelectOptions } from '../../utils/assignableUsers'
+import { getProjectUserNames } from '../../utils/projectUsers'
 import { projectMatchesSearch } from '../../utils/projectSearch'
+import { getTipoProyectoLabel, TIPO_PROYECTO_OPTIONS } from '../../utils/projectType'
+import { ESTADO_PROYECTO_OPTIONS, getEstadoProyectoOptions } from '../../utils/projectStatus'
 import { toDateInputValue } from '../../utils/date'
 import { Button } from '../ui/Button'
 import { ProjectSearchInput } from './ProjectSearchInput'
@@ -27,14 +24,6 @@ const DEFAULT_GRUPO_OPTIONS = [
   { value: 'A', label: 'A' },
   { value: 'B', label: 'B' },
   { value: 'C', label: 'C' },
-]
-
-const ESTADO_PROYECTO_OPTIONS = [
-  { value: 'Brief', label: 'Brief' },
-  { value: 'Taxonomia', label: 'Taxonomia' },
-  { value: 'Diseno', label: 'Diseno' },
-  { value: 'Desarrollo', label: 'Desarrollo' },
-  { value: 'ProyectoFinalizado', label: 'ProyectoFinalizado' },
 ]
 
 const TECNOLOGIA_OPTIONS = [
@@ -89,7 +78,6 @@ interface ProjectsListViewProps {
   updateProject: (
     id: number,
     data: UpdateProjectRequest,
-    usuariosIds: number[],
   ) => Promise<{ success: boolean; error?: string }>
 }
 
@@ -181,13 +169,6 @@ export function ProjectsListView({
   const openEdit = async (project: Project) => {
     setEditingProject(project)
     await loadFormData()
-    const currentRoles = useRolesStore.getState().roles
-    const currentUsers = useUsersStore.getState().users
-    const { programadorId, disenadorId } = splitUserIdsByRole(
-      getProjectUserIds(project),
-      currentRoles,
-      currentUsers,
-    )
     reset({
       name: project.name,
       descripcion: project.descripcion,
@@ -204,8 +185,8 @@ export function ProjectsListView({
       diasSinResponder:
         project.diasSinResponder !== null ? String(project.diasSinResponder) : '',
       fechaEntrega: toDateInputValue(project.fechaEntrega),
-      programadorId,
-      disenadorId,
+      programadorId: project.desarrolladorId != null ? String(project.desarrolladorId) : '',
+      disenadorId: project.disenadorId != null ? String(project.disenadorId) : '',
     })
     setModalOpen(true)
   }
@@ -216,18 +197,25 @@ export function ProjectsListView({
     reset(emptyForm)
   }
 
-  const buildCreatePayload = (data: ProjectForm) => ({
-    name: data.name.trim(),
-    descripcion: data.descripcion.trim(),
-    grupo: data.grupo,
-    seguimientoId: Number(data.seguimientoId),
-    comentario: data.comentario.trim(),
-    ...(showTipoProyecto && {
-      tipoProyecto: data.tipoProyecto.trim() || null,
-    }),
-  })
+  const buildCreatePayload = (data: ProjectForm): CreateProjectRequest => {
+    const desarrolladorId = data.programadorId ? Number(data.programadorId) : undefined
+    const disenadorId = data.disenadorId ? Number(data.disenadorId) : undefined
 
-  const buildUpdatePayload = (data: ProjectForm) => ({
+    return {
+      name: data.name.trim(),
+      descripcion: data.descripcion.trim(),
+      grupo: data.grupo,
+      seguimientoId: Number(data.seguimientoId),
+      comentario: data.comentario.trim(),
+      ...(showTipoProyecto && {
+        tipoProyecto: data.tipoProyecto.trim() || null,
+      }),
+      ...(desarrolladorId != null && { desarrolladorId }),
+      ...(disenadorId != null && { disenadorId }),
+    }
+  }
+
+  const buildUpdatePayload = (data: ProjectForm): UpdateProjectRequest => ({
     ...buildCreatePayload(data),
     tipoProyecto: showTipoProyecto
       ? data.tipoProyecto.trim() || null
@@ -239,17 +227,14 @@ export function ProjectsListView({
       ? Number(data.diasSinResponder)
       : null,
     fechaEntrega: data.fechaEntrega.trim() || null,
+    desarrolladorId: data.programadorId ? Number(data.programadorId) : null,
+    disenadorId: data.disenadorId ? Number(data.disenadorId) : null,
   })
 
-  const getUsuariosIds = (data: ProjectForm) =>
-    mergeUserIds(data.programadorId, data.disenadorId)
-
   const onSubmit = async (data: ProjectForm) => {
-    const usuariosIds = getUsuariosIds(data)
-
     const result = editingProject
-      ? await updateProject(editingProject.id, buildUpdatePayload(data), usuariosIds)
-      : await createProject({ ...buildCreatePayload(data), usuariosIds })
+      ? await updateProject(editingProject.id, buildUpdatePayload(data))
+      : await createProject(buildCreatePayload(data))
 
     if (result.success) {
       closeModal()
@@ -384,7 +369,7 @@ export function ProjectsListView({
                     <td className="px-4 py-3">
                       {project.tipoProyecto ? (
                         <span className="inline-flex rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs font-medium text-violet-300 ring-1 ring-violet-500/25">
-                          {project.tipoProyecto}
+                          {getTipoProyectoLabel(project.tipoProyecto)}
                         </span>
                       ) : (
                         <span className="text-slate-500">—</span>
@@ -453,13 +438,12 @@ export function ProjectsListView({
           />
 
           {showTipoProyecto && (
-            <Input
+            <Select
               label="Tipo Proyecto"
-              placeholder="Ej. E-commerce, Landing, Rediseño..."
+              options={TIPO_PROYECTO_OPTIONS}
+              placeholder="Selecciona un tipo"
               error={errors.tipoProyecto?.message}
-              {...register('tipoProyecto', {
-                maxLength: { value: 100, message: 'Máximo 100 caracteres' },
-              })}
+              {...register('tipoProyecto')}
             />
           )}
 
@@ -491,7 +475,10 @@ export function ProjectsListView({
                 />
                 <Select
                   label="Estado proyecto"
-                  options={ESTADO_PROYECTO_OPTIONS}
+                  options={getEstadoProyectoOptions(
+                    editingProject?.estadoProyecto ?? '',
+                    editingProject?.tipoProyecto ?? null,
+                  )}
                   placeholder="Selecciona un estado"
                   error={errors.estadoProyecto?.message}
                   {...register('estadoProyecto')}

@@ -160,3 +160,10 @@ export function deleteRecordatorioRequest(id: number) {
     method: 'DELETE',
   })
 }
+
+export function updatePasswordRequest(id: number, password: string) {
+  return apiFetch<void>(`/user/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ password }),
+  })
+}

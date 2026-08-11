@@ -232,7 +232,7 @@ Propios, minimalistas, usan tokens de `@theme`. No meter librerías externas; ex
 
 ## Componentes de proyectos (`src/components/projects/`)
 
-- **`ProjectsListView`** — componente reutilizable para `/proyectos` y `/projects/admin`. Props: `title`, `description`, `grupoOptions`, `showTipoProyecto` (default `true`), más el store inyectado (`projects`, `loading`, `saving`, `error`, `fetchProjects`, `createProject`, `updateProject`).
+- **`ProjectsListView`** — componente reutilizable para `/proyectos` y `/projects/admin`. Props: `title`, `description`, `grupoOptions` (default A/B/C), `showTipoProyecto` (default `true`), más el store inyectado (`projects`, `loading`, `saving`, `error`, `fetchProjects`, `createProject`, `updateProject`).
 - **`ProjectSearchInput`** — input de búsqueda con dropdown de sugerencias (combobox). Busca en nombre, descripción, usuarios, ID y opcionalmente `tipoProyecto`. Al seleccionar una sugerencia, rellena el input con el nombre del proyecto.
 
 ## Utilidades (`src/utils/`)
@@ -363,13 +363,9 @@ pnpm preview        # previsualizar el build
 
 ## Decisiones de diseño
 
-- **Sin librería de UI externa**: componentes `ui/` propios. Si se necesita algo nuevo, extenderlos antes de meter una dependencia.
-- **Recordatorios en backend**: persisten en `/recordatorio`, no en localStorage. `estado=true` activo; "Finalizado" hace `PATCH estado: false`.
-- **Alertas de recordatorios**: solo para admin; `useRecordatoriosReminders` cada 5 min mientras haya activos, con sonido + notificación del browser + modal con botón "Finalizado" inline.
-- **Vista canvas**: tableros horizontales por programador o diseñador; roles restringidos ven solo su vista.
-- **Búsqueda de proyectos**: util compartido `projectSearch.ts` + componente `ProjectSearchInput` con autocomplete; reutilizado en `ProjectsListView`.
+- **Sin librería de UI externa**: componentes `ui/` propios. Extender antes de agregar dependencias.
+- **Recordatorios en backend**: `estado=true` activo; "Finalizado" = `PATCH estado: false`. No en localStorage.
+- **`tipoProyecto` enum**: el back exige `Informativa|Ecommerce` (DB guarda `"E-commerce"` legado, API traduce). El front **nunca** envía `"E-commerce"`.
 - **Proyectos admin**: endpoint dedicado `/projects/admin` en lugar de filtrar client-side.
-- **`tipoProyecto` enum**: el back devuelve y exige `Informativa|Ecommerce` (el DB guarda `"E-commerce"` legado, la API traduce). El front nunca usa `"E-commerce"` como valor de envío/comparación; solo como label.
-- **Transiciones de etapa validadas en el back**: `PATCH` solo deja avanzar una etapa (o retroceder a una anterior); si el front manda un salto, el `409` del back ya trae `message` para mostrar. `Archivado` se maneja aparte (archivar/reactivar).
-- **Responsive mobile-first**: drawer lateral, tablas con scroll horizontal, modales adaptados; sin librerías extra.
+- **`Archivado`** no se toca por PATCH; usar `POST /:id/archivar` / `/reactivar`.
 - **Sin tests todavía**: si se agregan, preferir Vitest.

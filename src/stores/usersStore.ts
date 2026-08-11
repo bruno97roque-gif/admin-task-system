@@ -1,21 +1,24 @@
 import { create } from 'zustand'
 import type { AppUser } from '../types'
 import type { CreateUserRequest } from '../services/api'
-import { createUserRequest, getUsersRequest } from '../services/api'
+import { createUserRequest, getUsersRequest, updatePasswordRequest } from '../services/api'
 
 interface UsersState {
   users: AppUser[]
   loading: boolean
   creating: boolean
+  saving: boolean
   error: string | null
   fetchUsers: () => Promise<void>
   createUser: (data: CreateUserRequest) => Promise<{ success: boolean; error?: string }>
+  updatePassword: (id: number, password: string) => Promise<{ success: boolean; error?: string }>
 }
 
 export const useUsersStore = create<UsersState>((set, get) => ({
   users: [],
   loading: false,
   creating: false,
+  saving: false,
   error: null,
 
   fetchUsers: async () => {
@@ -42,6 +45,20 @@ export const useUsersStore = create<UsersState>((set, get) => ({
       const message =
         error instanceof Error ? error.message : 'Error al crear el usuario'
       set({ creating: false, error: message })
+      return { success: false, error: message }
+    }
+  },
+
+  updatePassword: async (id, password) => {
+    set({ saving: true, error: null })
+    try {
+      await updatePasswordRequest(id, password)
+      set({ saving: false })
+      return { success: true }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Error al actualizar la contraseña'
+      set({ saving: false, error: message })
       return { success: false, error: message }
     }
   },

@@ -14,6 +14,10 @@ import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 import { getUsersByRoleName } from '../utils/assignableUsers'
 import { isProjectAssignee } from '../utils/projectUsers'
+import {
+  estadoProyectoClass,
+  getEstadoProyectoLabel,
+} from '../utils/projectStatus'
 import { Button } from '../components/ui/Button'
 
 type ProjectUsuarioItem = Project['usuarios'][number]
@@ -32,21 +36,6 @@ function getInitials(name: string): string {
     .slice(0, 2)
     .join('')
     .toUpperCase()
-}
-
-const ESTADO_PROYECTO_COLORS: Record<string, string> = {
-  Registro: 'bg-slate-500/20 text-slate-300',
-  Brief: 'bg-blue-500/20 text-blue-300',
-  Taxonomia: 'bg-indigo-500/20 text-indigo-300',
-  Diseno: 'bg-purple-500/20 text-purple-300',
-  Desarrollo: 'bg-amber-500/20 text-amber-300',
-  Desarollo: 'bg-amber-500/20 text-amber-300',
-  ProyectoFinalizado: 'bg-emerald-500/20 text-emerald-300',
-  Archivado: 'bg-red-500/20 text-red-300',
-}
-
-function estadoProyectoClass(estado: string): string {
-  return ESTADO_PROYECTO_COLORS[estado] ?? 'bg-surface-overlay text-slate-300'
 }
 
 function ProjectCard({ project, columnUserId }: { project: Project; columnUserId: number }) {
@@ -71,7 +60,7 @@ function ProjectCard({ project, columnUserId }: { project: Project; columnUserId
         <span
           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${estadoProyectoClass(project.estadoProyecto)}`}
         >
-          {project.estadoProyecto}
+          {getEstadoProyectoLabel(project.estadoProyecto)}
         </span>
         {project.tecnologia && (
           <span className="inline-flex items-center gap-1 rounded-full bg-surface-overlay px-2 py-0.5 text-xs text-slate-300">

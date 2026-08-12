@@ -10,7 +10,11 @@ import { getUsersByRoleName, toSelectOptions } from '../../utils/assignableUsers
 import { getProjectUserNames } from '../../utils/projectUsers'
 import { projectMatchesSearch } from '../../utils/projectSearch'
 import { getTipoProyectoLabel, TIPO_PROYECTO_OPTIONS } from '../../utils/projectType'
-import { ESTADO_PROYECTO_OPTIONS, getEstadoProyectoOptions } from '../../utils/projectStatus'
+import {
+  ESTADO_PROYECTO_OPTIONS,
+  getEstadoProyectoLabel,
+  getEstadoProyectoOptions,
+} from '../../utils/projectStatus'
 import { toDateInputValue } from '../../utils/date'
 import { Button } from '../ui/Button'
 import { ProjectSearchInput } from './ProjectSearchInput'
@@ -379,7 +383,7 @@ export function ProjectsListView({
                   <td className="px-4 py-3 text-slate-400">{project.estadoPago}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-medium text-accent-hover">
-                      {project.estadoProyecto}
+                      {getEstadoProyectoLabel(project.estadoProyecto)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-slate-400">{project.grupo}</td>

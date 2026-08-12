@@ -18,6 +18,7 @@ import {
   getActiveProjectCountsByRole,
   type UserProjectCount,
 } from '../utils/assignableUsers'
+import { getEstadoProyectoLabel } from '../utils/projectStatus'
 
 const FINALIZED_STATUS = 'ProyectoFinalizado'
 
@@ -262,7 +263,9 @@ export function DashboardPage() {
                     <p className="truncate text-sm font-medium text-slate-200">{project.name}</p>
                     <p className="text-xs text-slate-500">Grupo {project.grupo}</p>
                   </div>
-                  <span className="shrink-0 text-xs text-slate-400">{project.estadoProyecto}</span>
+                  <span className="shrink-0 text-xs text-slate-400">
+                    {getEstadoProyectoLabel(project.estadoProyecto)}
+                  </span>
                 </li>
               ))}
             </ul>

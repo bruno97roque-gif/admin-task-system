@@ -1,510 +1,266 @@
-# Front.md — Contrato de la API para el frontend
+# Front.md — cambios necesarios en el front
 
-API: `admin-proyecto-api` (NestJS) · Actualizado: **2026-08-09**
-Rama: `feat/flujo-completo` · Migración `20260809120000` **ya aplicada en producción**.
-
-Este documento cubre el módulo de **proyectos** después de implementar el flujo del
-diagrama «Flujo de trabajo (mejorado).drawio», más lo que hay que cambiar en el front
-para que no se rompa.
+> **Contexto:** el enum `EstadoProyecto` pasó de 7 a 9 valores. El tramo de diseño, que
+> antes era una sola etapa, ahora son tres. La migración ya está aplicada en la base de
+> producción y la API ya devuelve los valores nuevos.
+>
+> Fecha: **2026-08-12** · Rama de la API: `feat/flujo-completo`
 
 ---
 
-## 0. Lo urgente: 3 cambios que rompen el front actual
+## 1. Sí, hay que tocar el front. Esto es lo mínimo
 
-Si no tocás nada más, tocá esto.
+- [ ] Agregar `AvanceDiseno` y `DisenoFinalizado` a la lista de estados (dropdowns, filtros, tablero, badges, colores).
+- [ ] Mapear valor → etiqueta: el JSON manda `"AvanceDiseno"`, el usuario tiene que leer **«Avance de Diseño»**.
+- [ ] Cambiar todo `estadoProyecto === 'Diseno'` por una comprobación sobre las **tres** etapas.
+- [ ] Ajustar el selector de etapa: ahora **no se puede saltar de `Diseno` a `Desarrollo`** en un paso. Devuelve `409`.
+- [ ] Revisar el orden con el que se ordenan/pintan las etapas: hay dos posiciones nuevas en el medio.
 
-### 1. `tipoProyecto` cambió de valor
+Nada de esto rompe lo que ya existe: **no se eliminó ningún valor**. Un proyecto que hoy
+está en `Diseno` sigue en `Diseno` y sigue funcionando igual. El riesgo real es el
+contrario: pantallas que **no** conozcan los valores nuevos y los muestren vacíos, en
+blanco o los tiren a un `default`.
 
-| | Antes | Ahora |
+---
+
+## 2. Los valores nuevos
+
+⚠️ **El valor que viaja por JSON no es el que se muestra.** La base guarda `"Avance de
+Diseño"` (con ñ y espacios) pero la API traduce y **siempre** manda el identificador de
+Prisma. Verificado contra producción, ida y vuelta.
+
+| Valor en el JSON (usar este) | Etiqueta para mostrar | Estado |
 |---|---|---|
-| Enviar | `"E-commerce"` | **`"Ecommerce"`** (sin guion) |
-| Recibir | `"E-commerce"` | **`"Ecommerce"`** |
+| `Registro` | Registro | — |
+| `Brief` | Brief | — |
+| `Taxonomia` | Taxonomía | — |
+| `Diseno` | Diseño | ya existía, **no se tocó** |
+| `AvanceDiseno` | **Avance de Diseño** | 🆕 |
+| `DisenoFinalizado` | **Diseño Finalizado** | 🆕 |
+| `Desarrollo` | Desarrollo | — |
+| `ProyectoFinalizado` | Proyecto Finalizado | — |
+| `Archivado` | Archivado | — |
 
-La columna pasó de texto libre a enum. En la base sigue guardado `"E-commerce"`, pero la
-API traduce en las dos direcciones. Mandar `"E-commerce"` ahora devuelve **400**.
+Sin `ñ`, sin espacios y sin acentos en el valor: `AvanceDiseno`, no `"Avance de Diseño"`.
+Si mandás el string de la base en un `PATCH`, la API responde **400** (`estadoProyecto must
+be one of the following values: ...`).
 
-Afecta a los **23 proyectos e-commerce** que ya existen: filtros, etiquetas y `<select>`
-que comparen contra el string viejo dejan de funcionar.
-
-```js
-// Valores válidos, únicos dos
-const TIPO_PROYECTO = ['Informativa', 'Ecommerce'];
-
-// Para mostrar
-const LABEL_TIPO = { Informativa: 'Web informativa', Ecommerce: 'E-commerce' };
-```
-
-### 2. Ya no se pueden saltear etapas
-
-`PATCH /projects/:id` con `estadoProyecto` ahora valida el orden del diagrama y
-devuelve **409** si el salto no es legal.
-
-```
-Registro → Brief → Taxonomía → Diseño → Desarrollo → Proyecto Finalizado
-```
-
-- ✅ Avanzar de a **una** etapa
-- ✅ **Retroceder** a cualquier etapa anterior (los ciclos de «volver a presentar»)
-- ✅ Quedarse en la misma etapa
-- ❌ Saltear hacia adelante → `409`
-- ❌ `estadoProyecto: "Archivado"` → `409`, hay que usar `POST /projects/:id/archivar`
-- ❌ Salir de `Archivado` por PATCH → `409`, hay que usar `POST /projects/:id/reactivar`
-
-**Excepción:** `Brief → Diseño` (salteando Taxonomía) **sí** vale, pero solo si el
-proyecto **no** es e-commerce. Un e-commerce tiene que pasar por Taxonomía.
-
-En un `<select>` de etapas conviene habilitar solo: la actual, la siguiente, y las
-anteriores.
-
-### 3. Cuatro rutas ahora dan 403 según el rol
-
-Solo para roles **`Admin`** y **`Owner`**:
-
-- `PUT /projects/:id/plan-cobros`
-- `PATCH /projects/:id/cobros/:hito`
-- `POST /projects/:id/archivar`
-- `POST /projects/:id/reactivar`
-
-Con cualquier otro rol responden `403` con
-`{"message": "Esta acción es solo para: Admin, Owner"}`.
-
-El `roleId` viene en la respuesta del login. Roles actuales:
-`Admin=3`, `Programador=5`, `Owner=6`, `Ventas=7`, `Diseñador=8`.
-
-> ⚠️ El front **no** debe decidir permisos por sí solo — el back valida igual. Esto es
-> solo para no mostrar botones que van a fallar.
+El orden de la tabla es el orden del pipeline. Si en algún lado ordenás las etapas por un
+índice hardcodeado, hay que reacomodarlo: las dos nuevas van **entre `Diseno` y
+`Desarrollo`**.
 
 ---
 
-## 1. Autenticación (sin cambios)
+## 3. La máquina de estados: qué acepta ahora `PATCH /projects/:id`
 
-Los tres endpoints son públicos y **todos** necesitan `credentials: 'include'`.
+Esto es lo que más se puede romper. La regla no cambió, pero el camino se hizo más largo.
 
-| Ruta | Respuesta |
+```
+Registro → Brief → Taxonomia → Diseno → AvanceDiseno → DisenoFinalizado → Desarrollo → ProyectoFinalizado
+```
+
+**Reglas de movimiento:**
+
+| Movimiento | ¿Se puede? |
 |---|---|
-| `POST /auth/login` | `200` + `{ accessToken, user }` |
-| `POST /auth/refresh` | `200` + `{ accessToken, user }` |
-| `POST /auth/logout` | **`204` sin body** — no hacer `.json()` |
+| Quedarse en la misma etapa | ✅ |
+| Avanzar **una** etapa | ✅ |
+| Retroceder (una o varias) | ✅ — el flujo tiene ciclos de «volver a presentar» |
+| Avanzar salteando etapas | ❌ `409` |
+| `Brief → Diseno` (saltea taxonomía) | ✅ solo si el proyecto **no** es e-commerce |
+| Entrar o salir de `Archivado` con un `PATCH` | ❌ `409` — se usan `POST /:id/archivar` y `/:id/reactivar` |
 
-```jsonc
-// POST /auth/login  → body: { "user": "...", "password": "..." }
+**El caso que se rompe:** una pantalla que hoy mueve un proyecto de `Diseno` a
+`Desarrollo` de una sola vez ahora recibe:
+
+```json
 {
-  "accessToken": "eyJ...",
-  "user": { "id": 1, "name": "Aaron", "user": "aaron", "roleId": 3, "roleName": "Admin" }
+  "statusCode": 409,
+  "message": "No se puede saltar de Diseno a Desarrollo: hay que pasar por AvanceDiseno",
+  "error": "Conflict"
 }
 ```
 
-El refresh token va en una cookie httpOnly con `Path=/auth`; nunca aparece en el body.
-El resto de la API pide `Authorization: Bearer <accessToken>` o responde `401`.
-
-Errores: `401` con `Credenciales inválidas`, `Refresh token inválido o expirado`,
-`El usuario está desactivado`.
-
-**Recomendación:** un solo refresh en vuelo a la vez (single-flight) y reintentar la
-request original una sola vez.
+La forma correcta es ofrecer **solo la etapa siguiente** (y las anteriores, si querés
+permitir retroceder). El mensaje del `409` viene en español y ya dice por dónde hay que
+pasar: es mostrable tal cual en un toast.
 
 ---
 
-## 2. El objeto `Proyecto` que devuelve la API
+## 4. Endpoints afectados
 
-Todas las rutas de proyectos devuelven este shape (salvo las que se aclaran aparte).
-Los campos marcados **NUEVO** no existían antes.
+### `GET /projects/diseno` — el tablero del diseñador
 
-```jsonc
-{
-  "id": 22,
-  "name": "Cliente X",
-  "descripcion": "...",
-  "comentario": "...",
-  "estadoProyecto": "Desarrollo",     // Registro|Brief|Taxonomia|Diseno|Desarrollo|ProyectoFinalizado|Archivado
-  "grupo": "A",                        // A|B|C — se calcula solo, ver §3
-  "tipoProyecto": "Ecommerce",         // ⚠️ CAMBIÓ: Informativa|Ecommerce|null
-  "tecnologia": "WordPress",           // Shopify|WordPress|Personalizado|null
-  "estadoPago": "50%",                 // texto libre, ya no es la fuente de verdad
-  "seguimientoId": 2,
-  "seguimiento": { "id": 2, "name": "Todo bien" },
-  "diasSinResponder": "3",             // texto libre, lo carga administración a mano
-  "fechaEntrega": "2026-09-30T00:00:00.000Z",
+**Cambió lo que devuelve.** Antes traía solo los proyectos en `Diseno`; ahora trae el
+tramo de diseño entero: `Diseno`, `AvanceDiseno` y `DisenoFinalizado` (siempre en Grupo
+A). El filtro `?id=<disenadorId>` sigue igual.
 
-  // Asignados en el registro. No rotan, pero se pueden reasignar.
-  "disenadorId": 4,
-  "desarrolladorId": 5,
-  "disenador":     { "id": 4, "name": "Ana",  "user": "ana",  "roleId": 8 },
-  "desarrollador": { "id": 5, "name": "Luis", "user": "luis", "roleId": 5 },
+Si la pantalla asumía que *todos* los elementos de esa lista estaban en `Diseno`, ahora
+son tres estados distintos: conviene mostrar el badge de etapa, o partirla en tres
+columnas tipo kanban.
 
-  // Equipo genérico (tabla usuarios_proyectos). Distinto de los dos de arriba.
-  "usuarios": [ { "id": 5, "name": "Luis", "user": "luis", "roleId": 5 } ],
+### `POST /projects/:id/aprobar-diseno`
 
-  // Bloqueos del cliente
-  "materialMarcaRecibido": true,       // frena el paso a Diseño
-  "catalogoRecibido": false,           // solo frena la carga de productos
-  "hostingContratado": false,          // NUEVO — frena producción, manda a Grupo C
+Ahora se acepta desde **cualquiera** de las tres etapas de diseño (antes solo desde
+`Diseno`). El botón se puede habilitar en las tres. Si el proyecto está fuera del tramo:
 
-  // Recorrido — NUEVO. El diagrama no les da estado propio: son marcas de tiempo.
-  "factibilidadRevisadaAt": null,
-  "disenoAprobadoAt": null,
-  "productosCargados": false,
-  "presentadoAt": null,
-  "subidoProduccionAt": null,
-  "capacitacionAt": null,
+```json
+{ "statusCode": 409, "message": "El proyecto 24 no está en diseño: está en Desarrollo" }
+```
 
-  "rondasCambiosUsadas": 1,
-  "fechaUltimoCambioEstado": "2026-08-01T10:00:00.000Z",
-  "archivadoAt": null,
+### `GET /projects/programador`
 
-  // Plan de cobros. Vacío = proyecto anterior al flujo nuevo (ver §6).
-  "cobros": [
-    { "id": 1, "hito": "AbonoInicial",     "porcentaje": 50, "cobrado": true,  "fechaCobro": "2026-08-01T..." },
-    { "id": 2, "hito": "AprobacionDiseno", "porcentaje": 30, "cobrado": false, "fechaCobro": null },
-    { "id": 3, "hito": "Entrega",          "porcentaje": 20, "cobrado": false, "fechaCobro": null }
-  ],
+No cambió su lógica (Grupo A, todo lo no terminal), pero **ahora también van a aparecer
+ahí proyectos en `AvanceDiseno` y `DisenoFinalizado`**, igual que antes aparecían los que
+estaban en `Diseno`. Si la vista pinta la etapa, tiene que conocer los valores nuevos.
 
-  "recordatorios": [                   // NUEVO — solo los PENDIENTES
-    { "id": 7, "tipo": "MaterialMarca", "resueltoAt": null, "createdAt": "2026-07-01T..." }
-  ],
-  "cotizaciones": [                    // NUEVO
-    { "id": 2, "motivo": "Cambio de paleta", "aprobada": false, "cobrada": false }
-  ],
+### `GET /projects/:id/historial`
 
-  "responsable": "desarrollador",      // NUEVO — ya calculado, ver §3
-  "diasEsperandoAlCliente": 39,        // NUEVO — o null si la pelota está en Websy
+Las filas de historial pueden traer los valores nuevos en `estadoAnterior` y
+`estadoNuevo`. Mismo mapeo de etiquetas.
 
-  "createdAt": "...", "updatedAt": "...", "deletedAt": null
+### El campo `responsable` (viene en toda respuesta de proyecto)
+
+Se calcula en el back, el front solo lo muestra. Las tres etapas de diseño devuelven
+`"disenador"`, así que **no hay nada que cambiar** — pero si el front replicaba ese
+cálculo por su cuenta, hay que actualizarlo o, mejor, borrarlo y usar el campo.
+
+---
+
+## 5. Snippet para copiar
+
+```ts
+export const ESTADO_PROYECTO = {
+  Registro: 'Registro',
+  Brief: 'Brief',
+  Taxonomia: 'Taxonomia',
+  Diseno: 'Diseno',
+  AvanceDiseno: 'AvanceDiseno',
+  DisenoFinalizado: 'DisenoFinalizado',
+  Desarrollo: 'Desarrollo',
+  ProyectoFinalizado: 'ProyectoFinalizado',
+  Archivado: 'Archivado',
+} as const;
+
+export type EstadoProyecto =
+  (typeof ESTADO_PROYECTO)[keyof typeof ESTADO_PROYECTO];
+
+/** Etiquetas para mostrar. El valor del JSON no lleva ñ ni espacios. */
+export const ETIQUETA_ESTADO: Record<EstadoProyecto, string> = {
+  Registro: 'Registro',
+  Brief: 'Brief',
+  Taxonomia: 'Taxonomía',
+  Diseno: 'Diseño',
+  AvanceDiseno: 'Avance de Diseño',
+  DisenoFinalizado: 'Diseño Finalizado',
+  Desarrollo: 'Desarrollo',
+  ProyectoFinalizado: 'Proyecto Finalizado',
+  Archivado: 'Archivado',
+};
+
+/**
+ * El pipeline en orden. `Archivado` queda afuera a propósito: es lateral, se
+ * entra y se sale por sus propias rutas.
+ */
+export const ORDEN_ETAPAS: EstadoProyecto[] = [
+  'Registro',
+  'Brief',
+  'Taxonomia',
+  'Diseno',
+  'AvanceDiseno',
+  'DisenoFinalizado',
+  'Desarrollo',
+  'ProyectoFinalizado',
+];
+
+/** El tramo de diseño. Usar esto en vez de comparar contra 'Diseno' solo. */
+export const ETAPAS_DISENO: EstadoProyecto[] = [
+  'Diseno',
+  'AvanceDiseno',
+  'DisenoFinalizado',
+];
+
+export const esEtapaDeDiseno = (estado: EstadoProyecto) =>
+  ETAPAS_DISENO.includes(estado);
+
+/**
+ * Las etapas a las que la API va a dejar mover el proyecto: la siguiente y
+ * todas las anteriores. Sirve para armar el `<select>` sin comerse un 409.
+ *
+ * No contempla las dos excepciones por tipo de proyecto (ver §6); si el
+ * proyecto es informativo o e-commerce, filtrar `Taxonomia` según corresponda.
+ */
+export function etapasPermitidas(actual: EstadoProyecto): EstadoProyecto[] {
+  const i = ORDEN_ETAPAS.indexOf(actual);
+  if (i === -1) return []; // Archivado: solo se sale por POST /:id/reactivar
+  return ORDEN_ETAPAS.slice(0, i + 2);
 }
 ```
 
-**Todo lo NUEVO es aditivo**: si lo ignorás, nada se rompe. Pero `responsable` y
-`diasEsperandoAlCliente` vienen listos para mostrar y te ahorran calcularlos.
+---
+
+## 6. Detalles que conviene tener a mano
+
+**Las dos bifurcaciones por `tipoProyecto` no cambiaron**, pero se cruzan con el selector
+de etapas:
+
+- `Informativa` → **no puede** entrar a `Taxonomia` (409), y puede saltar `Brief → Diseno`.
+- `Ecommerce` → **tiene que** pasar por `Taxonomia` antes del diseño.
+- `tipoProyecto: null` (proyectos viejos) → no se lo fuerza a ninguna rama.
+
+**Las compuertas siguen igual, con un solo agregado:** el material de marca ahora frena la
+entrada a **las tres** etapas de diseño, no solo a la primera. El error es un `409`:
+
+```
+No se puede pasar a AvanceDiseno: falta el material de marca (logo, fotos de banners y secciones)
+```
+
+Ojo con esto: **las compuertas solo rigen para proyectos con plan de cobros cargado.** Hoy
+la tabla `cobros` está vacía en producción, así que ninguno de los 53 proyectos que ya
+existen se traba con nada. Van a empezar a aparecer cuando administración cargue planes de
+cobro.
+
+**El cobro de aprobación de diseño no bloquea el tramo de diseño.** Se sigue exigiendo
+para entrar a `Desarrollo`, no antes: el avance y las rondas de cambios van incluidos en
+el abono inicial. Lo que sí se corrió es el recordatorio — el de `CobroAprobacionDiseno`
+ahora se abre recién cuando el proyecto llega a `DisenoFinalizado`, no durante todo el
+diseño. Si el front muestra recordatorios abiertos, va a notar que ese aparece más tarde
+que antes.
 
 ---
 
-## 3. Dos campos que ya no se cargan a mano
+## 7. Lo que **no** cambió
 
-### `grupo` se calcula solo
+Para que nadie salga a tocar de más:
 
-Se deriva del bloqueo, en este orden de prioridad:
-
-| Situación | Grupo |
-|---|---|
-| Falta un cobro **o** falta el hosting | **C** — el pago manda |
-| Falta el material de marca | **B** |
-| Todo bien, o lo único que falta es el catálogo | **A** — el desarrollo no se detiene |
-
-Mandar `grupo` explícito en el body **sigue funcionando** como salida manual, pero en
-general no hace falta: cualquier ruta que cambie un bloqueo lo recalcula sola.
-
-### `responsable` sale de la etapa
-
-| Etapa / situación | Responsable |
-|---|---|
-| Grupo **B** o **C** (sea cual sea la etapa) | `administracion` |
-| Diseño | `disenador` |
-| Desarrollo | `desarrollador` |
-| Registro, Brief, Taxonomía | `administracion` |
+- No se eliminó ni se renombró ningún valor. `Diseno` sigue existiendo tal cual.
+- **Ningún proyecto cambió de estado.** Los 7 que estaban en `Diseño` siguen en `Diseño`.
+- No cambió la forma de la respuesta: los mismos campos, los mismos nombres.
+- No cambió ninguna URL, ni el contrato de auth, ni los permisos por rol.
+- `GET /projects/admin`, `/archivados` y `/por-archivar` funcionan igual que antes.
 
 ---
 
-## 4. Listados
+## 8. Cómo probarlo
 
-| Ruta | Qué trae |
-|---|---|
-| `GET /projects` | Todos los no borrados |
-| `GET /projects/programador?id=N` | Grupo A, sin finalizados ni archivados. Con `id` matchea `desarrolladorId` **o** el equipo genérico |
-| `GET /projects/diseno?id=N` | Grupo A **y** etapa Diseño. Con `id` matchea solo `disenadorId` |
-| `GET /projects/admin` | Grupos B y C, sin archivados. Sí incluye finalizados |
-| `GET /projects/archivados` | Solo archivados, más recientes primero |
-| `GET /projects/por-archivar` | Los que llevan ≥90 días esperando al cliente |
-| `GET /projects/:id` | Uno. `404` si no existe |
-| `GET /projects/:id/historial` | Trazabilidad, ascendente |
-| `GET /projects/:id/recordatorios` | Todos, abiertos y resueltos, más recientes primero |
+Con un proyecto de prueba en `Diseno`:
 
-> ⚠️ **`por-archivar` cambió de resultado.** Antes listaba cualquier proyecto parado 90
-> días, incluidos los de Grupo A con desarrollo activo. Ahora exige que el proyecto esté
-> realmente esperando al cliente. **Va a devolver menos proyectos que antes** — eso es lo
-> correcto, no un bug.
+```bash
+# 1. Avanza un paso: 200
+curl -X PATCH .../projects/<id> -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' -d '{"estadoProyecto":"AvanceDiseno"}'
 
-`GET /:id/historial` devuelve:
+# 2. Saltea: 409 «hay que pasar por DisenoFinalizado»
+curl -X PATCH .../projects/<id> -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' -d '{"estadoProyecto":"ProyectoFinalizado"}'
 
-```jsonc
-[{
-  "id": 1, "proyectoId": 22,
-  "estadoAnterior": "Diseno", "estadoNuevo": "Desarrollo",
-  "grupoAnterior": "B", "grupoNuevo": "A",
-  "motivo": "Hito AprobacionDiseno cobrado",
-  "createdAt": "2026-08-01T...",
-  "usuario": { "id": 1, "name": "Aaron", "user": "aaron" }   // null si el usuario se borró
-}]
+# 3. Retrocede: 200
+curl -X PATCH .../projects/<id> -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' -d '{"estadoProyecto":"Diseno"}'
+
+# 4. El tablero del diseñador ahora trae las tres etapas
+curl .../projects/diseno -H 'Authorization: Bearer <token>'
 ```
 
----
-
-## 5. Crear y editar
-
-### `POST /projects`
-
-```jsonc
-{
-  "name": "Cliente X",                  // requerido
-  "descripcion": "...",                 // requerido
-  "comentario": "...",                  // requerido
-  "seguimientoId": 2,                   // requerido
-
-  "estadoProyecto": "Registro",         // opcional, default "Registro"
-  "tipoProyecto": "Ecommerce",          // opcional — Informativa|Ecommerce
-  "tecnologia": "Shopify",              // opcional
-  "estadoPago": "50%",                  // opcional
-  "grupo": "A",                         // opcional — si se omite se calcula solo
-  "disenadorId": 4,
-  "desarrolladorId": 5,
-  "usuariosIds": [5, 6],
-  "fechaEntrega": "2026-09-30",         // string ISO-8601 o null
-  "diasSinResponder": "3",              // acepta number, se convierte a string
-
-  "materialMarcaRecibido": false,
-  "catalogoRecibido": false,
-  "hostingContratado": false,
-
-  // Plan de cobros: exactamente 3 ítems, deben sumar 100
-  "planCobros": [
-    { "hito": "AbonoInicial",     "porcentaje": 50 },
-    { "hito": "AprobacionDiseno", "porcentaje": 30 },
-    { "hito": "Entrega",          "porcentaje": 20 }
-  ],
-  "aprobadoPorJefatura": false,         // NUEVO — única forma de bajar el abono del 30%
-  "abonoInicialCobrado": true           // NUEVO — marca el abono cobrado en el alta
-}
-```
-
-**⚠️ El body no admite propiedades desconocidas.** Cualquier campo de más devuelve `400`.
-
-Errores: `400` si el plan no suma 100, si el abono inicial es <30% sin
-`aprobadoPorJefatura`, si el seguimiento o algún usuario no existe, o si mandás
-`abonoInicialCobrado` sin `planCobros`.
-
-`409` si creás el proyecto **ya adelantado** (`estadoProyecto` distinto de `Registro`) y
-no cumple las compuertas de esa etapa — antes se podía crear un proyecto directamente en
-`Desarrollo` salteando todo el flujo.
-
-### `PATCH /projects/:id`
-
-Los mismos campos, **todos opcionales**, **menos** `planCobros`, `aprobadoPorJefatura` y
-`abonoInicialCobrado` (esos tienen su propia ruta; mandarlos acá da `400`).
-
-Dos reglas que importan:
-
-- **Omitir una clave la deja intacta. Mandarla en `null` o `[]` la borra.**
-  `usuariosIds: []` **borra todas las asignaciones** del proyecto.
-- `usuariosIds` hace **reemplazo total**: borra los que había y deja exactamente esos.
-
-Errores: `409` si la transición de etapa no es válida (§0.2) o si falta una compuerta
-(§6). `400` por validación. `404` si no existe.
-
-### Asignar usuarios — las tres formas
-
-| Objetivo | Cómo |
-|---|---|
-| **Reemplazar toda la lista** | `PATCH /projects/:id` con `{"usuariosIds": [1,2,3]}` |
-| **Agregar sin tocar los existentes** | `POST /projects/:id/usuarios` con `{"usuariosIds": [4]}` |
-| **Quitar uno** | `DELETE /projects/:id/usuarios/:usuarioId` |
-
-No hay un `PUT /projects/:id/usuarios`. El «cambiar» es el `PATCH`.
-
-`POST /:id/usuarios` requiere un array **no vacío** e ignora duplicados.
-`DELETE` devuelve `404` si ese usuario no estaba asignado.
-
-> Los asignados del registro (`disenadorId`, `desarrolladorId`) son **otra cosa** y se
-> cambian por `PATCH`, como cualquier otro campo.
-
-### `DELETE /projects/:id`
-
-Borrado lógico (marca `deletedAt`). Devuelve el proyecto.
-
----
-
-## 6. Cobros y compuertas
-
-### El plan
-
-Siempre **tres hitos fijos**: `AbonoInicial`, `AprobacionDiseno`, `Entrega`.
-Lo variable es el porcentaje. **El sistema no maneja montos en dinero**, solo el % y si
-está cobrado.
-
-```
-PUT /projects/:id/plan-cobros        (Admin/Owner)
-{
-  "cobros": [ {"hito":"AbonoInicial","porcentaje":50}, ... ],   // exactamente 3, suman 100
-  "aprobadoPorJefatura": false
-}
-
-PATCH /projects/:id/cobros/:hito     (Admin/Owner)   :hito = AbonoInicial|AprobacionDiseno|Entrega
-{ "cobrado": true, "fechaCobro": "2026-08-09" }      // fechaCobro opcional, default hoy
-```
-
-Redefinir el plan cambia los porcentajes pero **respeta lo ya cobrado**.
-
-Errores: `400` si no suman 100 o el abono baja de 30 sin aprobación; `400` si marcás un
-hito que no está en el plan; `403` si el rol no es Admin/Owner.
-
-### Las compuertas
-
-Bloquean la **entrada** a una etapa y devuelven `409` con todos los motivos juntos:
-
-| Para entrar a | Hace falta |
-|---|---|
-| `Brief` | `AbonoInicial` cobrado |
-| `Diseno` | material de marca recibido |
-| `Desarrollo` | `AprobacionDiseno` cobrado |
-| `ProyectoFinalizado` | `Entrega` cobrado + hosting + producción + capacitación |
-
-```jsonc
-// 409
-{ "message": "No se puede pasar a ProyectoFinalizado: el hito Entrega todavía no está cobrado; el cliente todavía no contrató el hosting" }
-```
-
-> 🔑 **Las compuertas solo rigen para proyectos con plan de cobros cargado.**
-> Los **52 proyectos que ya existen** tienen `cobros: []`, así que hoy **ninguno se
-> traba** y siguen avanzando como siempre. En cuanto administración le cargue un plan a
-> uno, ese proyecto pasa a exigir todo lo de la tabla. Vale la pena avisarle al equipo.
-
----
-
-## 7. Rutas nuevas del recorrido
-
-Todas devuelven el **proyecto completo** actualizado (salvo `rondas-cambio`) y dejan su
-fila en el historial.
-
-### Bloqueos del cliente
-
-Body: `{ "recibido": true, "motivo": "opcional" }`
-
-| Ruta | Efecto |
-|---|---|
-| `PATCH /projects/:id/material-marca` | Habilita el paso a Diseño. Falta → **Grupo B** |
-| `PATCH /projects/:id/catalogo` | Solo e-commerce. Falta → sigue en **A** |
-| `PATCH /projects/:id/hosting` | Campo `recibido` = contratado. Falta → **Grupo C** |
-
-`catalogo` devuelve `409` si el proyecto no es e-commerce.
-
-### Hitos
-
-Body: `{ "motivo": "opcional" }` (máx. 500 caracteres)
-
-| Ruta | Nodo | Notas |
-|---|---|---|
-| `POST /projects/:id/factibilidad` | F1 | El desarrollador revisa. **No bloquea nada** |
-| `POST /projects/:id/aprobar-diseno` | A9 | `409` si el proyecto no está en Diseño |
-| `POST /projects/:id/cargar-productos` | C3 | `409` si no es e-commerce o falta el catálogo |
-| `POST /projects/:id/presentar` | B4 | Marca `presentadoAt` |
-| `POST /projects/:id/produccion` | B13 | `409` si no hay hosting contratado |
-| `POST /projects/:id/capacitacion` | B14 | `409` si no se subió a producción |
-
-### Observaciones de la web (B5/B6)
-
-```
-POST /projects/:id/observaciones
-{ "detalle": "Cambiar el color del header", "dentroDelAlcance": true }
-```
-
-- `dentroDelAlcance: true` → limpia `presentadoAt` para volver a presentar
-- `dentroDelAlcance: false` → crea una **cotización adicional** y **el proyecto continúa
-  igual** hacia el cobro de entrega (el diagrama no lo frena)
-- `409` si el proyecto todavía no se presentó
-
-> No confundir con las rondas de diseño: estas son observaciones sobre la **web ya
-> desarrollada**, en la Fase 2.
-
-### Rondas de cambios de diseño (A9b)
-
-```
-POST /projects/:id/rondas-cambio     { "motivo": "opcional" }
-```
-
-Devuelve un shape **distinto**:
-
-```jsonc
-{
-  "rondasUsadas": 3,
-  "rondasIncluidas": 2,
-  "requiereCotizacionAdicional": true,   // se pasó de las 2 incluidas
-  "proyecto": { /* proyecto completo */ }
-}
-```
-
-**No bloquea nada** cuando se agotan: el proyecto sigue como está y se crea una cotización
-adicional para que administración la persiga. El caso se maneja internamente.
-
-### Archivar y reactivar
-
-```
-POST /projects/:id/archivar     { "motivo": "opcional" }     (Admin/Owner)
-POST /projects/:id/reactivar    { "motivo": "opcional" }     (Admin/Owner)
-```
-
-`archivar` → `409` si ya está archivado o si está finalizado. Cierra los recordatorios.
-
-`reactivar` devuelve un shape **distinto**:
-
-```jsonc
-{
-  "porcentajeAReactivar": 25,        // 25% antes del año, 50% desde el año
-  "diasArchivado": 120,
-  "seRehaceInicioYDiseno": false,    // true con 50%: vuelve a Brief
-  "proyecto": { /* proyecto completo */ }
-}
-```
-
-`409` si el proyecto no está archivado.
-
----
-
-## 8. Recordatorios
-
-Los cinco del diagrama, **automáticos**: el back abre y cierra el que corresponda solo.
-El front no los crea — solo los muestra.
-
-Tipos: `MaterialMarca`, `Catalogo`, `CobroAprobacionDiseno`, `CobroEntrega`, `Hosting`.
-
-**Hay como máximo uno abierto por proyecto.** La prioridad es: cobro → hosting →
-material de marca → catálogo. `diasEsperandoAlCliente` sale de ahí.
-
-> No confundir con `GET /recordatorio` (sin `s`), que es la lista de notas sueltas de
-> siempre y no tiene relación con proyectos.
-
----
-
-## 9. Códigos de error
-
-| Código | Cuándo |
-|---|---|
-| `400` | Validación: campo faltante, tipo incorrecto, **propiedad desconocida en el body**, plan que no suma 100, FK inexistente |
-| `401` | Sin token, token inválido o expirado |
-| `403` | **NUEVO** — el rol no puede ejecutar esa acción |
-| `404` | El proyecto (o el usuario asignado) no existe |
-| `409` | **Regla de negocio**: transición inválida, compuerta sin cumplir, ya archivado, no es e-commerce, orden de hitos |
-
-Todos traen `{ "message": "...", "statusCode": N }` con el mensaje **en español, listo
-para mostrarle al usuario**. Los `409` de compuertas juntan todos los motivos separados
-por `;`.
-
----
-
-## 10. Checklist para el front
-
-**Obligatorio:**
-- [ ] Reemplazar `"E-commerce"` por `"Ecommerce"` en envíos, comparaciones y filtros
-- [ ] Etiqueta de display: `Ecommerce` → «E-commerce»
-- [ ] Selector de etapa: habilitar solo actual, siguiente y anteriores
-- [ ] Sacar `"Archivado"` del selector → usar `POST /:id/archivar`
-- [ ] Esconder plan-cobros / cobros / archivar / reactivar si el rol no es Admin u Owner
-- [ ] Mostrar el `message` de los `409` (vienen redactados para el usuario)
-
-**Recomendado:**
-- [ ] Usar `responsable` y `diasEsperandoAlCliente` en vez de calcularlos
-- [ ] Mostrar el recordatorio pendiente en la ficha del proyecto
-- [ ] Dejar de mandar `grupo`: se calcula solo
-- [ ] Pantalla para el tramo final (presentar → observaciones → producción → capacitación)
-- [ ] Mostrar `cotizaciones` pendientes
-
-**Ojo con:**
-- [ ] `usuariosIds: []` en el `PATCH` borra todas las asignaciones
-- [ ] `por-archivar` devuelve menos proyectos que antes (es lo correcto)
+Y el checkeo rápido de que no quedó nada sin mapear: buscar en el front
+`'Diseno'`, `"Diseño"` y `estadoProyecto` a ver dónde se compara o se pinta.

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { IoFolderOpenOutline, IoSearchOutline } from 'react-icons/io5'
 import type { Project } from '../../types'
 import { projectMatchesSearch } from '../../utils/projectSearch'
+import { getEstadoProyectoLabel } from '../../utils/projectStatus'
 
 interface ProjectSearchInputProps {
   label?: string
@@ -99,7 +100,7 @@ export function ProjectSearchInput({
                         {project.name}
                       </span>
                       <span className="block truncate text-xs text-slate-500">
-                        Grupo {project.grupo} · {project.estadoProyecto}
+                        Grupo {project.grupo} · {getEstadoProyectoLabel(project.estadoProyecto)}
                         {project.descripcion ? ` · ${project.descripcion}` : ''}
                       </span>
                     </span>

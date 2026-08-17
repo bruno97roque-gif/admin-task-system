@@ -8,7 +8,7 @@ import {
   IoRefreshOutline,
   IoTimeOutline,
 } from 'react-icons/io5'
-import type { AppUser, Project } from '../types'
+import type { AppUser, AuthUser, Project } from '../types'
 import { useAuthStore } from '../stores/authStore'
 import { useProjectsByDisenoStore } from '../stores/projectsByDisenoStore'
 import { useRolesStore } from '../stores/rolesStore'
@@ -37,6 +37,16 @@ function getInitials(name: string): string {
     .slice(0, 2)
     .join('')
     .toUpperCase()
+}
+
+function authUserToAppUser(user: AuthUser): AppUser {
+  return {
+    id: user.id,
+    name: user.name,
+    user: user.user,
+    roleId: user.roleId,
+    active: true,
+  }
 }
 
 function ProjectCard({ project, columnUserId }: { project: Project; columnUserId: number }) {
@@ -144,7 +154,9 @@ function DisenadorColumn({
 }
 
 export function ProjectsByDisenoPage() {
-  const user = useAuthStore((s) => s.user)
+  const authUser = useAuthStore((s) => s.user)
+  const isDisenador = authUser?.roleName === 'Diseñador'
+  const disenadorId = isDisenador ? authUser?.id : undefined
   const projects = useProjectsByDisenoStore((s) => s.projects)
   const loading = useProjectsByDisenoStore((s) => s.loading)
   const error = useProjectsByDisenoStore((s) => s.error)
@@ -154,24 +166,23 @@ export function ProjectsByDisenoPage() {
   const fetchUsers = useUsersStore((s) => s.fetchUsers)
   const roles = useRolesStore((s) => s.roles)
   const fetchRoles = useRolesStore((s) => s.fetchRoles)
-  const roleName = user?.roleName
-  const currentUserId = user?.id
-  const disenadorId = roleName === 'Diseñador' ? currentUserId : undefined
 
   useEffect(() => {
     fetchProjects(disenadorId)
-    fetchUsers()
-    fetchRoles()
-  }, [disenadorId, fetchProjects, fetchUsers, fetchRoles])
+    if (!isDisenador) {
+      fetchUsers()
+      fetchRoles()
+    }
+  }, [disenadorId, fetchProjects, fetchRoles, fetchUsers, isDisenador])
 
   const disenadores = useMemo(
     () => {
+      if (isDisenador && authUser) return [authUserToAppUser(authUser)]
+
       const allDisenadores = getUsersByRoleName(users, roles, 'Diseñador')
-      return roleName === 'Diseñador'
-        ? allDisenadores.filter((disenador) => disenador.id === currentUserId)
-        : allDisenadores
+      return allDisenadores
     },
-    [currentUserId, roleName, roles, users],
+    [authUser, isDisenador, roles, users],
   )
 
   const columns = useMemo(() => {
@@ -194,7 +205,9 @@ export function ProjectsByDisenoPage() {
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">Diseño</h1>
+          <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">
+            {isDisenador ? 'Mis proyectos' : 'Proyectos por Diseño'}
+          </h1>
           <p className="text-sm text-slate-400">
             Vista canvas · {disenadores.length} diseñadores · {totalAsignados} asignaciones
           </p>

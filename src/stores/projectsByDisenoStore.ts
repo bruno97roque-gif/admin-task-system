@@ -6,7 +6,7 @@ interface ProjectsByDisenoState {
   projects: Project[]
   loading: boolean
   error: string | null
-  fetchProjectsByDiseno: () => Promise<void>
+  fetchProjectsByDiseno: (disenadorId?: number) => Promise<void>
 }
 
 export const useProjectsByDisenoStore = create<ProjectsByDisenoState>((set) => ({
@@ -14,10 +14,10 @@ export const useProjectsByDisenoStore = create<ProjectsByDisenoState>((set) => (
   loading: false,
   error: null,
 
-  fetchProjectsByDiseno: async () => {
+  fetchProjectsByDiseno: async (disenadorId) => {
     set({ loading: true, error: null })
     try {
-      const projects = await getProjectsByDisenoRequest()
+      const projects = await getProjectsByDisenoRequest(disenadorId)
       set({ projects, loading: false })
     } catch (error) {
       set({

@@ -66,8 +66,9 @@ export function getProjectsByProgramadorRequest(programadorId?: number) {
   return apiFetch<import('../types').Project[]>(`/projects/programador${query}`)
 }
 
-export function getProjectsByDisenoRequest() {
-  return apiFetch<import('../types').Project[]>('/projects/diseno')
+export function getProjectsByDisenoRequest(disenadorId?: number) {
+  const query = disenadorId != null ? `?id=${disenadorId}` : ''
+  return apiFetch<import('../types').Project[]>(`/projects/diseno${query}`)
 }
 
 export function getSeguimientosRequest() {

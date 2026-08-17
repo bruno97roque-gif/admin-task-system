@@ -9,6 +9,7 @@ import {
   IoTimeOutline,
 } from 'react-icons/io5'
 import type { AppUser, Project } from '../types'
+import { useAuthStore } from '../stores/authStore'
 import { useProjectsByDisenoStore } from '../stores/projectsByDisenoStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
@@ -143,6 +144,7 @@ function DisenadorColumn({
 }
 
 export function ProjectsByDisenoPage() {
+  const user = useAuthStore((s) => s.user)
   const projects = useProjectsByDisenoStore((s) => s.projects)
   const loading = useProjectsByDisenoStore((s) => s.loading)
   const error = useProjectsByDisenoStore((s) => s.error)
@@ -152,16 +154,24 @@ export function ProjectsByDisenoPage() {
   const fetchUsers = useUsersStore((s) => s.fetchUsers)
   const roles = useRolesStore((s) => s.roles)
   const fetchRoles = useRolesStore((s) => s.fetchRoles)
+  const roleName = user?.roleName
+  const currentUserId = user?.id
+  const disenadorId = roleName === 'Diseñador' ? currentUserId : undefined
 
   useEffect(() => {
-    fetchProjects()
+    fetchProjects(disenadorId)
     fetchUsers()
     fetchRoles()
-  }, [fetchProjects, fetchUsers, fetchRoles])
+  }, [disenadorId, fetchProjects, fetchUsers, fetchRoles])
 
   const disenadores = useMemo(
-    () => getUsersByRoleName(users, roles, 'Diseñador'),
-    [users, roles],
+    () => {
+      const allDisenadores = getUsersByRoleName(users, roles, 'Diseñador')
+      return roleName === 'Diseñador'
+        ? allDisenadores.filter((disenador) => disenador.id === currentUserId)
+        : allDisenadores
+    },
+    [currentUserId, roleName, roles, users],
   )
 
   const columns = useMemo(() => {
@@ -192,7 +202,7 @@ export function ProjectsByDisenoPage() {
         <Button
           variant="secondary"
           className="w-full sm:w-auto"
-          onClick={() => fetchProjects()}
+          onClick={() => fetchProjects(disenadorId)}
           loading={loading}
         >
           <IoRefreshOutline size={18} />

@@ -5,6 +5,7 @@ import {
   createProjectRequest,
   getProjectsAdminRequest,
   updateProjectRequest,
+  updateProjectResponsablesRequest,
 } from '../services/api'
 
 interface ProjectsAdminState {
@@ -17,6 +18,10 @@ interface ProjectsAdminState {
   updateProject: (
     id: number,
     data: UpdateProjectRequest,
+  ) => Promise<{ success: boolean; error?: string }>
+  updateProjectResponsables: (
+    id: number,
+    data: { disenadorId: number; desarrolladorId: number },
   ) => Promise<{ success: boolean; error?: string }>
   getProjectById: (id: number) => Project | undefined
 }
@@ -43,7 +48,13 @@ export const useProjectsAdminStore = create<ProjectsAdminState>((set, get) => ({
   createProject: async (data) => {
     set({ saving: true, error: null })
     try {
-      await createProjectRequest(data)
+      const project = await createProjectRequest(data)
+      if (data.desarrolladorId != null && data.disenadorId != null) {
+        await updateProjectResponsablesRequest(project.id, {
+          disenadorId: data.disenadorId,
+          desarrolladorId: data.desarrolladorId,
+        })
+      }
       await get().fetchProjects()
       set({ saving: false })
       return { success: true }
@@ -65,6 +76,21 @@ export const useProjectsAdminStore = create<ProjectsAdminState>((set, get) => ({
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Error al actualizar el proyecto'
+      set({ saving: false, error: message })
+      return { success: false, error: message }
+    }
+  },
+
+  updateProjectResponsables: async (id, data) => {
+    set({ saving: true, error: null })
+    try {
+      await updateProjectResponsablesRequest(id, data)
+      await get().fetchProjects()
+      set({ saving: false })
+      return { success: true }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Error al actualizar responsables'
       set({ saving: false, error: message })
       return { success: false, error: message }
     }

@@ -83,6 +83,10 @@ interface ProjectsListViewProps {
     id: number,
     data: UpdateProjectRequest,
   ) => Promise<{ success: boolean; error?: string }>
+  updateProjectResponsables: (
+    id: number,
+    data: { disenadorId: number; desarrolladorId: number },
+  ) => Promise<{ success: boolean; error?: string }>
 }
 
 export function ProjectsListView({
@@ -97,6 +101,7 @@ export function ProjectsListView({
   fetchProjects,
   createProject,
   updateProject,
+  updateProjectResponsables,
 }: ProjectsListViewProps) {
   const seguimientos = useSeguimientosStore((s) => s.seguimientos)
   const fetchSeguimientos = useSeguimientosStore((s) => s.fetchSeguimientos)
@@ -235,10 +240,50 @@ export function ProjectsListView({
     disenadorId: data.disenadorId ? Number(data.disenadorId) : null,
   })
 
+  const hasProjectDataChanges = (data: ProjectForm, project: Project): boolean => {
+    const payload = buildUpdatePayload(data)
+    return (
+      payload.name !== project.name ||
+      payload.descripcion !== project.descripcion ||
+      payload.grupo !== project.grupo ||
+      payload.seguimientoId !== project.seguimientoId ||
+      payload.comentario !== project.comentario ||
+      payload.tecnologia !== project.tecnologia ||
+      payload.tipoProyecto !== project.tipoProyecto ||
+      payload.estadoPago !== project.estadoPago ||
+      payload.estadoProyecto !==
+        (project.estadoProyecto === 'Desarollo' ? 'Desarrollo' : project.estadoProyecto) ||
+      payload.diasSinResponder !== project.diasSinResponder ||
+      toDateInputValue(payload.fechaEntrega) !== toDateInputValue(project.fechaEntrega)
+    )
+  }
+
   const onSubmit = async (data: ProjectForm) => {
-    const result = editingProject
-      ? await updateProject(editingProject.id, buildUpdatePayload(data))
-      : await createProject(buildCreatePayload(data))
+    let result
+
+    if (!editingProject) {
+      result = await createProject(buildCreatePayload(data))
+    } else {
+      const desarrolladorId = data.programadorId ? Number(data.programadorId) : null
+      const disenadorId = data.disenadorId ? Number(data.disenadorId) : null
+      const responsablesChanged =
+        desarrolladorId !== editingProject.desarrolladorId ||
+        disenadorId !== editingProject.disenadorId
+
+      if (
+        responsablesChanged &&
+        !hasProjectDataChanges(data, editingProject) &&
+        desarrolladorId != null &&
+        disenadorId != null
+      ) {
+        result = await updateProjectResponsables(editingProject.id, {
+          disenadorId,
+          desarrolladorId,
+        })
+      } else {
+        result = await updateProject(editingProject.id, buildUpdatePayload(data))
+      }
+    }
 
     if (result.success) {
       closeModal()

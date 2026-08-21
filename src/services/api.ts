@@ -121,6 +121,21 @@ export function updateProjectRequest(id: number, data: UpdateProjectRequest) {
   })
 }
 
+export interface UpdateProjectResponsablesRequest {
+  disenadorId: number
+  desarrolladorId: number
+}
+
+export function updateProjectResponsablesRequest(
+  id: number,
+  data: UpdateProjectResponsablesRequest,
+) {
+  return apiFetch<import('../types').Project>(`/projects/${id}/responsables`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
 export function updateProjectUsuariosRequest(
   id: number,
   data: UpdateProjectUsuariosRequest,

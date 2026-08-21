@@ -8,7 +8,11 @@ import {
 
 function buildUpdatePayloadFromProject(
   project: Project,
-  overrides: { comentario: string; fechaEntrega: string | null },
+  overrides: {
+    comentario: string
+    fechaEntrega: string | null
+    estadoProyecto: string
+  },
 ): UpdateProjectRequest {
   return {
     name: project.name,
@@ -19,7 +23,7 @@ function buildUpdatePayloadFromProject(
     tecnologia: project.tecnologia,
     tipoProyecto: project.tipoProyecto,
     estadoPago: project.estadoPago,
-    estadoProyecto: project.estadoProyecto,
+    estadoProyecto: overrides.estadoProyecto,
     diasSinResponder: project.diasSinResponder,
     fechaEntrega: overrides.fechaEntrega,
   }
@@ -33,7 +37,11 @@ interface ProjectsByProgramadorState {
   fetchProjectsByProgramador: (programadorId?: number) => Promise<void>
   updateProjectComentario: (
     project: Project,
-    data: { comentario: string; fechaEntrega: string | null },
+    data: {
+      comentario: string
+      fechaEntrega: string | null
+      estadoProyecto: string
+    },
   ) => Promise<{ success: boolean; error?: string }>
 }
 
@@ -67,6 +75,7 @@ export const useProjectsByProgramadorStore = create<ProjectsByProgramadorState>(
         buildUpdatePayloadFromProject(project, {
           comentario: data.comentario.trim(),
           fechaEntrega: data.fechaEntrega,
+          estadoProyecto: data.estadoProyecto,
         }),
       )
       set((state) => ({

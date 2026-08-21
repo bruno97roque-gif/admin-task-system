@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import {
   IoBriefcaseOutline,
   IoCashOutline,
@@ -18,8 +19,20 @@ import { isProjectAssignee } from '../utils/projectUsers'
 import {
   estadoProyectoClass,
   getEstadoProyectoLabel,
+  getEstadoProyectoOptions,
 } from '../utils/projectStatus'
 import { Button } from '../components/ui/Button'
+import { DateInput } from '../components/ui/DateInput'
+import { Modal } from '../components/ui/Modal'
+import { Select } from '../components/ui/Select'
+import { Textarea } from '../components/ui/Textarea'
+import { toDateInputValue } from '../utils/date'
+
+interface ProjectEditForm {
+  comentario: string
+  fechaEntrega: string
+  estadoProyecto: string
+}
 
 type ProjectUsuarioItem = Project['usuarios'][number]
 
@@ -49,13 +62,36 @@ function authUserToAppUser(user: AuthUser): AppUser {
   }
 }
 
-function ProjectCard({ project, columnUserId }: { project: Project; columnUserId: number }) {
+function ProjectCard({
+  project,
+  columnUserId,
+  onSelect,
+}: {
+  project: Project
+  columnUserId: number
+  onSelect?: (project: Project) => void
+}) {
   const otrosUsuarios = project.usuarios
     .map(extractUser)
     .filter((u): u is AppUser => u !== null && u.id !== columnUserId)
 
   return (
-    <article className="rounded-lg border border-border bg-surface p-3 transition-colors hover:border-accent/50">
+    <article
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onClick={() => onSelect?.(project)}
+      onKeyDown={(e) => {
+        if (onSelect && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          onSelect(project)
+        }
+      }}
+      className={`rounded-lg border border-border bg-surface p-3 transition-colors ${
+        onSelect
+          ? 'cursor-pointer hover:border-accent/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent'
+          : ''
+      }`}
+    >
       <div className="mb-2 flex items-start justify-between gap-2">
         <h3 className="text-sm font-semibold text-slate-100">{project.name}</h3>
         <span className="shrink-0 rounded-full bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent-hover">
@@ -119,9 +155,11 @@ function ProjectCard({ project, columnUserId }: { project: Project; columnUserId
 function DisenadorColumn({
   disenador,
   projects,
+  onSelectProject,
 }: {
   disenador: AppUser
   projects: Project[]
+  onSelectProject?: (project: Project) => void
 }) {
   return (
     <section className="flex w-[min(100%,20rem)] shrink-0 flex-col rounded-xl border border-border bg-surface-raised sm:w-80">
@@ -145,7 +183,12 @@ function DisenadorColumn({
           </p>
         ) : (
           projects.map((project) => (
-            <ProjectCard key={project.id} project={project} columnUserId={disenador.id} />
+            <ProjectCard
+              key={project.id}
+              project={project}
+              columnUserId={disenador.id}
+              onSelect={onSelectProject}
+            />
           ))
         )}
       </div>
@@ -160,7 +203,21 @@ export function ProjectsByDisenoPage() {
   const projects = useProjectsByDisenoStore((s) => s.projects)
   const loading = useProjectsByDisenoStore((s) => s.loading)
   const error = useProjectsByDisenoStore((s) => s.error)
+  const saving = useProjectsByDisenoStore((s) => s.saving)
   const fetchProjects = useProjectsByDisenoStore((s) => s.fetchProjectsByDiseno)
+  const updateProject = useProjectsByDisenoStore((s) => s.updateProject)
+
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+    setError,
+  } = useForm<ProjectEditForm>({
+    defaultValues: { comentario: '', fechaEntrega: '', estadoProyecto: '' },
+  })
 
   const users = useUsersStore((s) => s.users)
   const fetchUsers = useUsersStore((s) => s.fetchUsers)
@@ -200,6 +257,35 @@ export function ProjectsByDisenoPage() {
     () => columns.reduce((acc, col) => acc + col.projects.length, 0),
     [columns],
   )
+
+  const openEdit = (project: Project) => {
+    setEditingProject(project)
+    reset({
+      comentario: project.comentario ?? '',
+      fechaEntrega: toDateInputValue(project.fechaEntrega),
+      estadoProyecto: project.estadoProyecto,
+    })
+  }
+
+  const closeEdit = () => {
+    setEditingProject(null)
+    reset({ comentario: '', fechaEntrega: '', estadoProyecto: '' })
+  }
+
+  const onSubmit = async (data: ProjectEditForm) => {
+    if (!editingProject) return
+
+    const result = await updateProject(editingProject, {
+      comentario: data.comentario,
+      fechaEntrega: data.fechaEntrega.trim() || null,
+      estadoProyecto: data.estadoProyecto,
+    })
+    if (result.success) {
+      closeEdit()
+    } else {
+      setError('root', { message: result.error ?? 'Error al guardar el proyecto' })
+    }
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -248,11 +334,65 @@ export function ProjectsByDisenoPage() {
                 key={disenador.id}
                 disenador={disenador}
                 projects={colProjects}
+                onSelectProject={openEdit}
               />
             ))}
           </div>
         )}
       </div>
+
+      <Modal
+        open={editingProject !== null}
+        onClose={closeEdit}
+        title={editingProject ? `Editar — ${editingProject.name}` : 'Editar proyecto'}
+      >
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {errors.root && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+              {errors.root.message}
+            </div>
+          )}
+          <Controller
+            name="fechaEntrega"
+            control={control}
+            render={({ field }) => (
+              <DateInput
+                label="Fecha de entrega"
+                name={field.name}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
+          />
+          <Select
+            label="Estado del proyecto"
+            options={
+              editingProject
+                ? getEstadoProyectoOptions(
+                    editingProject.estadoProyecto,
+                    editingProject.tipoProyecto,
+                  )
+                : []
+            }
+            {...register('estadoProyecto')}
+          />
+          <Textarea
+            label="Comentario"
+            placeholder="Escribe un comentario..."
+            rows={5}
+            {...register('comentario')}
+          />
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={closeEdit}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="w-full sm:w-auto" loading={saving}>
+              Guardar
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

@@ -20,17 +20,20 @@ import { isProjectAssignee } from '../utils/projectUsers'
 import {
   estadoProyectoClass,
   getEstadoProyectoLabel,
+  getEstadoProyectoOptions,
 } from '../utils/projectStatus'
 import { getTipoProyectoLabel } from '../utils/projectType'
 import { Button } from '../components/ui/Button'
 import { DateInput } from '../components/ui/DateInput'
 import { Modal } from '../components/ui/Modal'
+import { Select } from '../components/ui/Select'
 import { Textarea } from '../components/ui/Textarea'
 import { formatDateDisplay, toDateInputValue } from '../utils/date'
 
 interface ProjectEditForm {
   comentario: string
   fechaEntrega: string
+  estadoProyecto: string
 }
 
 type ProjectUsuarioItem = Project['usuarios'][number]
@@ -227,7 +230,9 @@ export function ProjectsByProgramadorPage() {
     control,
     formState: { errors },
     setError,
-  } = useForm<ProjectEditForm>({ defaultValues: { comentario: '', fechaEntrega: '' } })
+  } = useForm<ProjectEditForm>({
+    defaultValues: { comentario: '', fechaEntrega: '', estadoProyecto: '' },
+  })
 
   const users = useUsersStore((s) => s.users)
   const fetchUsers = useUsersStore((s) => s.fetchUsers)
@@ -270,12 +275,13 @@ export function ProjectsByProgramadorPage() {
     reset({
       comentario: project.comentario ?? '',
       fechaEntrega: toDateInputValue(project.fechaEntrega),
+      estadoProyecto: project.estadoProyecto,
     })
   }
 
   const closeEditComentario = () => {
     setEditingProject(null)
-    reset({ comentario: '', fechaEntrega: '' })
+    reset({ comentario: '', fechaEntrega: '', estadoProyecto: '' })
   }
 
   const onSubmitComentario = async (data: ProjectEditForm) => {
@@ -284,11 +290,12 @@ export function ProjectsByProgramadorPage() {
     const result = await updateProjectComentario(editingProject, {
       comentario: data.comentario,
       fechaEntrega: data.fechaEntrega.trim() || null,
+      estadoProyecto: data.estadoProyecto,
     })
     if (result.success) {
       closeEditComentario()
     } else {
-      setError('root', { message: result.error ?? 'Error al guardar el comentario' })
+      setError('root', { message: result.error ?? 'Error al guardar el proyecto' })
     }
   }
 
@@ -371,6 +378,18 @@ export function ProjectsByProgramadorPage() {
                 onBlur={field.onBlur}
               />
             )}
+          />
+          <Select
+            label="Estado del proyecto"
+            options={
+              editingProject
+                ? getEstadoProyectoOptions(
+                    editingProject.estadoProyecto,
+                    editingProject.tipoProyecto,
+                  )
+                : []
+            }
+            {...register('estadoProyecto')}
           />
           <Textarea
             label="Comentario"

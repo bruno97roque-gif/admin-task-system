@@ -1,6 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { IoAddOutline, IoCreateOutline, IoFolderOpenOutline, IoRefreshOutline } from 'react-icons/io5'
+import {
+  IoAddOutline,
+  IoCreateOutline,
+  IoFolderOpenOutline,
+  IoRefreshOutline,
+  IoTrashOutline,
+} from 'react-icons/io5'
 import type { Project } from '../../types'
 import type { CreateProjectRequest, UpdateProjectRequest } from '../../services/api'
 import { useRolesStore } from '../../stores/rolesStore'
@@ -21,6 +27,7 @@ import { ProjectSearchInput } from './ProjectSearchInput'
 import { Input } from '../ui/Input'
 import { DateInput } from '../ui/DateInput'
 import { Modal } from '../ui/Modal'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { Select } from '../ui/Select'
 import { Textarea } from '../ui/Textarea'
 
@@ -87,6 +94,7 @@ interface ProjectsListViewProps {
     id: number,
     data: { disenadorId: number; desarrolladorId: number },
   ) => Promise<{ success: boolean; error?: string }>
+  deleteProject?: (id: number) => Promise<{ success: boolean; error?: string }>
 }
 
 export function ProjectsListView({
@@ -102,6 +110,7 @@ export function ProjectsListView({
   createProject,
   updateProject,
   updateProjectResponsables,
+  deleteProject,
 }: ProjectsListViewProps) {
   const seguimientos = useSeguimientosStore((s) => s.seguimientos)
   const fetchSeguimientos = useSeguimientosStore((s) => s.fetchSeguimientos)
@@ -117,6 +126,10 @@ export function ProjectsListView({
   const [searchQuery, setSearchQuery] = useState('')
   const [grupoFilter, setGrupoFilter] = useState('')
   const [estadoProyectoFilter, setEstadoProyectoFilter] = useState('')
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
+  const [deleteName, setDeleteName] = useState('')
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
 
   const {
     register,
@@ -204,6 +217,36 @@ export function ProjectsListView({
     setModalOpen(false)
     setEditingProject(null)
     reset(emptyForm)
+  }
+
+  const openDeleteConfirmation = (project: Project) => {
+    setProjectToDelete(project)
+    setDeleteConfirmationOpen(true)
+  }
+
+  const cancelDelete = () => {
+    if (saving) return
+    setProjectToDelete(null)
+    setDeleteConfirmationOpen(false)
+    setDeleteModalOpen(false)
+    setDeleteName('')
+  }
+
+  const continueDelete = () => {
+    if (!projectToDelete) return
+    setDeleteConfirmationOpen(false)
+    setDeleteName('')
+    setDeleteModalOpen(true)
+  }
+
+  const confirmDelete = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!deleteProject || !projectToDelete || deleteName.trim() !== projectToDelete.name) return
+
+    const result = await deleteProject(projectToDelete.id)
+    if (result.success) {
+      cancelDelete()
+    }
   }
 
   const buildCreatePayload = (data: ProjectForm): CreateProjectRequest => {
@@ -450,6 +493,16 @@ export function ProjectsListView({
                       >
                         <IoCreateOutline size={16} />
                       </Button>
+                      {deleteProject && (
+                        <Button
+                          variant="ghost"
+                          onClick={() => openDeleteConfirmation(project)}
+                          aria-label={`Eliminar ${project.name}`}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <IoTrashOutline size={16} />
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -597,6 +650,53 @@ export function ProjectsListView({
             </Button>
             <Button type="submit" className="w-full sm:w-auto" loading={saving}>
               {editingProject ? 'Guardar cambios' : 'Guardar'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmDialog
+        open={deleteConfirmationOpen}
+        title="Eliminar proyecto"
+        message="¿Seguro que quieres eliminar este proyecto?"
+        onConfirm={continueDelete}
+        onCancel={cancelDelete}
+      />
+
+      <Modal
+        open={deleteModalOpen}
+        onClose={cancelDelete}
+        title="Confirmar eliminación"
+        size="sm"
+      >
+        <form onSubmit={confirmDelete} className="space-y-4">
+          {error && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+              {error}
+            </div>
+          )}
+          <p className="text-sm text-slate-300">
+            Escribe <strong className="text-slate-100">{projectToDelete?.name}</strong> para confirmar.
+          </p>
+          <Input
+            label="Nombre del proyecto"
+            value={deleteName}
+            onChange={(event) => setDeleteName(event.target.value)}
+            autoFocus
+            autoComplete="off"
+          />
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={cancelDelete}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              className="w-full sm:w-auto"
+              loading={saving}
+              disabled={deleteName.trim() !== projectToDelete?.name}
+            >
+              Eliminar proyecto
             </Button>
           </div>
         </form>

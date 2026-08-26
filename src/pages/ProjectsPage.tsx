@@ -10,6 +10,7 @@ export function ProjectsPage() {
   const createProject = useProjectsStore((s) => s.createProject)
   const updateProject = useProjectsStore((s) => s.updateProject)
   const updateProjectResponsables = useProjectsStore((s) => s.updateProjectResponsables)
+  const deleteProject = useProjectsStore((s) => s.deleteProject)
 
   return (
     <ProjectsListView
@@ -23,6 +24,7 @@ export function ProjectsPage() {
       createProject={createProject}
       updateProject={updateProject}
       updateProjectResponsables={updateProjectResponsables}
+      deleteProject={deleteProject}
     />
   )
 }

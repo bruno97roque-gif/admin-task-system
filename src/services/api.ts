@@ -121,6 +121,12 @@ export function updateProjectRequest(id: number, data: UpdateProjectRequest) {
   })
 }
 
+export function deleteProjectRequest(id: number) {
+  return apiFetch<void>(`/projects/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 export interface UpdateProjectResponsablesRequest {
   disenadorId: number
   desarrolladorId: number

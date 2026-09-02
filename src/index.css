@@ -1,12 +1,12 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-surface: #0f172a;
-  --color-surface-raised: #1e293b;
-  --color-surface-overlay: #334155;
-  --color-border: #334155;
-  --color-accent: #6366f1;
-  --color-accent-hover: #818cf8;
+  --color-surface: #1b0e20;
+  --color-surface-raised: #2d1835;
+  --color-surface-overlay: #44274f;
+  --color-border: #4a2a55;
+  --color-accent: #f18c1b;
+  --color-accent-hover: #f5ae5e;
 }
 
 html {
@@ -19,6 +19,12 @@ body {
   margin: 0;
   min-height: 100dvh;
   overflow-x: hidden;
+  background-image: linear-gradient(rgba(27, 14, 32, 0.78), rgba(27, 14, 32, 0.78)),
+    url('./assets/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 #root {

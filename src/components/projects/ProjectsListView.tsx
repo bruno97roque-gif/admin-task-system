@@ -5,6 +5,7 @@ import {
   IoCreateOutline,
   IoFolderOpenOutline,
   IoRefreshOutline,
+  IoTimeOutline,
   IoTrashOutline,
 } from 'react-icons/io5'
 import type { Project } from '../../types'
@@ -30,6 +31,7 @@ import { Modal } from '../ui/Modal'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { Select } from '../ui/Select'
 import { Textarea } from '../ui/Textarea'
+import { ProjectHistorialModal } from './ProjectHistorialModal'
 
 const DEFAULT_GRUPO_OPTIONS = [
   { value: 'A', label: 'A' },
@@ -130,6 +132,7 @@ export function ProjectsListView({
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
   const [deleteName, setDeleteName] = useState('')
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [historialProject, setHistorialProject] = useState<Project | null>(null)
 
   const {
     register,
@@ -488,6 +491,13 @@ export function ProjectsListView({
                     <div className="flex justify-end">
                       <Button
                         variant="ghost"
+                        onClick={() => setHistorialProject(project)}
+                        aria-label={`Ver historial de ${project.name}`}
+                      >
+                        <IoTimeOutline size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
                         onClick={() => openEdit(project)}
                         aria-label="Editar"
                       >
@@ -701,6 +711,12 @@ export function ProjectsListView({
           </div>
         </form>
       </Modal>
+
+      <ProjectHistorialModal
+        key={historialProject?.id ?? 'none'}
+        project={historialProject}
+        onClose={() => setHistorialProject(null)}
+      />
     </div>
   )
 }

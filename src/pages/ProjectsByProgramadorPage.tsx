@@ -1,212 +1,32 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import {
-  IoBriefcaseOutline,
-  IoBookmarkOutline,
-  IoCashOutline,
-  IoCodeSlashOutline,
-  IoLayersOutline,
-  IoPeopleOutline,
-  IoRefreshOutline,
-  IoTimeOutline,
-} from 'react-icons/io5'
-import type { AppUser, AuthUser, Project } from '../types'
+import { IoBriefcaseOutline, IoLayersOutline, IoRefreshOutline } from 'react-icons/io5'
+import type { Project } from '../types'
 import { useAuthStore } from '../stores/authStore'
 import { useProjectsByProgramadorStore } from '../stores/projectsByProgramadorStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 import { getUsersByRoleName } from '../utils/assignableUsers'
 import { isProjectAssignee } from '../utils/projectUsers'
-import {
-  estadoProyectoClass,
-  getEstadoProyectoLabel,
-  getEstadoProyectoOptions,
-} from '../utils/projectStatus'
-import { getTipoProyectoLabel } from '../utils/projectType'
+import { getEstadoProyectoOptions } from '../utils/projectStatus'
+import { type OrderMode } from '../utils/projectOrder'
+import { authUserToAppUser } from '../utils/user'
 import { Button } from '../components/ui/Button'
 import { DateInput } from '../components/ui/DateInput'
 import { Modal } from '../components/ui/Modal'
 import { Select } from '../components/ui/Select'
 import { Textarea } from '../components/ui/Textarea'
-import { formatDateDisplay, toDateInputValue } from '../utils/date'
+import { ProjectColumn } from '../components/projects/ProjectColumn'
+import { ProjectDetails } from '../components/projects/ProjectDetails'
+import { ProjectFilters } from '../components/projects/ProjectFilters'
+import { ProjectsBycModal } from '../components/projects/ProjectsBycModal'
+import { LoaderBlock } from '../components/ui/Loader'
+import { toDateInputValue } from '../utils/date'
 
 interface ProjectEditForm {
   comentario: string
   fechaEntrega: string
   estadoProyecto: string
-}
-
-type ProjectUsuarioItem = Project['usuarios'][number]
-
-function extractUser(item: ProjectUsuarioItem): AppUser | null {
-  if ('usuario' in item) return item.usuario ?? null
-  if ('name' in item && 'id' in item) return item
-  return null
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-}
-
-function ProjectCard({
-  project,
-  columnUserId,
-  onSelect,
-}: {
-  project: Project
-  columnUserId: number
-  onSelect: (project: Project) => void
-}) {
-  const otrosUsuarios = project.usuarios
-    .map(extractUser)
-    .filter((u): u is AppUser => u !== null && u.id !== columnUserId)
-
-  return (
-    <article
-      role="button"
-      tabIndex={0}
-      onClick={() => onSelect(project)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onSelect(project)
-        }
-      }}
-      className="cursor-pointer rounded-lg border border-border bg-surface p-3 transition-colors hover:border-accent/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-    >
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-slate-100">{project.name}</h3>
-        <span className="shrink-0 rounded-full bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent-hover">
-          Grupo {project.grupo}
-        </span>
-      </div>
-
-      {project.descripcion && (
-        <p className="mb-3 line-clamp-2 text-xs text-slate-400">{project.descripcion}</p>
-      )}
-
-      {project.tipoProyecto && (
-        <div className="mb-3">
-          <span className="inline-flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
-            <IoBookmarkOutline size={13} className="text-violet-300" />
-            {getTipoProyectoLabel(project.tipoProyecto)}
-          </span>
-        </div>
-      )}
-
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        <span
-          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${estadoProyectoClass(project.estadoProyecto)}`}
-        >
-          {getEstadoProyectoLabel(project.estadoProyecto)}
-        </span>
-        {project.tecnologia && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-overlay px-2 py-0.5 text-xs text-slate-300">
-            <IoCodeSlashOutline size={12} />
-            {project.tecnologia}
-          </span>
-        )}
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-300">
-          <IoCashOutline size={12} />
-          {project.estadoPago || '—'}
-        </span>
-      </div>
-
-      <dl className="space-y-1.5 text-xs text-slate-400">
-        <div className="flex items-center gap-1.5">
-          <IoLayersOutline size={12} className="text-slate-500" />
-          <span>Seguimiento: {project.seguimiento?.name ?? '—'}</span>
-        </div>
-        {project.diasSinResponder !== null && (
-          <div className="flex items-center gap-1.5">
-            <IoTimeOutline size={12} className="text-slate-500" />
-            <span>{project.diasSinResponder} días sin responder</span>
-          </div>
-        )}
-        {project.fechaEntrega && (
-          <div className="flex items-center gap-1.5">
-            <IoTimeOutline size={12} className="text-slate-500" />
-            <span>Entrega: {formatDateDisplay(project.fechaEntrega)}</span>
-          </div>
-        )}
-      </dl>
-
-      {project.comentario && (
-        <p className="mt-3 border-t border-border pt-2 text-xs italic text-slate-500">
-          “{project.comentario}”
-        </p>
-      )}
-
-      {otrosUsuarios.length > 0 && (
-        <div className="mt-3 flex items-center gap-1.5 border-t border-border pt-2">
-          <IoPeopleOutline size={12} className="text-slate-500" />
-          <span className="text-xs text-slate-500">
-            Con: {otrosUsuarios.map((u) => u.name).join(', ')}
-          </span>
-        </div>
-      )}
-    </article>
-  )
-}
-
-function ProgramadorColumn({
-  programador,
-  projects,
-  onSelectProject,
-}: {
-  programador: AppUser
-  projects: Project[]
-  onSelectProject: (project: Project) => void
-}) {
-  return (
-    <section className="flex w-[min(100%,20rem)] shrink-0 flex-col rounded-xl border border-border bg-surface-raised sm:w-80">
-      <header className="flex items-center gap-3 border-b border-border p-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/20 text-sm font-bold text-accent-hover">
-          {getInitials(programador.name)}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-slate-100">{programador.name}</p>
-          <p className="truncate text-xs text-slate-500">{programador.user}</p>
-        </div>
-        <span className="rounded-full bg-surface-overlay px-2 py-0.5 text-xs font-medium text-slate-300">
-          {projects.length}
-        </span>
-      </header>
-
-      <div className="flex-1 space-y-2 overflow-y-auto p-3">
-        {projects.length === 0 ? (
-          <p className="px-2 py-6 text-center text-xs text-slate-500">
-            Sin proyectos asignados
-          </p>
-        ) : (
-          projects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              columnUserId={programador.id}
-              onSelect={onSelectProject}
-            />
-          ))
-        )}
-      </div>
-    </section>
-  )
-}
-
-function authUserToAppUser(user: AuthUser): AppUser {
-  return {
-    id: user.id,
-    name: user.name,
-    user: user.user,
-    roleId: user.roleId,
-    active: true,
-  }
 }
 
 export function ProjectsByProgramadorPage() {
@@ -222,6 +42,9 @@ export function ProjectsByProgramadorPage() {
   const updateProjectComentario = useProjectsByProgramadorStore((s) => s.updateProjectComentario)
 
   const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [estadoFiltro, setEstadoFiltro] = useState('')
+  const [ordenFiltro, setOrdenFiltro] = useState<OrderMode>('personalizado')
+  const [showBycModal, setShowBycModal] = useState(false)
 
   const {
     register,
@@ -254,16 +77,21 @@ export function ProjectsByProgramadorPage() {
     return getUsersByRoleName(users, roles, 'Programador')
   }, [authUser, isProgramador, users, roles])
 
+  const filteredProjects = useMemo(
+    () => projects.filter((project) => !estadoFiltro || project.estadoProyecto === estadoFiltro),
+    [projects, estadoFiltro],
+  )
+
   const columns = useMemo(() => {
     if (programadores.length === 0) return []
 
     return programadores.map((programador) => ({
       programador,
-      projects: projects.filter((project) =>
+      projects: filteredProjects.filter((project) =>
         isProjectAssignee(project, 'Programador', programador.id),
       ),
     }))
-  }, [programadores, projects])
+  }, [programadores, filteredProjects])
 
   const totalAsignados = useMemo(
     () => columns.reduce((acc, col) => acc + col.projects.length, 0),
@@ -304,23 +132,44 @@ export function ProjectsByProgramadorPage() {
       <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">
-            {isProgramador ? 'Mis proyectos' : 'Proyectos por Programador'}
+            {isProgramador ? 'Mis proyectos' : 'Asignaciones'}
           </h1>
           <p className="text-sm text-slate-400">
             Vista canvas · {programadores.length} programador
             {programadores.length !== 1 ? 'es' : ''} · {totalAsignados} asignaciones
           </p>
         </div>
-        <Button
-          variant="secondary"
-          className="w-full sm:w-auto"
-          onClick={() => fetchProjects(programadorId)}
-          loading={loading}
-        >
-          <IoRefreshOutline size={18} />
-          Actualizar
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {isProgramador && (
+            <Button
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={() => setShowBycModal(true)}
+            >
+              <IoLayersOutline size={18} />
+              Ver proyectos B y C
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            className="w-full sm:w-auto"
+            onClick={() => fetchProjects(programadorId)}
+            loading={loading}
+          >
+            <IoRefreshOutline size={18} />
+            Actualizar
+          </Button>
+        </div>
       </header>
+
+      <div className="mb-4">
+        <ProjectFilters
+          estado={estadoFiltro}
+          onEstadoChange={setEstadoFiltro}
+          orden={ordenFiltro}
+          onOrdenChange={setOrdenFiltro}
+        />
+      </div>
 
       {error && editingProject === null && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -330,9 +179,7 @@ export function ProjectsByProgramadorPage() {
 
       <div className="flex-1 overflow-hidden">
         {loading && columns.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-sm text-slate-500">
-            Cargando proyectos...
-          </div>
+          <LoaderBlock label="Cargando proyectos..." />
         ) : columns.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
             <IoBriefcaseOutline size={32} className="text-slate-600" />
@@ -344,11 +191,13 @@ export function ProjectsByProgramadorPage() {
         ) : (
           <div className="flex h-full gap-4 overflow-x-auto pb-2">
             {columns.map(({ programador, projects: colProjects }) => (
-              <ProgramadorColumn
+              <ProjectColumn
                 key={programador.id}
-                programador={programador}
+                user={programador}
                 projects={colProjects}
                 onSelectProject={openEditComentario}
+                orderStorageKey={`programador-${programador.id}`}
+                orderMode={ordenFiltro}
               />
             ))}
           </div>
@@ -361,6 +210,7 @@ export function ProjectsByProgramadorPage() {
         title={editingProject ? `Editar — ${editingProject.name}` : 'Editar proyecto'}
       >
         <form onSubmit={handleSubmit(onSubmitComentario)} className="space-y-4">
+          {editingProject && <ProjectDetails project={editingProject} />}
           {errors.root && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
               {errors.root.message}
@@ -407,6 +257,15 @@ export function ProjectsByProgramadorPage() {
           </div>
         </form>
       </Modal>
+
+      {isProgramador && programadorId !== undefined && (
+        <ProjectsBycModal
+          open={showBycModal}
+          onClose={() => setShowBycModal(false)}
+          roleName="Programador"
+          userId={programadorId}
+        />
+      )}
     </div>
   )
 }

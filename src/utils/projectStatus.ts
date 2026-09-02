@@ -6,6 +6,7 @@ export const ESTADO_PROYECTO = {
   AvanceDiseno: 'AvanceDiseno',
   DisenoFinalizado: 'DisenoFinalizado',
   Desarrollo: 'Desarrollo',
+  DesarrolloFinalizado: 'DesarrolloFinalizado',
   ProyectoFinalizado: 'ProyectoFinalizado',
   Archivado: 'Archivado',
 } as const
@@ -20,6 +21,7 @@ export const ESTADO_PROYECTO_ORDER: EstadoProyecto[] = [
   'AvanceDiseno',
   'DisenoFinalizado',
   'Desarrollo',
+  'DesarrolloFinalizado',
   'ProyectoFinalizado',
 ]
 
@@ -32,6 +34,7 @@ export const ETIQUETA_ESTADO: Record<EstadoProyecto, string> = {
   AvanceDiseno: 'Avance de Diseño',
   DisenoFinalizado: 'Diseño Finalizado',
   Desarrollo: 'Desarrollo',
+  DesarrolloFinalizado: 'Desarrollo Finalizado',
   ProyectoFinalizado: 'Proyecto Finalizado',
   Archivado: 'Archivado',
 }
@@ -84,6 +87,7 @@ export const ESTADO_PROYECTO_COLORS: Record<string, string> = {
   DisenoFinalizado: 'bg-cyan-500/20 text-cyan-300',
   Desarrollo: 'bg-amber-500/20 text-amber-300',
   Desarollo: 'bg-amber-500/20 text-amber-300',
+  DesarrolloFinalizado: 'bg-teal-500/20 text-teal-300',
   ProyectoFinalizado: 'bg-emerald-500/20 text-emerald-300',
   Archivado: 'bg-red-500/20 text-red-300',
 }

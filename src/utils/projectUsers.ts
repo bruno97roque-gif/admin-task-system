@@ -2,7 +2,7 @@ import type { AppUser, ProjectUsuarioAssignment } from '../types'
 
 type ProjectUsuarioItem = ProjectUsuarioAssignment | AppUser
 
-function extractUser(item: ProjectUsuarioItem): AppUser | null {
+export function extractUser(item: ProjectUsuarioItem): AppUser | null {
   if ('usuario' in item) {
     return item.usuario ?? null
   }

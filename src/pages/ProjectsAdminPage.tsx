@@ -18,7 +18,7 @@ export function ProjectsAdminPage() {
 
   return (
     <ProjectsListView
-      title="Proyectos B y C"
+      title="En espera"
       description="Proyectos de los grupos B y C"
       grupoOptions={GRUPO_BC_OPTIONS}
       projects={projects}

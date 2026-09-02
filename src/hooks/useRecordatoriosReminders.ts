@@ -32,7 +32,7 @@ function showBrowserNotifications(items: Recordatorio[]) {
   items.forEach((item) => {
     new Notification('Recordatorio pendiente', {
       body: item.descripcion,
-      icon: '/favicon.svg',
+      icon: '/favicon.png',
       tag: `recordatorio-${item.id}`,
     })
   })

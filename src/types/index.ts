@@ -29,6 +29,7 @@ export interface Project {
   disenadorId: number | null
   desarrollador: AppUser | null
   disenador: AppUser | null
+  archivadoAt: string | null
 }
 
 export interface Recordatorio {
@@ -56,4 +57,50 @@ export interface AppUser {
   user: string
   active: boolean
   roleId: number
+}
+
+export interface HistorialEtapa {
+  id: number
+  proyectoId: number
+  estadoAnterior: string | null
+  estadoNuevo: string
+  grupoAnterior: string | null
+  grupoNuevo: string
+  motivo: string | null
+  usuarioId: number | null
+  createdAt: string
+  usuario: { id: number; name: string; user: string } | null
+}
+
+export interface AnaliticaMes {
+  mes: string
+  disenosFinalizados: number
+  desarrollosFinalizados: number
+}
+
+export interface AnaliticaPersonaMes {
+  usuarioId: number
+  nombre: string
+  mes: string
+  cantidad: number
+}
+
+export interface AnaliticaProyectoDuracion {
+  proyectoId: number
+  nombre: string
+  dias: number
+}
+
+export interface AnaliticaDuracion {
+  etapa: 'Diseno' | 'Desarrollo'
+  promedioDias: number
+  cantidadProyectos: number
+  proyectos: AnaliticaProyectoDuracion[]
+}
+
+export interface Analitica {
+  porMes: AnaliticaMes[]
+  disenadoresPorMes: AnaliticaPersonaMes[]
+  desarrolladoresPorMes: AnaliticaPersonaMes[]
+  duracionPromedio: AnaliticaDuracion[]
 }

@@ -19,18 +19,9 @@ import {
   type UserProjectCount,
 } from '../utils/assignableUsers'
 import { getEstadoProyectoLabel } from '../utils/projectStatus'
+import { Avatar } from '../components/ui/Avatar'
 
 const FINALIZED_STATUS = 'ProyectoFinalizado'
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-}
 
 interface TeamColumnProps {
   title: string
@@ -81,11 +72,12 @@ function TeamColumn({
               key={user.id}
               className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:border-accent/30"
             >
-              <div
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold ${avatarBg} ${avatarText}`}
-              >
-                {getInitials(user.name)}
-              </div>
+              <Avatar
+                userId={user.id}
+                name={user.name}
+                size={44}
+                fallbackClassName={`${avatarBg} ${avatarText}`}
+              />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-slate-100">{user.name}</p>
                 <p className="text-xs text-slate-500">{roleLabel}</p>

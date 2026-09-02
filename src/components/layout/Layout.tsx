@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import {
+  IoAnalyticsOutline,
   IoCalendarOutline,
+  IoCheckmarkCircleOutline,
   IoCloseOutline,
-  IoCodeSlashOutline,
   IoColorPaletteOutline,
   IoFolderOpenOutline,
   IoGridOutline,
@@ -13,19 +14,25 @@ import {
   IoPersonOutline,
   IoShieldOutline,
   IoStatsChartOutline,
+  IoTimeOutline,
 } from 'react-icons/io5'
 import { useAuthStore } from '../../stores/authStore'
 import { useRecordatoriosReminders } from '../../hooks/useRecordatoriosReminders'
 import { ReminderAlert } from '../reminders/ReminderAlert'
 import { canAccessNavPath, isRestrictedRole } from '../../utils/roleAccess'
+import { Avatar } from '../ui/Avatar'
+import { Logo } from '../ui/Logo'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: IoGridOutline, end: true },
   { to: '/roles', label: 'Roles', icon: IoShieldOutline },
   { to: '/usuarios', label: 'Usuarios', icon: IoPersonOutline },
   { to: '/proyectos', label: 'Proyectos', icon: IoFolderOpenOutline },
-  { to: '/projects/admin', label: 'Proyectos B y C', icon: IoLayersOutline },
-  { to: '/proyectos/programador', label: 'Por programador', icon: IoStatsChartOutline },
+  { to: '/vista-global', label: 'Vista Global', icon: IoLayersOutline },
+  { to: '/proyectos-terminados', label: 'Finalizados', icon: IoCheckmarkCircleOutline },
+  { to: '/analitica', label: 'Analítica', icon: IoAnalyticsOutline },
+  { to: '/projects/admin', label: 'En espera', icon: IoTimeOutline },
+  { to: '/proyectos/programador', label: 'Asignaciones', icon: IoStatsChartOutline },
   { to: '/proyectos/diseno', label: 'Diseño', icon: IoColorPaletteOutline },
   { to: '/recordatorios', label: 'Recordatorios', icon: IoCalendarOutline },
 ]
@@ -34,6 +41,8 @@ export function Layout() {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
+  const location = useLocation()
+  const isFullWidthPage = location.pathname === '/vista-global'
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const visibleNavItems = useMemo(
@@ -85,7 +94,7 @@ export function Layout() {
       >
         <div className="flex items-center gap-3 border-b border-border px-5 py-5">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent">
-            <IoCodeSlashOutline className="text-white" size={20} />
+            <Logo size={20} />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold text-slate-100">Websy Admin</p>
@@ -123,9 +132,16 @@ export function Layout() {
         </nav>
 
         <div className="border-t border-border p-4">
-          <div className="mb-3 truncate text-sm text-slate-300">{user?.name}</div>
-          {user?.roleName && (
-            <div className="mb-3 truncate text-xs text-slate-500">{user.roleName}</div>
+          {user && (
+            <div className="mb-3 flex items-center gap-2.5">
+              <Avatar userId={user.id} name={user.name} size={32} />
+              <div className="min-w-0">
+                <p className="truncate text-sm text-slate-300">{user.name}</p>
+                {user.roleName && (
+                  <p className="truncate text-xs text-slate-500">{user.roleName}</p>
+                )}
+              </div>
+            </div>
           )}
           <button
             type="button"
@@ -158,7 +174,11 @@ export function Layout() {
         </header>
 
         <main className="flex min-h-0 flex-1 flex-col">
-          <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col p-4 sm:p-6 lg:p-8">
+          <div
+            className={`mx-auto flex min-h-0 w-full flex-1 flex-col p-4 sm:p-6 lg:p-8 ${
+              isFullWidthPage ? '' : 'max-w-7xl'
+            }`}
+          >
             <Outlet />
           </div>
         </main>

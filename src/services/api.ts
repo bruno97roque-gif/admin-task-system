@@ -61,6 +61,14 @@ export function getProjectsAdminRequest() {
   return apiFetch<import('../types').Project[]>('/projects/admin')
 }
 
+export function getProjectHistorialRequest(id: number) {
+  return apiFetch<import('../types').HistorialEtapa[]>(`/projects/${id}/historial`)
+}
+
+export function getAnaliticaRequest() {
+  return apiFetch<import('../types').Analitica>('/projects/analitica')
+}
+
 export function getProjectsByProgramadorRequest(programadorId?: number) {
   const query = programadorId != null ? `?id=${programadorId}` : ''
   return apiFetch<import('../types').Project[]>(`/projects/programador${query}`)

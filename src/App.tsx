@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { refreshSession } from './lib/api'
 import { useAuthStore } from './stores/authStore'
 import { AppRouter } from './routes/AppRouter'
+import { LoaderScreen } from './components/ui/Loader'
 
 function App() {
   const sessionHydrated = useAuthStore((s) => s.sessionHydrated)
@@ -26,11 +27,7 @@ function App() {
   }, [])
 
   if (!sessionHydrated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-surface text-sm text-slate-400">
-        Cargando sesión...
-      </div>
-    )
+    return <LoaderScreen label="Cargando sesión..." />
   }
 
   return <AppRouter />

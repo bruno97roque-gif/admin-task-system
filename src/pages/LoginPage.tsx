@@ -1,10 +1,11 @@
 import { useForm } from 'react-hook-form'
-import { IoCodeSlashOutline, IoLockClosedOutline, IoPersonOutline } from 'react-icons/io5'
+import { IoLockClosedOutline, IoPersonOutline } from 'react-icons/io5'
 import { Navigate, useNavigate } from 'react-router'
 import { useAuthStore } from '../stores/authStore'
 import { getHomePathForRole } from '../utils/roleAccess'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import { Logo } from '../components/ui/Logo'
 
 interface LoginForm {
   user: string
@@ -47,8 +48,8 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-surface p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent shadow-lg shadow-indigo-500/30">
-            <IoCodeSlashOutline className="text-white" size={28} />
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent shadow-lg shadow-orange-500/30">
+            <Logo size={28} />
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Websy Admin</h1>
           <p className="mt-1 text-sm text-slate-400">

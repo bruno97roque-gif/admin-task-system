@@ -20,6 +20,7 @@ import {
 } from '../utils/assignableUsers'
 import descansoGif from '../assets/descanso.gif'
 import { getEstadoProyectoLabel } from '../utils/projectStatus'
+import { formatDateDisplay } from '../utils/date'
 import { Avatar } from '../components/ui/Avatar'
 
 const FINALIZED_STATUS = 'ProyectoFinalizado'
@@ -133,6 +134,14 @@ export function DashboardPage() {
 
   const pendingRecordatorios = recordatorios.filter((r) => r.estado)
 
+  const recentProjects = useMemo(
+    () =>
+      [...projects]
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, 5),
+    [projects],
+  )
+
   const stats = [
     {
       label: 'Usuarios',
@@ -172,7 +181,7 @@ export function DashboardPage() {
       icon: IoCheckmarkCircleOutline,
       color: 'text-emerald-400',
       bg: 'bg-emerald-500/10',
-      to: '/proyectos',
+      to: '/proyectos-terminados',
     },
   ]
 
@@ -237,15 +246,18 @@ export function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-xl border border-border bg-surface-raised p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-100">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
             <IoFolderOpenOutline className="text-accent" />
             Proyectos recientes
           </h2>
+          <p className="mb-4 text-xs text-slate-500">
+            Los últimos que se agregaron o modificaron (nuevo proyecto, cambio de etapa, edición...)
+          </p>
           {projects.length === 0 ? (
             <p className="text-sm text-slate-500">No hay proyectos registrados</p>
           ) : (
             <ul className="space-y-3">
-              {projects.slice(0, 5).map((project) => (
+              {recentProjects.map((project) => (
                 <li
                   key={project.id}
                   className="flex flex-col gap-1 rounded-lg border border-border bg-surface px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
@@ -254,9 +266,14 @@ export function DashboardPage() {
                     <p className="truncate text-sm font-medium text-slate-200">{project.name}</p>
                     <p className="text-xs text-slate-500">Grupo {project.grupo}</p>
                   </div>
-                  <span className="shrink-0 text-xs text-slate-400">
-                    {getEstadoProyectoLabel(project.estadoProyecto)}
-                  </span>
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs text-slate-400">
+                      {getEstadoProyectoLabel(project.estadoProyecto)}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      {formatDateDisplay(project.updatedAt)}
+                    </p>
+                  </div>
                 </li>
               ))}
             </ul>

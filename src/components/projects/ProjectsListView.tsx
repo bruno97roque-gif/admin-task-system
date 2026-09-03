@@ -22,6 +22,7 @@ import {
   ESTADO_PROYECTO_OPTIONS,
   estadoProyectoClass,
   getEstadoProyectoLabel,
+  sortPorJerarquia,
 } from '../../utils/projectStatus'
 import { Button } from '../ui/Button'
 import { ProjectSearchInput } from './ProjectSearchInput'
@@ -180,7 +181,7 @@ export function ProjectsListView({
       return projectMatchesSearch(project, searchQuery, showTipoProyecto)
     })
 
-    if (orden === 'defecto') return filtered
+    if (orden === 'defecto') return sortPorJerarquia(filtered)
 
     const sorted = [...filtered]
     if (orden === 'antiguo') {

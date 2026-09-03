@@ -45,6 +45,15 @@ const TECNOLOGIA_OPTIONS = [
   { value: 'Personalizado', label: 'Personalizado' },
 ]
 
+const ORDEN_OPTIONS = [
+  { value: 'defecto', label: 'Por defecto' },
+  { value: 'antiguo', label: 'Más antiguo' },
+  { value: 'nuevo', label: 'Más nuevo' },
+  { value: 'alfabetico', label: 'Alfabético' },
+]
+
+type OrdenProyectos = (typeof ORDEN_OPTIONS)[number]['value']
+
 interface ProjectForm {
   name: string
   descripcion: string
@@ -128,6 +137,7 @@ export function ProjectsListView({
   const [searchQuery, setSearchQuery] = useState('')
   const [grupoFilter, setGrupoFilter] = useState('')
   const [estadoProyectoFilter, setEstadoProyectoFilter] = useState('')
+  const [orden, setOrden] = useState<OrdenProyectos>('defecto')
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
   const [deleteName, setDeleteName] = useState('')
@@ -163,22 +173,38 @@ export function ProjectsListView({
   )
 
   const hasActiveFilters =
-    searchQuery.trim() !== '' || grupoFilter !== '' || estadoProyectoFilter !== ''
+    searchQuery.trim() !== '' ||
+    grupoFilter !== '' ||
+    estadoProyectoFilter !== '' ||
+    orden !== 'defecto'
 
   const filteredProjects = useMemo(() => {
-    return projects.filter((project) => {
+    const filtered = projects.filter((project) => {
       if (grupoFilter && project.grupo !== grupoFilter) return false
       if (estadoProyectoFilter && project.estadoProyecto !== estadoProyectoFilter) {
         return false
       }
       return projectMatchesSearch(project, searchQuery, showTipoProyecto)
     })
-  }, [projects, searchQuery, grupoFilter, estadoProyectoFilter, showTipoProyecto])
+
+    if (orden === 'defecto') return filtered
+
+    const sorted = [...filtered]
+    if (orden === 'antiguo') {
+      sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    } else if (orden === 'nuevo') {
+      sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    } else if (orden === 'alfabetico') {
+      sorted.sort((a, b) => a.name.localeCompare(b.name))
+    }
+    return sorted
+  }, [projects, searchQuery, grupoFilter, estadoProyectoFilter, showTipoProyecto, orden])
 
   const clearFilters = () => {
     setSearchQuery('')
     setGrupoFilter('')
     setEstadoProyectoFilter('')
+    setOrden('defecto')
   }
 
   const loadFormData = () =>
@@ -395,6 +421,14 @@ export function ProjectsListView({
             placeholder="Todos"
             value={estadoProyectoFilter}
             onChange={(e) => setEstadoProyectoFilter(e.target.value)}
+          />
+        </div>
+        <div className="w-full sm:w-44">
+          <Select
+            label="Ordenar por"
+            options={ORDEN_OPTIONS}
+            value={orden}
+            onChange={(e) => setOrden(e.target.value as OrdenProyectos)}
           />
         </div>
         {hasActiveFilters && (

@@ -42,7 +42,9 @@ export function Layout() {
   const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
   const location = useLocation()
-  const isFullWidthPage = location.pathname === '/vista-global'
+  const isFullWidthPage = ['/vista-global', '/proyectos', '/proyectos-terminados'].includes(
+    location.pathname,
+  )
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const visibleNavItems = useMemo(

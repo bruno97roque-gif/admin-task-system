@@ -21,6 +21,7 @@ import { ProjectDetails } from '../components/projects/ProjectDetails'
 import { ProjectFilters } from '../components/projects/ProjectFilters'
 import { ProjectsBycModal } from '../components/projects/ProjectsBycModal'
 import { LoaderBlock } from '../components/ui/Loader'
+import { CornerRestGif } from '../components/ui/CornerRestGif'
 import { toDateInputValue } from '../utils/date'
 
 interface ProjectEditForm {
@@ -266,6 +267,8 @@ export function ProjectsByDisenoPage() {
           userId={disenadorId}
         />
       )}
+
+      <CornerRestGif />
     </div>
   )
 }

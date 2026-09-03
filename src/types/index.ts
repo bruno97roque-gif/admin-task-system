@@ -32,6 +32,11 @@ export interface Project {
   archivadoAt: string | null
 }
 
+/** Un proyecto archivado, con la etapa en la que estaba justo antes de archivarse. */
+export interface ProjectArchivado extends Project {
+  etapaAlArchivar: string | null
+}
+
 export interface Recordatorio {
   id: number
   descripcion: string

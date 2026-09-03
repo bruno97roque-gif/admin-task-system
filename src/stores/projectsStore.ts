@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { Project } from '../types'
 import type { CreateProjectRequest, UpdateProjectRequest } from '../services/api'
 import {
+  archivarProjectRequest,
   createProjectRequest,
   deleteProjectRequest,
   getProjectsRequest,
@@ -25,6 +26,7 @@ interface ProjectsState {
     data: { disenadorId: number; desarrolladorId: number },
   ) => Promise<{ success: boolean; error?: string }>
   deleteProject: (id: number) => Promise<{ success: boolean; error?: string }>
+  archiveProject: (id: number) => Promise<{ success: boolean; error?: string }>
   getProjectById: (id: number) => Project | undefined
 }
 
@@ -108,6 +110,21 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Error al eliminar el proyecto'
+      set({ saving: false, error: message })
+      return { success: false, error: message }
+    }
+  },
+
+  archiveProject: async (id) => {
+    set({ saving: true, error: null })
+    try {
+      await archivarProjectRequest(id)
+      await get().fetchProjects()
+      set({ saving: false })
+      return { success: true }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Error al archivar el proyecto'
       set({ saving: false, error: message })
       return { success: false, error: message }
     }

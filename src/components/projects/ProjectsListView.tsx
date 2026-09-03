@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import {
   IoAddOutline,
+  IoArchiveOutline,
   IoCreateOutline,
   IoFolderOpenOutline,
   IoRefreshOutline,
@@ -102,6 +103,7 @@ interface ProjectsListViewProps {
     data: { disenadorId: number; desarrolladorId: number },
   ) => Promise<{ success: boolean; error?: string }>
   deleteProject?: (id: number) => Promise<{ success: boolean; error?: string }>
+  archiveProject?: (id: number) => Promise<{ success: boolean; error?: string }>
 }
 
 export function ProjectsListView({
@@ -118,6 +120,7 @@ export function ProjectsListView({
   updateProject,
   updateProjectResponsables,
   deleteProject,
+  archiveProject,
 }: ProjectsListViewProps) {
   const seguimientos = useSeguimientosStore((s) => s.seguimientos)
   const fetchSeguimientos = useSeguimientosStore((s) => s.fetchSeguimientos)
@@ -139,6 +142,7 @@ export function ProjectsListView({
   const [deleteName, setDeleteName] = useState('')
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [historialProject, setHistorialProject] = useState<Project | null>(null)
+  const [projectToArchive, setProjectToArchive] = useState<Project | null>(null)
 
   const {
     register,
@@ -240,6 +244,20 @@ export function ProjectsListView({
     const result = await deleteProject(projectToDelete.id)
     if (result.success) {
       cancelDelete()
+    }
+  }
+
+  const cancelArchive = () => {
+    if (saving) return
+    setProjectToArchive(null)
+  }
+
+  const confirmArchive = async () => {
+    if (!archiveProject || !projectToArchive) return
+
+    const result = await archiveProject(projectToArchive.id)
+    if (result.success) {
+      cancelArchive()
     }
   }
 
@@ -470,6 +488,16 @@ export function ProjectsListView({
                       >
                         <IoCreateOutline size={16} />
                       </Button>
+                      {archiveProject && (
+                        <Button
+                          variant="ghost"
+                          onClick={() => setProjectToArchive(project)}
+                          aria-label={`Archivar ${project.name}`}
+                          className="text-amber-400 hover:text-amber-300"
+                        >
+                          <IoArchiveOutline size={16} />
+                        </Button>
+                      )}
                       {deleteProject && (
                         <Button
                           variant="ghost"
@@ -593,6 +621,17 @@ export function ProjectsListView({
         message="¿Seguro que quieres eliminar este proyecto?"
         onConfirm={continueDelete}
         onCancel={cancelDelete}
+      />
+
+      <ConfirmDialog
+        open={projectToArchive !== null}
+        title="Archivar proyecto"
+        message={`¿Archivar "${projectToArchive?.name}"? Va a aparecer en Archivados, desde donde se puede reactivar o eliminar definitivamente.`}
+        confirmLabel="Archivar"
+        onConfirm={confirmArchive}
+        onCancel={cancelArchive}
+        loading={saving}
+        error={projectToArchive ? error : null}
       />
 
       <Modal

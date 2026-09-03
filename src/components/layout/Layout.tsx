@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import {
   IoAnalyticsOutline,
+  IoArchiveOutline,
   IoCalendarOutline,
   IoCheckmarkCircleOutline,
   IoCloseOutline,
+  IoCodeSlashOutline,
   IoColorPaletteOutline,
   IoFolderOpenOutline,
   IoGridOutline,
@@ -13,7 +15,6 @@ import {
   IoMenuOutline,
   IoPersonOutline,
   IoShieldOutline,
-  IoStatsChartOutline,
   IoTimeOutline,
 } from 'react-icons/io5'
 import { useAuthStore } from '../../stores/authStore'
@@ -30,9 +31,10 @@ const navItems = [
   { to: '/proyectos', label: 'Proyectos', icon: IoFolderOpenOutline, end: true },
   { to: '/vista-global', label: 'Vista Global', icon: IoLayersOutline },
   { to: '/proyectos-terminados', label: 'Finalizados', icon: IoCheckmarkCircleOutline },
+  { to: '/archivados', label: 'Archivados', icon: IoArchiveOutline },
   { to: '/analitica', label: 'Analítica', icon: IoAnalyticsOutline },
   { to: '/projects/admin', label: 'En espera', icon: IoTimeOutline },
-  { to: '/proyectos/programador', label: 'Asignaciones', icon: IoStatsChartOutline },
+  { to: '/proyectos/programador', label: 'Asignaciones', icon: IoCodeSlashOutline },
   { to: '/proyectos/diseno', label: 'Diseño', icon: IoColorPaletteOutline },
   { to: '/recordatorios', label: 'Recordatorios', icon: IoCalendarOutline },
 ]

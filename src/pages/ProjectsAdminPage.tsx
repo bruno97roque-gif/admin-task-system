@@ -15,6 +15,7 @@ export function ProjectsAdminPage() {
   const createProject = useProjectsAdminStore((s) => s.createProject)
   const updateProject = useProjectsAdminStore((s) => s.updateProject)
   const updateProjectResponsables = useProjectsAdminStore((s) => s.updateProjectResponsables)
+  const archiveProject = useProjectsAdminStore((s) => s.archiveProject)
 
   return (
     <ProjectsListView
@@ -29,6 +30,7 @@ export function ProjectsAdminPage() {
       createProject={createProject}
       updateProject={updateProject}
       updateProjectResponsables={updateProjectResponsables}
+      archiveProject={archiveProject}
     />
   )
 }

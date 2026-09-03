@@ -11,8 +11,14 @@ import {
 } from '../utils/projectStatus'
 import { Button } from '../components/ui/Button'
 import { LoaderBlock } from '../components/ui/Loader'
+import { DESARROLLADOR_COLORS, DISENADOR_COLORS, getUserColor } from '../utils/userColors'
 
 const ETAPAS_DISENADOR = ['Brief', 'Taxonomia', 'Diseno', 'AvanceDiseno', 'DisenoFinalizado']
+
+// Solo en el trabajo de diseño propiamente dicho el color sigue al
+// diseñador; Registro/Brief/Taxonomía (antes de que arranque el diseño) y
+// Desarrollo en adelante siguen al desarrollador.
+const ETAPAS_COLOR_DISENO = ['Diseno', 'AvanceDiseno', 'DisenoFinalizado']
 
 // Proyecto Finalizado tiene su propia ventana aparte ("Proyectos Terminados"):
 // acá solo va el flujo activo.
@@ -64,10 +70,13 @@ export function VistaGlobalPage() {
     () =>
       etapas.map((etapa) => ({
         etapa,
+        esEtapaDiseno: ETAPAS_COLOR_DISENO.includes(etapa),
         proyectos: visibles.filter((p) => p.estadoProyecto === etapa),
       })),
     [etapas, visibles],
   )
+
+  const mostrarLeyenda = !isProgramador && !isDisenador
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -103,6 +112,41 @@ export function VistaGlobalPage() {
         </div>
       </header>
 
+      {mostrarLeyenda && (
+        <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-400">
+          <span className="font-medium text-slate-500">Diseñadores</span>
+          {DISENADOR_COLORS.map((id) => {
+            const color = getUserColor(id)
+            if (!color) return null
+            return (
+              <span key={id} className="flex items-center gap-1.5">
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: color.hex }}
+                  aria-hidden="true"
+                />
+                {color.label}
+              </span>
+            )
+          })}
+          <span className="ml-2 font-medium text-slate-500">Desarrolladores</span>
+          {DESARROLLADOR_COLORS.map((id) => {
+            const color = getUserColor(id)
+            if (!color) return null
+            return (
+              <span key={id} className="flex items-center gap-1.5">
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: color.hex }}
+                  aria-hidden="true"
+                />
+                {color.label}
+              </span>
+            )
+          })}
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {error}
@@ -114,7 +158,7 @@ export function VistaGlobalPage() {
           <LoaderBlock label="Cargando proyectos..." />
         ) : (
           <div className="flex h-full gap-3 overflow-x-auto pb-2">
-            {columnas.map(({ etapa, proyectos }) => (
+            {columnas.map(({ etapa, esEtapaDiseno, proyectos }) => (
               <section
                 key={etapa}
                 className="flex w-44 shrink-0 flex-col rounded-xl border border-border bg-surface-raised"
@@ -134,19 +178,31 @@ export function VistaGlobalPage() {
                   {proyectos.length === 0 ? (
                     <p className="px-1 py-4 text-center text-xs text-slate-600">—</p>
                   ) : (
-                    proyectos.map((project) => (
-                      <div
-                        key={project.id}
-                        className={`truncate rounded-md px-2 py-1.5 text-xs ${
-                          project.grupo === 'A'
-                            ? 'bg-surface text-slate-200'
-                            : 'border border-dashed border-border bg-surface/60 text-slate-400'
-                        }`}
-                        title={`${project.name}${project.grupo !== 'A' ? ` — Grupo ${project.grupo}` : ''}`}
-                      >
-                        {project.name}
-                      </div>
-                    ))
+                    proyectos.map((project) => {
+                      const color = getUserColor(
+                        esEtapaDiseno ? project.disenadorId : project.desarrolladorId,
+                      )
+                      return (
+                        <div
+                          key={project.id}
+                          className={`flex items-center gap-1.5 truncate rounded-md px-2 py-1.5 text-xs ${
+                            project.grupo === 'A'
+                              ? 'bg-surface text-slate-200'
+                              : 'border border-dashed border-border bg-surface/60 text-slate-400'
+                          }`}
+                          title={`${project.name}${color ? ` — ${color.label}` : ''}${project.grupo !== 'A' ? ` — Grupo ${project.grupo}` : ''}`}
+                        >
+                          {color && (
+                            <span
+                              className="h-2 w-2 shrink-0 rounded-full"
+                              style={{ backgroundColor: color.hex }}
+                              aria-hidden="true"
+                            />
+                          )}
+                          <span className="truncate">{project.name}</span>
+                        </div>
+                      )
+                    })
                   )}
                 </div>
               </section>

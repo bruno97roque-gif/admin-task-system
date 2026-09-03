@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   DndContext,
   PointerSensor,
@@ -53,12 +53,21 @@ export function ProjectColumn({
   const [order, setOrder] = useState<number[]>(() => getStoredOrder(orderStorageKey))
   const isCustomOrder = orderMode === 'personalizado'
 
+  // Posiciones "antes" del reset, para animarlas a mano (FLIP): fuera de un
+  // drag real, dnd-kit no anima solo porque el array cambió de orden.
+  const cardRefs = useRef(new Map<number, HTMLDivElement>())
+  const pendingFlip = useRef<Map<number, DOMRect> | null>(null)
+
   const skipFirstReset = useRef(true)
   useEffect(() => {
     if (skipFirstReset.current) {
       skipFirstReset.current = false
       return
     }
+    const before = new Map<number, DOMRect>()
+    cardRefs.current.forEach((el, id) => before.set(id, el.getBoundingClientRect()))
+    pendingFlip.current = before
+
     clearStoredOrder(orderStorageKey)
     setOrder([])
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -72,6 +81,27 @@ export function ProjectColumn({
     if (!isCustomOrder) return sortProjectsByMode(base, orderMode)
     return sortByOrder(base, reconcileOrder(order, base.map((p) => p.id)))
   }, [projects, order, orderMode, isCustomOrder])
+
+  useLayoutEffect(() => {
+    const before = pendingFlip.current
+    if (!before) return
+    pendingFlip.current = null
+
+    cardRefs.current.forEach((el, id) => {
+      const prevRect = before.get(id)
+      if (!prevRect) return
+      const deltaY = prevRect.top - el.getBoundingClientRect().top
+      if (Math.abs(deltaY) < 1) return
+
+      el.style.transition = 'none'
+      el.style.transform = `translateY(${deltaY}px)`
+      el.getBoundingClientRect() // fuerza reflow antes de animar
+      requestAnimationFrame(() => {
+        el.style.transition = 'transform 300ms ease'
+        el.style.transform = ''
+      })
+    })
+  }, [orderedProjects])
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
@@ -130,12 +160,19 @@ export function ProjectColumn({
               strategy={verticalListSortingStrategy}
             >
               {orderedProjects.map((project) => (
-                <SortableProjectCard
+                <div
                   key={project.id}
-                  project={project}
-                  columnUserId={user.id}
-                  onSelect={onSelectProject}
-                />
+                  ref={(el) => {
+                    if (el) cardRefs.current.set(project.id, el)
+                    else cardRefs.current.delete(project.id)
+                  }}
+                >
+                  <SortableProjectCard
+                    project={project}
+                    columnUserId={user.id}
+                    onSelect={onSelectProject}
+                  />
+                </div>
               ))}
             </SortableContext>
           </DndContext>

@@ -265,13 +265,13 @@ export function DashboardPage() {
           )}
         </section>
 
-        <section className="rounded-xl border border-border bg-surface-raised p-5">
+        <section className="flex flex-col rounded-xl border border-border bg-[#222034] p-5">
           <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-100">
             <IoTimeOutline className="text-amber-400" />
             Recordatorios activos
           </h2>
           {pendingRecordatorios.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-2 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
               <img src={descansoGif} alt="" className="h-64 w-64 rounded-lg object-cover" />
               <p className="text-sm text-slate-500">No hay recordatorios activos</p>
             </div>

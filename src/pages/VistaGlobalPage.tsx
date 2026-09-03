@@ -12,7 +12,8 @@ import {
 import { Button } from '../components/ui/Button'
 import { LoaderBlock } from '../components/ui/Loader'
 import { ProjectEditModal } from '../components/projects/ProjectEditModal'
-import { DESARROLLADOR_COLORS, DISENADOR_COLORS, getUserColor } from '../utils/userColors'
+import { PersonColorLegend } from '../components/projects/PersonColorLegend'
+import { getUserColor } from '../utils/userColors'
 
 const ETAPAS_DISENADOR = ['Brief', 'Taxonomia', 'Diseno', 'AvanceDiseno', 'DisenoFinalizado']
 
@@ -81,8 +82,6 @@ export function VistaGlobalPage() {
     [etapas, visibles],
   )
 
-  const mostrarLeyenda = !isProgramador && !isDisenador
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -117,40 +116,7 @@ export function VistaGlobalPage() {
         </div>
       </header>
 
-      {mostrarLeyenda && (
-        <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-400">
-          <span className="font-medium text-slate-500">Diseñadores</span>
-          {DISENADOR_COLORS.map((id) => {
-            const color = getUserColor(id)
-            if (!color) return null
-            return (
-              <span key={id} className="flex items-center gap-1.5">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: color.hex }}
-                  aria-hidden="true"
-                />
-                {color.label}
-              </span>
-            )
-          })}
-          <span className="ml-2 font-medium text-slate-500">Desarrolladores</span>
-          {DESARROLLADOR_COLORS.map((id) => {
-            const color = getUserColor(id)
-            if (!color) return null
-            return (
-              <span key={id} className="flex items-center gap-1.5">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: color.hex }}
-                  aria-hidden="true"
-                />
-                {color.label}
-              </span>
-            )
-          })}
-        </div>
-      )}
+      <PersonColorLegend />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">

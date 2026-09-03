@@ -49,8 +49,9 @@ Nuevo endpoint `GET /projects/analitica`: cierres de diseño/desarrollo por mes,
 
 Kanban por etapa de todo el flujo activo (sin Proyecto Finalizado, que tiene su propia ventana). Admin/Owner ven todo; Developers ven sus proyectos en toda su vida; Diseñadores solo de Brief a Diseño Finalizado. Botón para mostrar/ocultar Grupo B/C ("congelados").
 
-- **Colores por persona**: cada diseñador/desarrollador tiene un color fijo (Juan Carlos=rojo, Gustavo=azul, Luis=naranja, Rubid=celeste, Aaron=verde) — el punto de color de cada tarjeta sigue al diseñador en las etapas de diseño y al desarrollador en el resto, cambiando de significado al pasar de etapa.
+- **Colores por persona**: cada diseñador/desarrollador tiene un color fijo (Juan Carlos=rojo, Gustavo=azul, Luis=naranja, Rubid=amarillo, Aaron=verde) — el punto de color de cada tarjeta sigue al diseñador en las etapas de diseño y al desarrollador en el resto, cambiando de significado al pasar de etapa. El color de Rubid pasó de celeste a amarillo y luego se ajustó a un amarillo más claro; el naranja de Luis se hizo más saturado ([PR #11](https://github.com/bruno97roque-gif/admin-task-system/pull/11)).
 - **Click en una tarjeta abre el editor** — se extrajo el modal de edición a un componente compartido (`ProjectEditModal`) reutilizado también en las tablas.
+- **Leyenda de colores** (`PersonColorLegend`, extraída como componente compartido) visible en Vista Global para todos los roles, y también en Developers y Diseñadores, para que cada programador/diseñador tenga el mapeo de colores a la vista mientras trabaja en su propio tablero ([PR #11](https://github.com/bruno97roque-gif/admin-task-system/pull/11)).
 
 ### Proyectos / Finalizados / En espera (tabla) — [PR #2](https://github.com/bruno97roque-gif/admin-task-system/pull/2), [PR #3](https://github.com/bruno97roque-gif/admin-task-system/pull/3), [PR #6](https://github.com/bruno97roque-gif/admin-task-system/pull/6), [PR #7](https://github.com/bruno97roque-gif/admin-task-system/pull/7)
 
@@ -91,6 +92,6 @@ Nueva página: cierres de diseño/desarrollo por mes (gráfico), leaderboard por
 
 ## Notas para seguir
 
-- El PR [#10](https://github.com/bruno97roque-gif/admin-task-system/pull/10) (Taxonomía en Developers) queda pendiente de mergear.
 - La notificación de Discord por cobro terminó usando el campo libre **"Estado pago"** (porcentaje) en vez del sistema de hitos estructurado del backend, porque ese sistema nunca tuvo pantalla propia en el front.
 - Hay que agregar `DISCORD_WEBHOOK_URL` en Railway si todavía no está (ya se probó en vivo que funciona una vez configurada).
+- El PR [#11](https://github.com/bruno97roque-gif/admin-task-system/pull/11) (color de Rubid + leyenda de colores en Developers/Diseñadores/Vista Global) queda pendiente de mergear.

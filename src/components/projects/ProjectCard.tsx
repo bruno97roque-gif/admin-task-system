@@ -4,6 +4,7 @@ import { extractUser } from '../../utils/projectUsers'
 import { estadoProyectoClass, getEstadoProyectoLabel } from '../../utils/projectStatus'
 import { getTipoProyectoLabel } from '../../utils/projectType'
 import { grupoBadgeClass } from '../../utils/grupoColor'
+import { getUserColor } from '../../utils/userColors'
 import { TecnologiaIcon } from './TecnologiaIcon'
 import { TipoProyectoIcon } from './TipoProyectoIcon'
 
@@ -71,9 +72,26 @@ export function ProjectCard({
       </div>
 
       {otrosUsuarios.length > 0 && (
-        <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-          <IoPeopleOutline size={12} className="text-slate-500" />
-          <span>Con: {otrosUsuarios.map((u) => u.name).join(', ')}</span>
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+          <span className="flex items-center gap-1">
+            <IoPeopleOutline size={12} className="text-slate-500" />
+            Con:
+          </span>
+          {otrosUsuarios.map((u) => {
+            const color = getUserColor(u.id)
+            return (
+              <span key={u.id} className="flex items-center gap-1">
+                {color && (
+                  <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: color.hex }}
+                    aria-hidden="true"
+                  />
+                )}
+                {u.name}
+              </span>
+            )
+          })}
         </div>
       )}
     </article>

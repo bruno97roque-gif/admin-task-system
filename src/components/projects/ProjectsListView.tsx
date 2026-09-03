@@ -18,7 +18,11 @@ import { getProjectUserEntries } from '../../utils/projectUsers'
 import { getUserColor } from '../../utils/userColors'
 import { projectMatchesSearch } from '../../utils/projectSearch'
 import { getTipoProyectoLabel, TIPO_PROYECTO_OPTIONS } from '../../utils/projectType'
-import { ESTADO_PROYECTO_OPTIONS, getEstadoProyectoLabel } from '../../utils/projectStatus'
+import {
+  ESTADO_PROYECTO_OPTIONS,
+  estadoProyectoClass,
+  getEstadoProyectoLabel,
+} from '../../utils/projectStatus'
 import { Button } from '../ui/Button'
 import { ProjectSearchInput } from './ProjectSearchInput'
 import { Input } from '../ui/Input'
@@ -408,7 +412,9 @@ export function ProjectsListView({
                   )}
                   <td className="px-4 py-3 text-slate-400">{project.estadoPago}</td>
                   <td className="px-4 py-3">
-                    <span className="inline-flex rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-medium text-accent-hover">
+                    <span
+                      className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${estadoProyectoClass(project.estadoProyecto)}`}
+                    >
                       {getEstadoProyectoLabel(project.estadoProyecto)}
                     </span>
                   </td>

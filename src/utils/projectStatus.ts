@@ -122,8 +122,18 @@ function jerarquiaIndex(estado: string): number {
   return i === -1 ? ESTADO_PROYECTO_JERARQUIA.length : i
 }
 
-export function sortPorJerarquia<T extends { estadoProyecto: string }>(items: T[]): T[] {
-  return [...items].sort(
-    (a, b) => jerarquiaIndex(a.estadoProyecto) - jerarquiaIndex(b.estadoProyecto),
-  )
+/**
+ * Empate dentro de la misma etapa: el que lleva más tiempo ahí (más viejo,
+ * `createdAt` como aproximación de "cuándo entró a su grupo actual") va
+ * primero. Ej.: dentro de Desarrollo, si dos proyectos son Grupo A, el que
+ * es Grupo A hace más tiempo tiene más jerarquía.
+ */
+export function sortPorJerarquia<T extends { estadoProyecto: string; createdAt: string }>(
+  items: T[],
+): T[] {
+  return [...items].sort((a, b) => {
+    const porEtapa = jerarquiaIndex(a.estadoProyecto) - jerarquiaIndex(b.estadoProyecto)
+    if (porEtapa !== 0) return porEtapa
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  })
 }

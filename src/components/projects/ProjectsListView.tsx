@@ -35,6 +35,8 @@ import { Select } from '../ui/Select'
 import { Textarea } from '../ui/Textarea'
 import { ProjectHistorialModal } from './ProjectHistorialModal'
 import { ProjectEditModal } from './ProjectEditModal'
+import { TipoProyectoIcon } from './TipoProyectoIcon'
+import { TecnologiaIcon } from './TecnologiaIcon'
 
 const DEFAULT_GRUPO_OPTIONS = [
   { value: 'A', label: 'A' },
@@ -422,7 +424,8 @@ export function ProjectsListView({
                   {showTipoProyecto && (
                     <td className="px-4 py-3">
                       {project.tipoProyecto ? (
-                        <span className="inline-flex whitespace-nowrap rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs font-medium text-violet-300 ring-1 ring-violet-500/25">
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs font-medium text-violet-300 ring-1 ring-violet-500/25">
+                          <TipoProyectoIcon tipoProyecto={project.tipoProyecto} />
                           {getTipoProyectoLabel(project.tipoProyecto)}
                         </span>
                       ) : (
@@ -445,7 +448,14 @@ export function ProjectsListView({
                     {project.seguimiento?.name ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-slate-400">
-                    {project.tecnologia ?? '—'}
+                    {project.tecnologia ? (
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                        <TecnologiaIcon tecnologia={project.tecnologia} />
+                        {project.tecnologia}
+                      </span>
+                    ) : (
+                      '—'
+                    )}
                   </td>
                   <td className="px-4 py-3 text-slate-400">
                     {(() => {

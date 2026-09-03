@@ -14,7 +14,8 @@ import { useRolesStore } from '../../stores/rolesStore'
 import { useSeguimientosStore } from '../../stores/seguimientosStore'
 import { useUsersStore } from '../../stores/usersStore'
 import { getUsersByRoleName, toSelectOptions } from '../../utils/assignableUsers'
-import { getProjectUserNames } from '../../utils/projectUsers'
+import { getProjectUserEntries } from '../../utils/projectUsers'
+import { getUserColor } from '../../utils/userColors'
 import { projectMatchesSearch } from '../../utils/projectSearch'
 import { getTipoProyectoLabel, TIPO_PROYECTO_OPTIONS } from '../../utils/projectType'
 import { ESTADO_PROYECTO_OPTIONS, getEstadoProyectoLabel } from '../../utils/projectStatus'
@@ -397,7 +398,7 @@ export function ProjectsListView({
                   {showTipoProyecto && (
                     <td className="px-4 py-3">
                       {project.tipoProyecto ? (
-                        <span className="inline-flex rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs font-medium text-violet-300 ring-1 ring-violet-500/25">
+                        <span className="inline-flex whitespace-nowrap rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs font-medium text-violet-300 ring-1 ring-violet-500/25">
                           {getTipoProyectoLabel(project.tipoProyecto)}
                         </span>
                       ) : (
@@ -419,7 +420,29 @@ export function ProjectsListView({
                     {project.tecnologia ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-slate-400">
-                    {getProjectUserNames(project)}
+                    {(() => {
+                      const entries = getProjectUserEntries(project)
+                      if (entries.length === 0) return 'Sin asignar'
+                      return (
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          {entries.map((user) => {
+                            const color = getUserColor(user.id)
+                            return (
+                              <span key={user.id} className="inline-flex items-center gap-1">
+                                {color && (
+                                  <span
+                                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                                    style={{ backgroundColor: color.hex }}
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                {user.name}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      )
+                    })()}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end">

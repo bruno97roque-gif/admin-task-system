@@ -8,8 +8,8 @@ interface UserColor {
 const USER_COLOR_BY_ID: Record<number, UserColor> = {
   13: { hex: '#ef4444', label: 'Juan Carlos' }, // rojo
   16: { hex: '#3b82f6', label: 'Gustavo' }, // azul
-  12: { hex: '#f18c1b', label: 'Luis' }, // naranja
-  14: { hex: '#eab308', label: 'Rubid' }, // amarillo
+  12: { hex: '#f97316', label: 'Luis' }, // naranja
+  14: { hex: '#fde047', label: 'Rubid' }, // amarillo claro
   11: { hex: '#22c55e', label: 'Aaron' }, // verde
 }
 

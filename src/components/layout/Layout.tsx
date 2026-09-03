@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import {
   IoAnalyticsOutline,
+  IoArchiveOutline,
   IoCalendarOutline,
   IoCheckmarkCircleOutline,
   IoCloseOutline,
+  IoCodeSlashOutline,
   IoColorPaletteOutline,
   IoFolderOpenOutline,
   IoGridOutline,
@@ -13,7 +15,6 @@ import {
   IoMenuOutline,
   IoPersonOutline,
   IoShieldOutline,
-  IoStatsChartOutline,
   IoTimeOutline,
 } from 'react-icons/io5'
 import { useAuthStore } from '../../stores/authStore'
@@ -25,16 +26,17 @@ import { Logo } from '../ui/Logo'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: IoGridOutline, end: true },
-  { to: '/roles', label: 'Roles', icon: IoShieldOutline },
-  { to: '/usuarios', label: 'Usuarios', icon: IoPersonOutline },
   { to: '/proyectos', label: 'Proyectos', icon: IoFolderOpenOutline, end: true },
   { to: '/vista-global', label: 'Vista Global', icon: IoLayersOutline },
+  { to: '/projects/admin', label: 'En espera', icon: IoTimeOutline },
+  { to: '/proyectos/programador', label: 'Developers', icon: IoCodeSlashOutline },
+  { to: '/proyectos/diseno', label: 'Diseñadores', icon: IoColorPaletteOutline },
   { to: '/proyectos-terminados', label: 'Finalizados', icon: IoCheckmarkCircleOutline },
   { to: '/analitica', label: 'Analítica', icon: IoAnalyticsOutline },
-  { to: '/projects/admin', label: 'En espera', icon: IoTimeOutline },
-  { to: '/proyectos/programador', label: 'Asignaciones', icon: IoStatsChartOutline },
-  { to: '/proyectos/diseno', label: 'Diseño', icon: IoColorPaletteOutline },
+  { to: '/usuarios', label: 'Usuarios', icon: IoPersonOutline },
+  { to: '/roles', label: 'Roles', icon: IoShieldOutline },
   { to: '/recordatorios', label: 'Recordatorios', icon: IoCalendarOutline },
+  { to: '/archivados', label: 'Archivados', icon: IoArchiveOutline },
 ]
 
 export function Layout() {

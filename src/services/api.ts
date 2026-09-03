@@ -135,6 +135,31 @@ export function deleteProjectRequest(id: number) {
   })
 }
 
+export function getArchivedProjectsRequest() {
+  return apiFetch<import('../types').ProjectArchivado[]>('/projects/archivados')
+}
+
+export function archivarProjectRequest(id: number, motivo?: string) {
+  return apiFetch<import('../types').Project>(`/projects/${id}/archivar`, {
+    method: 'POST',
+    body: JSON.stringify({ motivo }),
+  })
+}
+
+export interface ResumenReactivacion {
+  porcentajeAReactivar: number
+  diasArchivado: number
+  seRehaceInicioYDiseno: boolean
+  proyecto: import('../types').Project
+}
+
+export function reactivarProjectRequest(id: number, motivo?: string) {
+  return apiFetch<ResumenReactivacion>(`/projects/${id}/reactivar`, {
+    method: 'POST',
+    body: JSON.stringify({ motivo }),
+  })
+}
+
 export interface UpdateProjectResponsablesRequest {
   disenadorId: number
   desarrolladorId: number

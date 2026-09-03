@@ -3,10 +3,10 @@ import { Link } from 'react-router'
 import {
   IoAlarmOutline,
   IoCheckmarkCircleOutline,
+  IoCodeSlashOutline,
   IoColorPaletteOutline,
   IoFolderOpenOutline,
   IoPeopleOutline,
-  IoShieldOutline,
   IoStatsChartOutline,
   IoTimeOutline,
 } from 'react-icons/io5'
@@ -134,6 +134,18 @@ export function DashboardPage() {
 
   const pendingRecordatorios = recordatorios.filter((r) => r.estado)
 
+  const enDesarrolloCount = useMemo(
+    () => projects.filter((p) => p.estadoProyecto === 'Desarrollo').length,
+    [projects],
+  )
+
+  const enDisenoCount = useMemo(
+    () =>
+      projects.filter((p) => p.estadoProyecto === 'Diseno' || p.estadoProyecto === 'AvanceDiseno')
+        .length,
+    [projects],
+  )
+
   const recentProjects = useMemo(
     () =>
       [...projects]
@@ -144,20 +156,20 @@ export function DashboardPage() {
 
   const stats = [
     {
-      label: 'Usuarios',
-      value: users.length,
-      icon: IoPeopleOutline,
-      color: 'text-blue-400',
-      bg: 'bg-blue-500/10',
-      to: '/usuarios',
+      label: 'Programadores',
+      value: enDesarrolloCount,
+      icon: IoCodeSlashOutline,
+      color: 'text-purple-400',
+      bg: 'bg-purple-500/10',
+      to: '/proyectos/programador',
     },
     {
-      label: 'Roles',
-      value: roles.length,
-      icon: IoShieldOutline,
-      color: 'text-indigo-400',
-      bg: 'bg-indigo-500/10',
-      to: '/roles',
+      label: 'Diseñadores',
+      value: enDisenoCount,
+      icon: IoColorPaletteOutline,
+      color: 'text-pink-400',
+      bg: 'bg-pink-500/10',
+      to: '/proyectos/diseno',
     },
     {
       label: 'Proyectos activos',

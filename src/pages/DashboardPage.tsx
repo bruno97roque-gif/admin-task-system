@@ -185,22 +185,20 @@ export function DashboardPage() {
         </p>
       </header>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
         {stats.map(({ label, value, icon: Icon, color, bg, to }) => (
           <Link
             key={label}
             to={to}
-            className="rounded-xl border border-border bg-surface-raised p-5 transition-colors hover:border-accent/50"
+            className="flex h-28 min-w-0 flex-col justify-between rounded-xl border border-border bg-surface-raised p-5 transition-colors hover:border-accent/50"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-400">{label}</p>
-                <p className="mt-1 text-3xl font-bold text-slate-100">{value}</p>
-              </div>
-              <div className={`rounded-xl p-3 ${bg}`}>
+            <div className="flex items-start justify-between gap-2">
+              <p className="min-w-0 truncate text-sm text-slate-400">{label}</p>
+              <div className={`shrink-0 rounded-xl p-3 ${bg}`}>
                 <Icon className={color} size={24} />
               </div>
             </div>
+            <p className="text-3xl font-bold text-slate-100">{value}</p>
           </Link>
         ))}
       </div>

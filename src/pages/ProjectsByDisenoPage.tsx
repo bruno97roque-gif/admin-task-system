@@ -134,7 +134,7 @@ export function ProjectsByDisenoPage() {
       <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">
-            {isDisenador ? 'Mis proyectos' : 'Proyectos por Diseño'}
+            {isDisenador ? 'Mis proyectos' : 'Diseñadores'}
           </h1>
           <p className="text-sm text-slate-400">
             Vista canvas · {disenadores.length} diseñadores · {totalAsignados} asignaciones

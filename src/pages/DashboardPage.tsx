@@ -272,7 +272,7 @@ export function DashboardPage() {
           </h2>
           {pendingRecordatorios.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-2 text-center">
-              <img src={descansoGif} alt="" className="h-52 w-52 rounded-lg object-cover" />
+              <img src={descansoGif} alt="" className="h-64 w-64 rounded-lg object-cover" />
               <p className="text-sm text-slate-500">No hay recordatorios activos</p>
             </div>
           ) : (

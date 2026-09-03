@@ -7,7 +7,7 @@ export function CornerRestGif() {
     <img
       src={descansoGif}
       alt=""
-      className="pointer-events-none fixed right-4 bottom-4 z-0 hidden h-40 w-40 rounded-lg object-cover opacity-80 lg:block"
+      className="pointer-events-none fixed right-4 bottom-4 z-0 hidden h-52 w-52 rounded-lg object-cover opacity-80 lg:block"
     />
   )
 }

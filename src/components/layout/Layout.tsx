@@ -34,8 +34,8 @@ const navItems = [
   { to: '/archivados', label: 'Archivados', icon: IoArchiveOutline },
   { to: '/analitica', label: 'Analítica', icon: IoAnalyticsOutline },
   { to: '/projects/admin', label: 'En espera', icon: IoTimeOutline },
-  { to: '/proyectos/programador', label: 'Asignaciones', icon: IoCodeSlashOutline },
-  { to: '/proyectos/diseno', label: 'Diseño', icon: IoColorPaletteOutline },
+  { to: '/proyectos/programador', label: 'Developers', icon: IoCodeSlashOutline },
+  { to: '/proyectos/diseno', label: 'Diseñadores', icon: IoColorPaletteOutline },
   { to: '/recordatorios', label: 'Recordatorios', icon: IoCalendarOutline },
 ]
 

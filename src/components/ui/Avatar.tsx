@@ -21,8 +21,9 @@ export function Avatar({
       <img
         src={photo}
         alt={name}
+        draggable={false}
         style={{ height: size, width: size }}
-        className={`shrink-0 rounded-full object-cover ${className}`}
+        className={`shrink-0 rounded-full object-cover select-none ${className}`}
       />
     )
   }

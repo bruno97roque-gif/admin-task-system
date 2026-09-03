@@ -3,10 +3,10 @@ import { Link } from 'react-router'
 import {
   IoAlarmOutline,
   IoCheckmarkCircleOutline,
+  IoCodeSlashOutline,
   IoColorPaletteOutline,
   IoFolderOpenOutline,
   IoPeopleOutline,
-  IoShieldOutline,
   IoStatsChartOutline,
   IoTimeOutline,
 } from 'react-icons/io5'
@@ -20,6 +20,7 @@ import {
 } from '../utils/assignableUsers'
 import descansoGif from '../assets/descanso.gif'
 import { getEstadoProyectoLabel } from '../utils/projectStatus'
+import { formatDateDisplay } from '../utils/date'
 import { Avatar } from '../components/ui/Avatar'
 
 const FINALIZED_STATUS = 'ProyectoFinalizado'
@@ -133,22 +134,42 @@ export function DashboardPage() {
 
   const pendingRecordatorios = recordatorios.filter((r) => r.estado)
 
+  const enDesarrolloCount = useMemo(
+    () => projects.filter((p) => p.estadoProyecto === 'Desarrollo').length,
+    [projects],
+  )
+
+  const enDisenoCount = useMemo(
+    () =>
+      projects.filter((p) => p.estadoProyecto === 'Diseno' || p.estadoProyecto === 'AvanceDiseno')
+        .length,
+    [projects],
+  )
+
+  const recentProjects = useMemo(
+    () =>
+      [...projects]
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, 5),
+    [projects],
+  )
+
   const stats = [
     {
-      label: 'Usuarios',
-      value: users.length,
-      icon: IoPeopleOutline,
-      color: 'text-blue-400',
-      bg: 'bg-blue-500/10',
-      to: '/usuarios',
+      label: 'Programadores',
+      value: enDesarrolloCount,
+      icon: IoCodeSlashOutline,
+      color: 'text-purple-400',
+      bg: 'bg-purple-500/10',
+      to: '/proyectos/programador',
     },
     {
-      label: 'Roles',
-      value: roles.length,
-      icon: IoShieldOutline,
-      color: 'text-indigo-400',
-      bg: 'bg-indigo-500/10',
-      to: '/roles',
+      label: 'Diseñadores',
+      value: enDisenoCount,
+      icon: IoColorPaletteOutline,
+      color: 'text-pink-400',
+      bg: 'bg-pink-500/10',
+      to: '/proyectos/diseno',
     },
     {
       label: 'Proyectos activos',
@@ -172,7 +193,7 @@ export function DashboardPage() {
       icon: IoCheckmarkCircleOutline,
       color: 'text-emerald-400',
       bg: 'bg-emerald-500/10',
-      to: '/proyectos',
+      to: '/proyectos-terminados',
     },
   ]
 
@@ -185,22 +206,20 @@ export function DashboardPage() {
         </p>
       </header>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
         {stats.map(({ label, value, icon: Icon, color, bg, to }) => (
           <Link
             key={label}
             to={to}
-            className="rounded-xl border border-border bg-surface-raised p-5 transition-colors hover:border-accent/50"
+            className="flex h-28 min-w-0 flex-col justify-between rounded-xl border border-border bg-surface-raised p-5 transition-colors hover:border-accent/50"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-400">{label}</p>
-                <p className="mt-1 text-3xl font-bold text-slate-100">{value}</p>
-              </div>
-              <div className={`rounded-xl p-3 ${bg}`}>
+            <div className="flex items-start justify-between gap-2">
+              <p className="min-w-0 truncate text-sm text-slate-400">{label}</p>
+              <div className={`shrink-0 rounded-xl p-3 ${bg}`}>
                 <Icon className={color} size={24} />
               </div>
             </div>
+            <p className="text-3xl font-bold text-slate-100">{value}</p>
           </Link>
         ))}
       </div>
@@ -239,15 +258,18 @@ export function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-xl border border-border bg-surface-raised p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-100">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
             <IoFolderOpenOutline className="text-accent" />
             Proyectos recientes
           </h2>
+          <p className="mb-4 text-xs text-slate-500">
+            Los últimos que se agregaron o modificaron (nuevo proyecto, cambio de etapa, edición...)
+          </p>
           {projects.length === 0 ? (
             <p className="text-sm text-slate-500">No hay proyectos registrados</p>
           ) : (
             <ul className="space-y-3">
-              {projects.slice(0, 5).map((project) => (
+              {recentProjects.map((project) => (
                 <li
                   key={project.id}
                   className="flex flex-col gap-1 rounded-lg border border-border bg-surface px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
@@ -256,9 +278,14 @@ export function DashboardPage() {
                     <p className="truncate text-sm font-medium text-slate-200">{project.name}</p>
                     <p className="text-xs text-slate-500">Grupo {project.grupo}</p>
                   </div>
-                  <span className="shrink-0 text-xs text-slate-400">
-                    {getEstadoProyectoLabel(project.estadoProyecto)}
-                  </span>
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs text-slate-400">
+                      {getEstadoProyectoLabel(project.estadoProyecto)}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      {formatDateDisplay(project.updatedAt)}
+                    </p>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -272,7 +299,12 @@ export function DashboardPage() {
           </h2>
           {pendingRecordatorios.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
-              <img src={descansoGif} alt="" className="h-64 w-64 rounded-lg object-cover" />
+              <img
+                src={descansoGif}
+                alt=""
+                draggable={false}
+                className="h-64 w-64 rounded-lg object-cover select-none"
+              />
               <p className="text-sm text-slate-500">No hay recordatorios activos</p>
             </div>
           ) : (

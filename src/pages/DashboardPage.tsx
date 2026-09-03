@@ -18,6 +18,7 @@ import {
   getActiveProjectCountsByRole,
   type UserProjectCount,
 } from '../utils/assignableUsers'
+import descansoGif from '../assets/descanso.gif'
 import { getEstadoProyectoLabel } from '../utils/projectStatus'
 import { Avatar } from '../components/ui/Avatar'
 
@@ -270,7 +271,10 @@ export function DashboardPage() {
             Recordatorios activos
           </h2>
           {pendingRecordatorios.length === 0 ? (
-            <p className="text-sm text-slate-500">No hay recordatorios activos</p>
+            <div className="flex flex-col items-center gap-2 py-2 text-center">
+              <img src={descansoGif} alt="" className="h-32 w-32 rounded-lg object-cover" />
+              <p className="text-sm text-slate-500">No hay recordatorios activos</p>
+            </div>
           ) : (
             <ul className="space-y-3">
               {pendingRecordatorios.slice(0, 5).map((item) => (

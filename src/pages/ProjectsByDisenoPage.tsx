@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { IoBriefcaseOutline, IoLayersOutline, IoRefreshOutline } from 'react-icons/io5'
+import {
+  IoArrowUndoOutline,
+  IoBriefcaseOutline,
+  IoLayersOutline,
+  IoRefreshOutline,
+} from 'react-icons/io5'
 import type { Project } from '../types'
 import { useAuthStore } from '../stores/authStore'
 import { useProjectsByDisenoStore } from '../stores/projectsByDisenoStore'
@@ -9,7 +14,7 @@ import { useUsersStore } from '../stores/usersStore'
 import { getUsersByRoleName } from '../utils/assignableUsers'
 import { isProjectAssignee } from '../utils/projectUsers'
 import { getEstadoProyectoOptions } from '../utils/projectStatus'
-import { type OrderMode } from '../utils/projectOrder'
+import { clearStoredOrder, type OrderMode } from '../utils/projectOrder'
 import { authUserToAppUser } from '../utils/user'
 import { Button } from '../components/ui/Button'
 import { DateInput } from '../components/ui/DateInput'
@@ -45,6 +50,7 @@ export function ProjectsByDisenoPage() {
   const [estadoFiltro, setEstadoFiltro] = useState('')
   const [ordenFiltro, setOrdenFiltro] = useState<OrderMode>('personalizado')
   const [showBycModal, setShowBycModal] = useState(false)
+  const [resetKey, setResetKey] = useState(0)
   const {
     register,
     handleSubmit,
@@ -99,6 +105,11 @@ export function ProjectsByDisenoPage() {
     () => columns.reduce((acc, col) => acc + col.projects.length, 0),
     [columns],
   )
+
+  const handleResetOrder = () => {
+    disenadores.forEach((disenador) => clearStoredOrder(`diseno-${disenador.id}`))
+    setResetKey((k) => k + 1)
+  }
 
   const openEdit = (project: Project) => {
     setEditingProject(project)
@@ -163,13 +174,17 @@ export function ProjectsByDisenoPage() {
         </div>
       </header>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-end gap-3">
         <ProjectFilters
           estado={estadoFiltro}
           onEstadoChange={setEstadoFiltro}
           orden={ordenFiltro}
           onOrdenChange={setOrdenFiltro}
         />
+        <Button variant="ghost" onClick={handleResetOrder}>
+          <IoArrowUndoOutline size={16} />
+          Restablecer orden
+        </Button>
       </div>
 
       {error && (
@@ -192,7 +207,7 @@ export function ProjectsByDisenoPage() {
           <div className="flex h-full gap-4 overflow-x-auto pb-2">
             {columns.map(({ disenador, projects: colProjects }) => (
               <ProjectColumn
-                key={disenador.id}
+                key={`${disenador.id}-${resetKey}`}
                 user={disenador}
                 projects={colProjects}
                 onSelectProject={openEdit}

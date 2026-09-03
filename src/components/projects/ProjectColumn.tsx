@@ -18,6 +18,7 @@ import {
   sortProjectsByMode,
   type OrderMode,
 } from '../../utils/projectOrder'
+import { sortPorJerarquia } from '../../utils/projectStatus'
 import { Avatar } from '../ui/Avatar'
 import { ProjectCard } from './ProjectCard'
 import { SortableProjectCard } from './SortableProjectCard'
@@ -41,8 +42,12 @@ export function ProjectColumn({
   const isCustomOrder = orderMode === 'personalizado'
 
   const orderedProjects = useMemo(() => {
-    if (!isCustomOrder) return sortProjectsByMode(projects, orderMode)
-    return sortByOrder(projects, reconcileOrder(order, projects.map((p) => p.id)))
+    // Base por jerarquía de etapa: así, mientras nadie arrastró nada
+    // (o cuando aparece una tarjeta nueva), el orden por defecto tiene
+    // sentido en vez de ser el orden crudo en que llegó de la API.
+    const base = sortPorJerarquia(projects)
+    if (!isCustomOrder) return sortProjectsByMode(base, orderMode)
+    return sortByOrder(base, reconcileOrder(order, base.map((p) => p.id)))
   }, [projects, order, orderMode, isCustomOrder])
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))

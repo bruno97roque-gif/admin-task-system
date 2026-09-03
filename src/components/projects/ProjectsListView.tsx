@@ -16,12 +16,14 @@ import { useUsersStore } from '../../stores/usersStore'
 import { getUsersByRoleName, toSelectOptions } from '../../utils/assignableUsers'
 import { getProjectUserEntries } from '../../utils/projectUsers'
 import { getUserColor } from '../../utils/userColors'
+import { grupoTextClass } from '../../utils/grupoColor'
 import { projectMatchesSearch } from '../../utils/projectSearch'
 import { getTipoProyectoLabel, TIPO_PROYECTO_OPTIONS } from '../../utils/projectType'
 import {
   ESTADO_PROYECTO_OPTIONS,
   estadoProyectoClass,
   getEstadoProyectoLabel,
+  sortPorJerarquia,
 } from '../../utils/projectStatus'
 import { Button } from '../ui/Button'
 import { ProjectSearchInput } from './ProjectSearchInput'
@@ -180,7 +182,7 @@ export function ProjectsListView({
       return projectMatchesSearch(project, searchQuery, showTipoProyecto)
     })
 
-    if (orden === 'defecto') return filtered
+    if (orden === 'defecto') return sortPorJerarquia(filtered)
 
     const sorted = [...filtered]
     if (orden === 'antiguo') {
@@ -418,7 +420,9 @@ export function ProjectsListView({
                       {getEstadoProyectoLabel(project.estadoProyecto)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-400">{project.grupo}</td>
+                  <td className={`px-4 py-3 font-semibold ${grupoTextClass(project.grupo)}`}>
+                    {project.grupo}
+                  </td>
                   <td className="px-4 py-3 text-slate-400">
                     {project.seguimiento?.name ?? '—'}
                   </td>

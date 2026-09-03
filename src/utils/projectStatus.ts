@@ -95,3 +95,35 @@ export const ESTADO_PROYECTO_COLORS: Record<string, string> = {
 export function estadoProyectoClass(estado: string): string {
   return ESTADO_PROYECTO_COLORS[estado] ?? 'bg-surface-overlay text-slate-300'
 }
+
+/**
+ * Orden "por defecto" de las listas y tableros: no es el orden del flujo,
+ * es el que más sirve para revisar el día a día — lo más activo primero
+ * (Desarrollo, luego Diseño), lo más temprano al final de lo activo, y los
+ * "Finalizado" siempre al fondo del todo.
+ */
+export const ESTADO_PROYECTO_JERARQUIA: EstadoProyecto[] = [
+  'Desarrollo',
+  'Diseno',
+  'AvanceDiseno',
+  'Brief',
+  'Taxonomia',
+  'Registro',
+  'ProyectoFinalizado',
+  'DesarrolloFinalizado',
+  'DisenoFinalizado',
+  'Archivado',
+]
+
+function jerarquiaIndex(estado: string): number {
+  const i = ESTADO_PROYECTO_JERARQUIA.indexOf(
+    estado === 'Desarollo' ? 'Desarrollo' : (estado as EstadoProyecto),
+  )
+  return i === -1 ? ESTADO_PROYECTO_JERARQUIA.length : i
+}
+
+export function sortPorJerarquia<T extends { estadoProyecto: string }>(items: T[]): T[] {
+  return [...items].sort(
+    (a, b) => jerarquiaIndex(a.estadoProyecto) - jerarquiaIndex(b.estadoProyecto),
+  )
+}

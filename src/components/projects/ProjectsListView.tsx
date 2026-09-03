@@ -16,6 +16,7 @@ import { useUsersStore } from '../../stores/usersStore'
 import { getUsersByRoleName, toSelectOptions } from '../../utils/assignableUsers'
 import { getProjectUserEntries } from '../../utils/projectUsers'
 import { getUserColor } from '../../utils/userColors'
+import { grupoTextClass } from '../../utils/grupoColor'
 import { projectMatchesSearch } from '../../utils/projectSearch'
 import { getTipoProyectoLabel, TIPO_PROYECTO_OPTIONS } from '../../utils/projectType'
 import {
@@ -419,7 +420,9 @@ export function ProjectsListView({
                       {getEstadoProyectoLabel(project.estadoProyecto)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-400">{project.grupo}</td>
+                  <td className={`px-4 py-3 font-semibold ${grupoTextClass(project.grupo)}`}>
+                    {project.grupo}
+                  </td>
                   <td className="px-4 py-3 text-slate-400">
                     {project.seguimiento?.name ?? '—'}
                   </td>

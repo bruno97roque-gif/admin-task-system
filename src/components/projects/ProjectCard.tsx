@@ -3,6 +3,7 @@ import type { AppUser, Project } from '../../types'
 import { extractUser } from '../../utils/projectUsers'
 import { estadoProyectoClass, getEstadoProyectoLabel } from '../../utils/projectStatus'
 import { getTipoProyectoLabel } from '../../utils/projectType'
+import { grupoBadgeClass } from '../../utils/grupoColor'
 import { TecnologiaIcon } from './TecnologiaIcon'
 import { TipoProyectoIcon } from './TipoProyectoIcon'
 
@@ -38,7 +39,9 @@ export function ProjectCard({
     >
       <div className="mb-2 flex items-start justify-between gap-2">
         <h3 className="text-sm font-semibold text-slate-100">{project.name}</h3>
-        <span className="shrink-0 rounded-full bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent-hover">
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${grupoBadgeClass(project.grupo)}`}
+        >
           Grupo {project.grupo}
         </span>
       </div>

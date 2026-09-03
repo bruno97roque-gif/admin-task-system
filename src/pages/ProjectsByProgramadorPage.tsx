@@ -14,7 +14,7 @@ import { useUsersStore } from '../stores/usersStore'
 import { getUsersByRoleName } from '../utils/assignableUsers'
 import { isProjectAssignee } from '../utils/projectUsers'
 import { ESTADO_PROYECTO_OPTIONS, getEstadoProyectoOptions } from '../utils/projectStatus'
-import { clearStoredOrder, type OrderMode } from '../utils/projectOrder'
+import { type OrderMode } from '../utils/projectOrder'
 import { authUserToAppUser } from '../utils/user'
 import { Button } from '../components/ui/Button'
 import { DateInput } from '../components/ui/DateInput'
@@ -115,10 +115,7 @@ export function ProjectsByProgramadorPage() {
     [columns],
   )
 
-  const handleResetOrder = () => {
-    programadores.forEach((programador) => clearStoredOrder(`programador-${programador.id}`))
-    setResetKey((k) => k + 1)
-  }
+  const handleResetOrder = () => setResetKey((k) => k + 1)
 
   const openEditComentario = (project: Project) => {
     setEditingProject(project)
@@ -219,12 +216,13 @@ export function ProjectsByProgramadorPage() {
           <div className="flex h-full gap-4 overflow-x-auto pb-2">
             {columns.map(({ programador, projects: colProjects }) => (
               <ProjectColumn
-                key={`${programador.id}-${resetKey}`}
+                key={programador.id}
                 user={programador}
                 projects={colProjects}
                 onSelectProject={openEditComentario}
                 orderStorageKey={`programador-${programador.id}`}
                 orderMode={ordenFiltro}
+                resetSignal={resetKey}
               />
             ))}
           </div>

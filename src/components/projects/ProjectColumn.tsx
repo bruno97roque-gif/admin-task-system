@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   DndContext,
   PointerSensor,
@@ -11,6 +11,7 @@ import {
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { AppUser, Project } from '../../types'
 import {
+  clearStoredOrder,
   getStoredOrder,
   mergeVisibleOrder,
   reconcileOrder,
@@ -37,6 +38,7 @@ export function ProjectColumn({
   avatarClassName = 'bg-accent/20 text-accent-hover',
   orderStorageKey,
   orderMode = 'personalizado',
+  resetSignal = 0,
 }: {
   user: AppUser
   projects: Project[]
@@ -44,9 +46,23 @@ export function ProjectColumn({
   avatarClassName?: string
   orderStorageKey: string
   orderMode?: OrderMode
+  /** Al cambiar (ej. resetSignal + 1), borra el orden guardado y vuelve a la
+   * jerarquía — sin desmontar, así dnd-kit anima el reacomodo como un drag. */
+  resetSignal?: number
 }) {
   const [order, setOrder] = useState<number[]>(() => getStoredOrder(orderStorageKey))
   const isCustomOrder = orderMode === 'personalizado'
+
+  const skipFirstReset = useRef(true)
+  useEffect(() => {
+    if (skipFirstReset.current) {
+      skipFirstReset.current = false
+      return
+    }
+    clearStoredOrder(orderStorageKey)
+    setOrder([])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetSignal])
 
   const orderedProjects = useMemo(() => {
     // Base por jerarquía de etapa: así, mientras nadie arrastró nada

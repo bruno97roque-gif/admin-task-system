@@ -27,7 +27,7 @@ const navItems = [
   { to: '/', label: 'Dashboard', icon: IoGridOutline, end: true },
   { to: '/roles', label: 'Roles', icon: IoShieldOutline },
   { to: '/usuarios', label: 'Usuarios', icon: IoPersonOutline },
-  { to: '/proyectos', label: 'Proyectos', icon: IoFolderOpenOutline },
+  { to: '/proyectos', label: 'Proyectos', icon: IoFolderOpenOutline, end: true },
   { to: '/vista-global', label: 'Vista Global', icon: IoLayersOutline },
   { to: '/proyectos-terminados', label: 'Finalizados', icon: IoCheckmarkCircleOutline },
   { to: '/analitica', label: 'Analítica', icon: IoAnalyticsOutline },

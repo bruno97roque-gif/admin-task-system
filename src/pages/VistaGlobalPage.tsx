@@ -11,6 +11,7 @@ import {
 } from '../utils/projectStatus'
 import { Button } from '../components/ui/Button'
 import { LoaderBlock } from '../components/ui/Loader'
+import { ProjectEditModal } from '../components/projects/ProjectEditModal'
 import { DESARROLLADOR_COLORS, DISENADOR_COLORS, getUserColor } from '../utils/userColors'
 
 const ETAPAS_DISENADOR = ['Brief', 'Taxonomia', 'Diseno', 'AvanceDiseno', 'DisenoFinalizado']
@@ -34,10 +35,14 @@ export function VistaGlobalPage() {
 
   const projects = useProjectsStore((s) => s.projects)
   const loading = useProjectsStore((s) => s.loading)
+  const saving = useProjectsStore((s) => s.saving)
   const error = useProjectsStore((s) => s.error)
   const fetchProjects = useProjectsStore((s) => s.fetchProjects)
+  const updateProject = useProjectsStore((s) => s.updateProject)
+  const updateProjectResponsables = useProjectsStore((s) => s.updateProjectResponsables)
 
   const [mostrarByC, setMostrarByC] = useState(false)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
 
   useEffect(() => {
     fetchProjects()
@@ -183,12 +188,14 @@ export function VistaGlobalPage() {
                         esEtapaDiseno ? project.disenadorId : project.desarrolladorId,
                       )
                       return (
-                        <div
+                        <button
                           key={project.id}
-                          className={`flex items-center gap-1.5 truncate rounded-md px-2 py-1.5 text-xs ${
+                          type="button"
+                          onClick={() => setEditingProject(project)}
+                          className={`flex w-full items-center gap-1.5 truncate rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
                             project.grupo === 'A'
-                              ? 'bg-surface text-slate-200'
-                              : 'border border-dashed border-border bg-surface/60 text-slate-400'
+                              ? 'bg-surface text-slate-200 hover:bg-surface-overlay'
+                              : 'border border-dashed border-border bg-surface/60 text-slate-400 hover:bg-surface/80'
                           }`}
                           title={`${project.name}${color ? ` — ${color.label}` : ''}${project.grupo !== 'A' ? ` — Grupo ${project.grupo}` : ''}`}
                         >
@@ -200,7 +207,7 @@ export function VistaGlobalPage() {
                             />
                           )}
                           <span className="truncate">{project.name}</span>
-                        </div>
+                        </button>
                       )
                     })
                   )}
@@ -210,6 +217,14 @@ export function VistaGlobalPage() {
           </div>
         )}
       </div>
+
+      <ProjectEditModal
+        project={editingProject}
+        onClose={() => setEditingProject(null)}
+        saving={saving}
+        updateProject={updateProject}
+        updateProjectResponsables={updateProjectResponsables}
+      />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import {
   IoAddOutline,
   IoCreateOutline,
@@ -14,35 +14,29 @@ import { useRolesStore } from '../../stores/rolesStore'
 import { useSeguimientosStore } from '../../stores/seguimientosStore'
 import { useUsersStore } from '../../stores/usersStore'
 import { getUsersByRoleName, toSelectOptions } from '../../utils/assignableUsers'
-import { getProjectUserNames } from '../../utils/projectUsers'
+import { getProjectUserEntries } from '../../utils/projectUsers'
+import { getUserColor } from '../../utils/userColors'
 import { projectMatchesSearch } from '../../utils/projectSearch'
 import { getTipoProyectoLabel, TIPO_PROYECTO_OPTIONS } from '../../utils/projectType'
 import {
   ESTADO_PROYECTO_OPTIONS,
+  estadoProyectoClass,
   getEstadoProyectoLabel,
-  getEstadoProyectoOptions,
 } from '../../utils/projectStatus'
-import { toDateInputValue } from '../../utils/date'
 import { Button } from '../ui/Button'
 import { ProjectSearchInput } from './ProjectSearchInput'
 import { Input } from '../ui/Input'
-import { DateInput } from '../ui/DateInput'
 import { Modal } from '../ui/Modal'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { Select } from '../ui/Select'
 import { Textarea } from '../ui/Textarea'
 import { ProjectHistorialModal } from './ProjectHistorialModal'
+import { ProjectEditModal } from './ProjectEditModal'
 
 const DEFAULT_GRUPO_OPTIONS = [
   { value: 'A', label: 'A' },
   { value: 'B', label: 'B' },
   { value: 'C', label: 'C' },
-]
-
-const TECNOLOGIA_OPTIONS = [
-  { value: 'Shopify', label: 'Shopify' },
-  { value: 'WordPress', label: 'WordPress' },
-  { value: 'Personalizado', label: 'Personalizado' },
 ]
 
 const ORDEN_OPTIONS = [
@@ -132,7 +126,7 @@ export function ProjectsListView({
   const roles = useRolesStore((s) => s.roles)
   const fetchRoles = useRolesStore((s) => s.fetchRoles)
 
-  const [modalOpen, setModalOpen] = useState(false)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [grupoFilter, setGrupoFilter] = useState('')
@@ -148,7 +142,6 @@ export function ProjectsListView({
     register,
     handleSubmit,
     reset,
-    control,
     formState: { errors },
     setError,
   } = useForm<ProjectForm>({ defaultValues: emptyForm })
@@ -207,44 +200,14 @@ export function ProjectsListView({
     setOrden('defecto')
   }
 
-  const loadFormData = () =>
-    Promise.all([fetchSeguimientos(), fetchUsers(), fetchRoles()])
-
   const openCreate = async () => {
-    setEditingProject(null)
     reset(emptyForm)
-    await loadFormData()
-    setModalOpen(true)
+    await Promise.all([fetchSeguimientos(), fetchUsers(), fetchRoles()])
+    setCreateModalOpen(true)
   }
 
-  const openEdit = async (project: Project) => {
-    setEditingProject(project)
-    await loadFormData()
-    reset({
-      name: project.name,
-      descripcion: project.descripcion,
-      tipoProyecto: project.tipoProyecto ?? '',
-      grupo: project.grupo,
-      seguimientoId: String(project.seguimientoId),
-      comentario: project.comentario ?? '',
-      tecnologia: project.tecnologia ?? '',
-      estadoPago: project.estadoPago ?? '',
-      estadoProyecto:
-        project.estadoProyecto === 'Desarollo'
-          ? 'Desarrollo'
-          : (project.estadoProyecto ?? ''),
-      diasSinResponder:
-        project.diasSinResponder !== null ? String(project.diasSinResponder) : '',
-      fechaEntrega: toDateInputValue(project.fechaEntrega),
-      programadorId: project.desarrolladorId != null ? String(project.desarrolladorId) : '',
-      disenadorId: project.disenadorId != null ? String(project.disenadorId) : '',
-    })
-    setModalOpen(true)
-  }
-
-  const closeModal = () => {
-    setModalOpen(false)
-    setEditingProject(null)
+  const closeCreateModal = () => {
+    setCreateModalOpen(false)
     reset(emptyForm)
   }
 
@@ -296,69 +259,11 @@ export function ProjectsListView({
     }
   }
 
-  const buildUpdatePayload = (data: ProjectForm): UpdateProjectRequest => ({
-    ...buildCreatePayload(data),
-    tipoProyecto: showTipoProyecto
-      ? data.tipoProyecto.trim() || null
-      : (editingProject?.tipoProyecto ?? null),
-    tecnologia: data.tecnologia.trim() || null,
-    estadoPago: data.estadoPago.trim(),
-    estadoProyecto: data.estadoProyecto.trim(),
-    diasSinResponder: data.diasSinResponder.trim()
-      ? Number(data.diasSinResponder)
-      : null,
-    fechaEntrega: data.fechaEntrega.trim() || null,
-    desarrolladorId: data.programadorId ? Number(data.programadorId) : null,
-    disenadorId: data.disenadorId ? Number(data.disenadorId) : null,
-  })
-
-  const hasProjectDataChanges = (data: ProjectForm, project: Project): boolean => {
-    const payload = buildUpdatePayload(data)
-    return (
-      payload.name !== project.name ||
-      payload.descripcion !== project.descripcion ||
-      payload.grupo !== project.grupo ||
-      payload.seguimientoId !== project.seguimientoId ||
-      payload.comentario !== project.comentario ||
-      payload.tecnologia !== project.tecnologia ||
-      payload.tipoProyecto !== project.tipoProyecto ||
-      payload.estadoPago !== project.estadoPago ||
-      payload.estadoProyecto !==
-        (project.estadoProyecto === 'Desarollo' ? 'Desarrollo' : project.estadoProyecto) ||
-      payload.diasSinResponder !== project.diasSinResponder ||
-      toDateInputValue(payload.fechaEntrega) !== toDateInputValue(project.fechaEntrega)
-    )
-  }
-
   const onSubmit = async (data: ProjectForm) => {
-    let result
-
-    if (!editingProject) {
-      result = await createProject(buildCreatePayload(data))
-    } else {
-      const desarrolladorId = data.programadorId ? Number(data.programadorId) : null
-      const disenadorId = data.disenadorId ? Number(data.disenadorId) : null
-      const responsablesChanged =
-        desarrolladorId !== editingProject.desarrolladorId ||
-        disenadorId !== editingProject.disenadorId
-
-      if (
-        responsablesChanged &&
-        !hasProjectDataChanges(data, editingProject) &&
-        desarrolladorId != null &&
-        disenadorId != null
-      ) {
-        result = await updateProjectResponsables(editingProject.id, {
-          disenadorId,
-          desarrolladorId,
-        })
-      } else {
-        result = await updateProject(editingProject.id, buildUpdatePayload(data))
-      }
-    }
+    const result = await createProject(buildCreatePayload(data))
 
     if (result.success) {
-      closeModal()
+      closeCreateModal()
     } else {
       setError('root', {
         message: result.error ?? 'Error al guardar el proyecto',
@@ -390,7 +295,7 @@ export function ProjectsListView({
         </div>
       </header>
 
-      {error && !modalOpen && (
+      {error && !createModalOpen && !editingProject && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {error}
         </div>
@@ -497,7 +402,7 @@ export function ProjectsListView({
                   {showTipoProyecto && (
                     <td className="px-4 py-3">
                       {project.tipoProyecto ? (
-                        <span className="inline-flex rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs font-medium text-violet-300 ring-1 ring-violet-500/25">
+                        <span className="inline-flex whitespace-nowrap rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs font-medium text-violet-300 ring-1 ring-violet-500/25">
                           {getTipoProyectoLabel(project.tipoProyecto)}
                         </span>
                       ) : (
@@ -507,7 +412,9 @@ export function ProjectsListView({
                   )}
                   <td className="px-4 py-3 text-slate-400">{project.estadoPago}</td>
                   <td className="px-4 py-3">
-                    <span className="inline-flex rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-medium text-accent-hover">
+                    <span
+                      className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${estadoProyectoClass(project.estadoProyecto)}`}
+                    >
                       {getEstadoProyectoLabel(project.estadoProyecto)}
                     </span>
                   </td>
@@ -519,7 +426,29 @@ export function ProjectsListView({
                     {project.tecnologia ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-slate-400">
-                    {getProjectUserNames(project)}
+                    {(() => {
+                      const entries = getProjectUserEntries(project)
+                      if (entries.length === 0) return 'Sin asignar'
+                      return (
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          {entries.map((user) => {
+                            const color = getUserColor(user.id)
+                            return (
+                              <span key={user.id} className="inline-flex items-center gap-1">
+                                {color && (
+                                  <span
+                                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                                    style={{ backgroundColor: color.hex }}
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                {user.name}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      )
+                    })()}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end">
@@ -532,7 +461,7 @@ export function ProjectsListView({
                       </Button>
                       <Button
                         variant="ghost"
-                        onClick={() => openEdit(project)}
+                        onClick={() => setEditingProject(project)}
                         aria-label="Editar"
                       >
                         <IoCreateOutline size={16} />
@@ -556,12 +485,7 @@ export function ProjectsListView({
         </table>
       </div>
 
-      <Modal
-        open={modalOpen}
-        onClose={closeModal}
-        title={editingProject ? 'Editar proyecto' : 'Agregar proyecto'}
-        size="lg"
-      >
+      <Modal open={createModalOpen} onClose={closeCreateModal} title="Agregar proyecto" size="lg">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {errors.root && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
@@ -611,61 +535,6 @@ export function ProjectsListView({
             />
           </div>
 
-          {editingProject && (
-            <>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  label="Estado pago"
-                  placeholder="Ej. 50%, Pagado, Pendiente..."
-                  {...register('estadoPago')}
-                />
-                <Select
-                  label="Estado proyecto"
-                  options={getEstadoProyectoOptions(
-                    editingProject?.estadoProyecto ?? '',
-                    editingProject?.tipoProyecto ?? null,
-                  )}
-                  placeholder="Selecciona un estado"
-                  error={errors.estadoProyecto?.message}
-                  {...register('estadoProyecto')}
-                />
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Select
-                  label="Tecnología"
-                  options={TECNOLOGIA_OPTIONS}
-                  placeholder="Selecciona una tecnología"
-                  error={errors.tecnologia?.message}
-                  {...register('tecnologia')}
-                />
-                <Controller
-                  name="fechaEntrega"
-                  control={control}
-                  render={({ field }) => (
-                    <DateInput
-                      label="Fecha de entrega"
-                      name={field.name}
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                    />
-                  )}
-                />
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  label="Días sin responder"
-                  type="number"
-                  min={0}
-                  placeholder="Ej. 3"
-                  {...register('diasSinResponder')}
-                />
-              </div>
-            </>
-          )}
-
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               label="Programador"
@@ -689,15 +558,30 @@ export function ProjectsListView({
           />
 
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={closeModal}>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={closeCreateModal}
+            >
               Cancelar
             </Button>
             <Button type="submit" className="w-full sm:w-auto" loading={saving}>
-              {editingProject ? 'Guardar cambios' : 'Guardar'}
+              Guardar
             </Button>
           </div>
         </form>
       </Modal>
+
+      <ProjectEditModal
+        project={editingProject}
+        onClose={() => setEditingProject(null)}
+        saving={saving}
+        showTipoProyecto={showTipoProyecto}
+        grupoOptions={grupoOptions}
+        updateProject={updateProject}
+        updateProjectResponsables={updateProjectResponsables}
+      />
 
       <ConfirmDialog
         open={deleteConfirmationOpen}

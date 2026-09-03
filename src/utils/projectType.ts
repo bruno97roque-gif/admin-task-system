@@ -9,7 +9,7 @@ export const TIPO_PROYECTO_OPTIONS: { value: string; label: string }[] = [
 ]
 
 export function getTipoProyectoLabel(value: string | null | undefined): string {
-  if (value === 'Informativa') return 'Web informativa'
+  if (value === 'Informativa') return 'Informativa'
   if (value === 'Ecommerce') return 'E-commerce'
   if (value === 'Sistema') return 'Sistema'
   return value ?? ''

@@ -35,7 +35,7 @@ export const ETIQUETA_ESTADO: Record<EstadoProyecto, string> = {
   DisenoFinalizado: 'Diseño Finalizado',
   Desarrollo: 'Desarrollo',
   DesarrolloFinalizado: 'Desarrollo Finalizado',
-  ProyectoFinalizado: 'Proyecto Finalizado',
+  ProyectoFinalizado: 'Finalizado',
   Archivado: 'Archivado',
 }
 

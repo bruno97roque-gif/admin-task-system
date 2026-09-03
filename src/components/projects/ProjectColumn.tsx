@@ -6,6 +6,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type Modifier,
 } from '@dnd-kit/core'
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { AppUser, Project } from '../../types'
@@ -22,6 +23,12 @@ import { sortPorJerarquia } from '../../utils/projectStatus'
 import { Avatar } from '../ui/Avatar'
 import { ProjectCard } from './ProjectCard'
 import { SortableProjectCard } from './SortableProjectCard'
+
+/** La columna es una lista vertical: no tiene sentido arrastrar a los costados. */
+const restrictToVerticalAxis: Modifier = ({ transform }) => ({
+  ...transform,
+  x: 0,
+})
 
 export function ProjectColumn({
   user,
@@ -96,7 +103,12 @@ export function ProjectColumn({
             />
           ))
         ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToVerticalAxis]}
+          >
             <SortableContext
               items={orderedProjects.map((p) => p.id)}
               strategy={verticalListSortingStrategy}

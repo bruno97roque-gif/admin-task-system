@@ -27,6 +27,7 @@ import { ProjectFilters } from '../components/projects/ProjectFilters'
 import { ProjectsBycModal } from '../components/projects/ProjectsBycModal'
 import { LoaderBlock } from '../components/ui/Loader'
 import { CornerRestGif } from '../components/ui/CornerRestGif'
+import { PersonColorLegend } from '../components/projects/PersonColorLegend'
 import { toDateInputValue } from '../utils/date'
 
 // Este tablero es solo del desarrollo: nada de las etapas de diseño ni de
@@ -194,6 +195,8 @@ export function ProjectsByProgramadorPage() {
           Restablecer orden
         </Button>
       </div>
+
+      <PersonColorLegend />
 
       {error && editingProject === null && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">

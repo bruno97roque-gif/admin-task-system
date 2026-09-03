@@ -9,7 +9,7 @@ const USER_COLOR_BY_ID: Record<number, UserColor> = {
   13: { hex: '#ef4444', label: 'Juan Carlos' }, // rojo
   16: { hex: '#3b82f6', label: 'Gustavo' }, // azul
   12: { hex: '#f18c1b', label: 'Luis' }, // naranja
-  14: { hex: '#22d3ee', label: 'Rubid' }, // celeste
+  14: { hex: '#eab308', label: 'Rubid' }, // amarillo
   11: { hex: '#22c55e', label: 'Aaron' }, // verde
 }
 

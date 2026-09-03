@@ -31,7 +31,7 @@ import { toDateInputValue } from '../utils/date'
 
 // Este tablero es solo del desarrollo: nada de las etapas de diseño ni de
 // Proyecto Finalizado (que tiene su propia ventana, "Finalizados").
-const ETAPAS_DEVELOPERS = ['Desarrollo', 'Brief', 'DesarrolloFinalizado']
+const ETAPAS_DEVELOPERS = ['Desarrollo', 'Brief', 'Taxonomia', 'DesarrolloFinalizado']
 const ESTADO_OPTIONS_DEVELOPERS = ESTADO_PROYECTO_OPTIONS.filter((opt) =>
   ETAPAS_DEVELOPERS.includes(opt.value),
 )

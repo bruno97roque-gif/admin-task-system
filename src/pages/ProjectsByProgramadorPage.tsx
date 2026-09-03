@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { IoBriefcaseOutline, IoLayersOutline, IoRefreshOutline } from 'react-icons/io5'
+import {
+  IoArrowUndoOutline,
+  IoBriefcaseOutline,
+  IoLayersOutline,
+  IoRefreshOutline,
+} from 'react-icons/io5'
 import type { Project } from '../types'
 import { useAuthStore } from '../stores/authStore'
 import { useProjectsByProgramadorStore } from '../stores/projectsByProgramadorStore'
@@ -8,7 +13,7 @@ import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 import { getUsersByRoleName } from '../utils/assignableUsers'
 import { isProjectAssignee } from '../utils/projectUsers'
-import { getEstadoProyectoOptions } from '../utils/projectStatus'
+import { ESTADO_PROYECTO_OPTIONS, getEstadoProyectoOptions } from '../utils/projectStatus'
 import { type OrderMode } from '../utils/projectOrder'
 import { authUserToAppUser } from '../utils/user'
 import { Button } from '../components/ui/Button'
@@ -23,6 +28,13 @@ import { ProjectsBycModal } from '../components/projects/ProjectsBycModal'
 import { LoaderBlock } from '../components/ui/Loader'
 import { CornerRestGif } from '../components/ui/CornerRestGif'
 import { toDateInputValue } from '../utils/date'
+
+// Este tablero es solo del desarrollo: nada de las etapas de diseño ni de
+// Proyecto Finalizado (que tiene su propia ventana, "Finalizados").
+const ETAPAS_DEVELOPERS = ['Desarrollo', 'Brief', 'DesarrolloFinalizado']
+const ESTADO_OPTIONS_DEVELOPERS = ESTADO_PROYECTO_OPTIONS.filter((opt) =>
+  ETAPAS_DEVELOPERS.includes(opt.value),
+)
 
 interface ProjectEditForm {
   comentario: string
@@ -46,6 +58,7 @@ export function ProjectsByProgramadorPage() {
   const [estadoFiltro, setEstadoFiltro] = useState('')
   const [ordenFiltro, setOrdenFiltro] = useState<OrderMode>('personalizado')
   const [showBycModal, setShowBycModal] = useState(false)
+  const [resetKey, setResetKey] = useState(0)
 
   const {
     register,
@@ -79,7 +92,10 @@ export function ProjectsByProgramadorPage() {
   }, [authUser, isProgramador, users, roles])
 
   const filteredProjects = useMemo(
-    () => projects.filter((project) => !estadoFiltro || project.estadoProyecto === estadoFiltro),
+    () =>
+      projects
+        .filter((project) => ETAPAS_DEVELOPERS.includes(project.estadoProyecto))
+        .filter((project) => !estadoFiltro || project.estadoProyecto === estadoFiltro),
     [projects, estadoFiltro],
   )
 
@@ -98,6 +114,8 @@ export function ProjectsByProgramadorPage() {
     () => columns.reduce((acc, col) => acc + col.projects.length, 0),
     [columns],
   )
+
+  const handleResetOrder = () => setResetKey((k) => k + 1)
 
   const openEditComentario = (project: Project) => {
     setEditingProject(project)
@@ -163,13 +181,18 @@ export function ProjectsByProgramadorPage() {
         </div>
       </header>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-end gap-3">
         <ProjectFilters
           estado={estadoFiltro}
           onEstadoChange={setEstadoFiltro}
           orden={ordenFiltro}
           onOrdenChange={setOrdenFiltro}
+          estadoOptions={ESTADO_OPTIONS_DEVELOPERS}
         />
+        <Button variant="ghost" onClick={handleResetOrder}>
+          <IoArrowUndoOutline size={16} />
+          Restablecer orden
+        </Button>
       </div>
 
       {error && editingProject === null && (
@@ -199,6 +222,7 @@ export function ProjectsByProgramadorPage() {
                 onSelectProject={openEditComentario}
                 orderStorageKey={`programador-${programador.id}`}
                 orderMode={ordenFiltro}
+                resetSignal={resetKey}
               />
             ))}
           </div>

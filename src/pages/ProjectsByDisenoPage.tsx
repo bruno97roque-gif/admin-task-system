@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { IoBriefcaseOutline, IoLayersOutline, IoRefreshOutline } from 'react-icons/io5'
+import {
+  IoArrowUndoOutline,
+  IoBriefcaseOutline,
+  IoLayersOutline,
+  IoRefreshOutline,
+} from 'react-icons/io5'
 import type { Project } from '../types'
 import { useAuthStore } from '../stores/authStore'
 import { useProjectsByDisenoStore } from '../stores/projectsByDisenoStore'
@@ -45,6 +50,7 @@ export function ProjectsByDisenoPage() {
   const [estadoFiltro, setEstadoFiltro] = useState('')
   const [ordenFiltro, setOrdenFiltro] = useState<OrderMode>('personalizado')
   const [showBycModal, setShowBycModal] = useState(false)
+  const [resetKey, setResetKey] = useState(0)
   const {
     register,
     handleSubmit,
@@ -99,6 +105,8 @@ export function ProjectsByDisenoPage() {
     () => columns.reduce((acc, col) => acc + col.projects.length, 0),
     [columns],
   )
+
+  const handleResetOrder = () => setResetKey((k) => k + 1)
 
   const openEdit = (project: Project) => {
     setEditingProject(project)
@@ -163,13 +171,17 @@ export function ProjectsByDisenoPage() {
         </div>
       </header>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-end gap-3">
         <ProjectFilters
           estado={estadoFiltro}
           onEstadoChange={setEstadoFiltro}
           orden={ordenFiltro}
           onOrdenChange={setOrdenFiltro}
         />
+        <Button variant="ghost" onClick={handleResetOrder}>
+          <IoArrowUndoOutline size={16} />
+          Restablecer orden
+        </Button>
       </div>
 
       {error && (
@@ -199,6 +211,7 @@ export function ProjectsByDisenoPage() {
                 avatarClassName="bg-purple-500/20 text-purple-300"
                 orderStorageKey={`diseno-${disenador.id}`}
                 orderMode={ordenFiltro}
+                resetSignal={resetKey}
               />
             ))}
           </div>

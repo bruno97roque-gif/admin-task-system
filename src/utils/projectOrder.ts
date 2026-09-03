@@ -54,6 +54,15 @@ export function setStoredOrder(key: string, order: number[]): void {
   }
 }
 
+/** Borra el orden personalizado guardado: la columna vuelve a la jerarquía por defecto. */
+export function clearStoredOrder(key: string): void {
+  try {
+    localStorage.removeItem(STORAGE_PREFIX + key)
+  } catch {
+    // localStorage no disponible — se ignora
+  }
+}
+
 /** Agrega ids nuevos al final y descarta los que ya no existen. */
 export function reconcileOrder(order: number[], currentIds: number[]): number[] {
   const currentSet = new Set(currentIds)

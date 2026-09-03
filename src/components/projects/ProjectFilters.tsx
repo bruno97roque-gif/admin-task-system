@@ -7,11 +7,13 @@ export function ProjectFilters({
   onEstadoChange,
   orden,
   onOrdenChange,
+  estadoOptions = ESTADO_PROYECTO_OPTIONS,
 }: {
   estado: string
   onEstadoChange: (value: string) => void
   orden: OrderMode
   onOrdenChange: (value: OrderMode) => void
+  estadoOptions?: { value: string; label: string }[]
 }) {
   return (
     <div className="flex flex-wrap items-end gap-3">
@@ -19,7 +21,7 @@ export function ProjectFilters({
         <Select
           label="Filtrar por estado"
           placeholder="Todos"
-          options={ESTADO_PROYECTO_OPTIONS}
+          options={estadoOptions}
           value={estado}
           onChange={(e) => onEstadoChange(e.target.value)}
         />

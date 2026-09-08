@@ -17,6 +17,7 @@ import {
   getActiveProjectCountsByRole,
   type UserProjectCount,
 } from '../utils/assignableUsers'
+import descansoGif from '../assets/descanso.gif'
 import { getEstadoProyectoLabel } from '../utils/projectStatus'
 import { formatDateDisplay, formatDateTimeDisplay } from '../utils/date'
 import { Avatar } from '../components/ui/Avatar'
@@ -304,9 +305,15 @@ export function DashboardPage() {
           </h2>
           <p className="mb-4 text-xs text-slate-500">Las cinco más cercanas, con su link de Meet</p>
           {proximasReuniones.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
+              <img
+                src={descansoGif}
+                alt=""
+                draggable={false}
+                className="h-64 w-64 rounded-lg object-cover select-none"
+              />
               <p className="text-sm text-slate-500">No hay reuniones agendadas</p>
-              <Link to="/reuniones" className="mt-2 text-sm text-accent-hover hover:underline">
+              <Link to="/reuniones" className="text-sm text-accent-hover hover:underline">
                 Agendar una
               </Link>
             </div>

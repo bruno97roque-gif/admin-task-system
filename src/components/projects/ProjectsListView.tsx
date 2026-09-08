@@ -57,6 +57,7 @@ type OrdenProyectos = (typeof ORDEN_OPTIONS)[number]['value']
 interface ProjectForm {
   name: string
   descripcion: string
+  enlaceMateriales: string
   tipoProyecto: string
   grupo: string
   seguimientoId: string
@@ -73,6 +74,7 @@ interface ProjectForm {
 const emptyForm: ProjectForm = {
   name: '',
   descripcion: '',
+  enlaceMateriales: '',
   tipoProyecto: '',
   grupo: '',
   seguimientoId: '',
@@ -286,6 +288,7 @@ export function ProjectsListView({
       grupo: data.grupo,
       seguimientoId: Number(data.seguimientoId),
       comentario: data.comentario.trim(),
+      enlaceMateriales: data.enlaceMateriales.trim() || null,
       ...(showTipoProyecto && {
         tipoProyecto: data.tipoProyecto.trim() || null,
       }),
@@ -586,6 +589,14 @@ export function ProjectsListView({
             placeholder="Describe el proyecto..."
             error={errors.descripcion?.message}
             {...register('descripcion', { required: 'La descripción es obligatoria' })}
+          />
+
+          <Input
+            label="Carpeta de materiales (opcional)"
+            type="url"
+            placeholder="https://drive.google.com/drive/folders/..."
+            error={errors.enlaceMateriales?.message}
+            {...register('enlaceMateriales')}
           />
 
           {showTipoProyecto && (

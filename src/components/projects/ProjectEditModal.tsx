@@ -32,6 +32,7 @@ const TECNOLOGIA_OPTIONS = [
 interface ProjectForm {
   name: string
   descripcion: string
+  enlaceMateriales: string
   tipoProyecto: string
   grupo: string
   seguimientoId: string
@@ -102,6 +103,7 @@ export function ProjectEditModal({
       reset({
         name: project.name,
         descripcion: project.descripcion,
+        enlaceMateriales: project.enlaceMateriales ?? '',
         tipoProyecto: project.tipoProyecto ?? '',
         grupo: project.grupo,
         seguimientoId: String(project.seguimientoId),
@@ -131,6 +133,7 @@ export function ProjectEditModal({
   const buildUpdatePayload = (data: ProjectForm): UpdateProjectRequest => ({
     name: data.name.trim(),
     descripcion: data.descripcion.trim(),
+    enlaceMateriales: data.enlaceMateriales.trim() || null,
     grupo: data.grupo,
     seguimientoId: Number(data.seguimientoId),
     comentario: data.comentario.trim(),
@@ -151,6 +154,7 @@ export function ProjectEditModal({
     return (
       payload.name !== actual.name ||
       payload.descripcion !== actual.descripcion ||
+      (payload.enlaceMateriales ?? null) !== (actual.enlaceMateriales ?? null) ||
       payload.grupo !== actual.grupo ||
       payload.seguimientoId !== actual.seguimientoId ||
       payload.comentario !== actual.comentario ||
@@ -208,6 +212,14 @@ export function ProjectEditModal({
           placeholder="Describe el proyecto..."
           error={errors.descripcion?.message}
           {...register('descripcion', { required: 'La descripción es obligatoria' })}
+        />
+
+        <Input
+          label="Carpeta de materiales"
+          type="url"
+          placeholder="https://drive.google.com/drive/folders/..."
+          error={errors.enlaceMateriales?.message}
+          {...register('enlaceMateriales')}
         />
 
         {showTipoProyecto && (

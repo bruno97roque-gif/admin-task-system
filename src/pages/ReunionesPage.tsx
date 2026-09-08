@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import {
   IoAddOutline,
+  IoCalendarNumberOutline,
   IoCalendarOutline,
   IoCreateOutline,
   IoPeopleOutline,
@@ -18,6 +19,14 @@ import { useRolesStore } from '../stores/rolesStore'
 import { isRestrictedRole } from '../utils/roleAccess'
 import { getUsersByRoleName, toSelectOptions } from '../utils/assignableUsers'
 import { formatDateTimeDisplay, toDateTimeInputValue } from '../utils/date'
+import {
+  componerTitulo,
+  enlaceGoogleCalendar,
+  esReunionDeEquipo,
+  participantesSinCorreo,
+  TIPOS_REUNION,
+  tituloEsLibre,
+} from '../utils/reuniones'
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -28,6 +37,7 @@ import { Select } from '../components/ui/Select'
 import { Textarea } from '../components/ui/Textarea'
 
 interface ReunionForm {
+  tipo: string
   titulo: string
   descripcion: string
   fecha: string
@@ -37,6 +47,7 @@ interface ReunionForm {
 }
 
 const emptyForm: ReunionForm = {
+  tipo: 'Brief',
   titulo: '',
   descripcion: '',
   fecha: '',
@@ -63,6 +74,8 @@ function ReunionCard({
   onEdit: (r: Reunion) => void
   onDelete: (r: Reunion) => void
 }) {
+  const sinCorreo = participantesSinCorreo(reunion)
+
   return (
     <article
       className={`flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-start sm:justify-between ${
@@ -117,6 +130,21 @@ function ReunionCard({
         </a>
         {esAdmin && (
           <>
+            <a
+              href={enlaceGoogleCalendar(reunion)}
+              target="_blank"
+              rel="noreferrer"
+              title={
+                sinCorreo.length > 0
+                  ? `Sin correo cargado: ${sinCorreo.join(', ')}. No se los podrá invitar.`
+                  : 'Crear el evento en Google Calendar e invitar a los convocados'
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-overlay px-3 py-2 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-600"
+            >
+              <IoCalendarNumberOutline size={16} />
+              Calendar
+              {sinCorreo.length > 0 && <span className="text-amber-400">!</span>}
+            </a>
             <Button variant="secondary" onClick={() => onEdit(reunion)} aria-label="Editar">
               <IoCreateOutline size={16} />
             </Button>
@@ -168,8 +196,24 @@ export function ReunionesPage() {
     reset,
     control,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ReunionForm>({ defaultValues: emptyForm })
+
+  // El título se arma con el proyecto primero y después el tipo. Con «Otros» y
+  // con la reunión de equipo lo escribe quien agenda.
+  const tipo = useWatch({ control, name: 'tipo' })
+  const proyectoIdForm = useWatch({ control, name: 'proyectoId' })
+  const esDeEquipo = esReunionDeEquipo(tipo)
+  const tituloLibre = tituloEsLibre(tipo)
+
+  // Se recalcula en el onChange y no en un efecto: así el título solo cambia
+  // cuando la persona toca el tipo o el proyecto, nunca por detrás.
+  const actualizarTitulo = (nuevoTipo: string, nuevoProyectoId: string) => {
+    if (nuevoTipo === 'Otros') return
+    const nombre = projects.find((p) => String(p.id) === nuevoProyectoId)?.name
+    setValue('titulo', componerTitulo(nuevoTipo, nombre))
+  }
 
   useEffect(() => {
     fetchReuniones(esAdmin)
@@ -224,6 +268,8 @@ export function ReunionesPage() {
   const openEdit = (reunion: Reunion) => {
     setEditing(reunion)
     reset({
+      // Al editar el título queda libre, para no pisar lo que ya se escribió.
+      tipo: reunion.proyectoId ? 'Otros' : 'Equipo',
       titulo: reunion.titulo,
       descripcion: reunion.descripcion ?? '',
       fecha: toDateTimeInputValue(reunion.fecha),
@@ -252,7 +298,9 @@ export function ReunionesPage() {
       descripcion: data.descripcion.trim() || null,
       fecha: fecha.toISOString(),
       linkMeet: data.linkMeet.trim(),
-      proyectoId: data.proyectoId ? Number(data.proyectoId) : null,
+      // La reunión de equipo no lleva proyecto: es general.
+      proyectoId:
+        esReunionDeEquipo(data.tipo) || !data.proyectoId ? null : Number(data.proyectoId),
       participantesIds: data.participantesIds.map(Number),
     }
 
@@ -360,26 +408,50 @@ export function ReunionesPage() {
               {errors.root.message}
             </div>
           )}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select
+              label="Tipo de reunión"
+              options={TIPOS_REUNION.map((t) => ({ value: t.value, label: t.label }))}
+              {...register('tipo', {
+                onChange: (e: { target: { value: string } }) =>
+                  actualizarTitulo(e.target.value, proyectoIdForm),
+              })}
+            />
+            {!esDeEquipo && (
+              <Select
+                label="Proyecto"
+                placeholder="Elige un proyecto"
+                options={projectOptions}
+                error={errors.proyectoId?.message}
+                {...register('proyectoId', {
+                  required: 'Elige el proyecto',
+                  onChange: (e: { target: { value: string } }) =>
+                    actualizarTitulo(tipo, e.target.value),
+                })}
+              />
+            )}
+          </div>
+
           <Input
             label="Título"
             placeholder="Presentación de avance de diseño"
+            readOnly={!tituloLibre}
+            className={tituloLibre ? '' : 'cursor-default text-slate-400'}
             error={errors.titulo?.message}
             {...register('titulo', { required: 'El título es obligatorio' })}
           />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Fecha y hora"
-              type="datetime-local"
-              error={errors.fecha?.message}
-              {...register('fecha', { required: 'La fecha es obligatoria' })}
-            />
-            <Select
-              label="Proyecto (opcional)"
-              placeholder="Sin proyecto"
-              options={projectOptions}
-              {...register('proyectoId')}
-            />
-          </div>
+          {!tituloLibre && (
+            <p className="-mt-2 text-xs text-slate-500">
+              Se arma solo con el proyecto y el tipo. Elige «Otros» para escribirlo.
+            </p>
+          )}
+
+          <Input
+            label="Fecha y hora"
+            type="datetime-local"
+            error={errors.fecha?.message}
+            {...register('fecha', { required: 'La fecha es obligatoria' })}
+          />
           <Input
             label="Link de Google Meet"
             type="url"

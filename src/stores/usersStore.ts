@@ -1,7 +1,12 @@
 import { create } from 'zustand'
 import type { AppUser } from '../types'
 import type { CreateUserRequest } from '../services/api'
-import { createUserRequest, getUsersRequest, updatePasswordRequest } from '../services/api'
+import {
+  createUserRequest,
+  getUsersRequest,
+  updatePasswordRequest,
+  updateUserEmailRequest,
+} from '../services/api'
 
 interface UsersState {
   users: AppUser[]
@@ -12,6 +17,10 @@ interface UsersState {
   fetchUsers: () => Promise<void>
   createUser: (data: CreateUserRequest) => Promise<{ success: boolean; error?: string }>
   updatePassword: (id: number, password: string) => Promise<{ success: boolean; error?: string }>
+  updateEmail: (
+    id: number,
+    email: string | null,
+  ) => Promise<{ success: boolean; error?: string }>
 }
 
 export const useUsersStore = create<UsersState>((set, get) => ({
@@ -58,6 +67,23 @@ export const useUsersStore = create<UsersState>((set, get) => ({
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Error al actualizar la contraseña'
+      set({ saving: false, error: message })
+      return { success: false, error: message }
+    }
+  },
+
+  updateEmail: async (id, email) => {
+    set({ saving: true, error: null })
+    try {
+      const actualizado = await updateUserEmailRequest(id, email)
+      set((state) => ({
+        users: state.users.map((u) => (u.id === id ? { ...u, email: actualizado.email } : u)),
+        saving: false,
+      }))
+      return { success: true }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Error al guardar el correo'
       set({ saving: false, error: message })
       return { success: false, error: message }
     }

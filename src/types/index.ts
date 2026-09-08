@@ -18,6 +18,8 @@ export interface Project {
   grupo: string
   seguimientoId: number
   comentario: string
+  /** Carpeta de Drive con todo el material del proyecto. */
+  enlaceMateriales: string | null
   diasSinResponder: number | null
   fechaEntrega: string | null
   createdAt: string
@@ -56,6 +58,8 @@ export interface AppUser {
   user: string
   active: boolean
   roleId: number
+  /** Correo corporativo, para las invitaciones de calendario. */
+  email?: string | null
 }
 
 export interface HistorialEtapa {
@@ -110,6 +114,7 @@ export interface UsuarioResumen {
   name: string
   user: string
   roleId: number
+  email?: string | null
 }
 
 export interface ProyectoResumen {

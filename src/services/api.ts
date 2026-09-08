@@ -44,6 +44,14 @@ export interface CreateUserRequest {
   user: string
   password: string
   roleId: number
+  email?: string | null
+}
+
+export function updateUserEmailRequest(id: number, email: string | null) {
+  return apiFetch<import('../types').AppUser>(`/user/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ email }),
+  })
 }
 
 export function createUserRequest(data: CreateUserRequest) {
@@ -90,6 +98,7 @@ export interface CreateProjectRequest {
   seguimientoId: number
   comentario: string
   tipoProyecto?: string | null
+  enlaceMateriales?: string | null
   disenadorId?: number | null
   desarrolladorId?: number | null
   usuariosIds?: number[]
@@ -112,6 +121,7 @@ export interface UpdateProjectRequest {
   tipoProyecto: string | null
   estadoPago: string
   estadoProyecto: string
+  enlaceMateriales?: string | null
   diasSinResponder: number | null
   fechaEntrega: string | null
   disenadorId?: number | null

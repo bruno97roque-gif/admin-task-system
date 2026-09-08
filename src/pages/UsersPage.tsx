@@ -5,6 +5,7 @@ import {
   IoEyeOffOutline,
   IoEyeOutline,
   IoKeyOutline,
+  IoMailOutline,
   IoPeopleOutline,
   IoRefreshOutline,
   IoShuffleOutline,
@@ -22,6 +23,7 @@ interface UserForm {
   user: string
   password: string
   roleId: string
+  email: string
 }
 
 const emptyForm: UserForm = {
@@ -29,10 +31,15 @@ const emptyForm: UserForm = {
   user: '',
   password: '',
   roleId: '',
+  email: '',
 }
 
 interface PasswordForm {
   password: string
+}
+
+interface EmailForm {
+  email: string
 }
 
 export function UsersPage() {
@@ -44,6 +51,7 @@ export function UsersPage() {
   const fetchUsers = useUsersStore((s) => s.fetchUsers)
   const createUser = useUsersStore((s) => s.createUser)
   const updatePassword = useUsersStore((s) => s.updatePassword)
+  const updateEmail = useUsersStore((s) => s.updateEmail)
 
   const roles = useRolesStore((s) => s.roles)
   const fetchRoles = useRolesStore((s) => s.fetchRoles)
@@ -51,6 +59,7 @@ export function UsersPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [passwordModalOpen, setPasswordModalOpen] = useState(false)
+  const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [showNewPassword, setShowNewPassword] = useState(false)
 
@@ -62,6 +71,14 @@ export function UsersPage() {
     formState: { errors },
     setError,
   } = useForm<UserForm>({ defaultValues: emptyForm })
+
+  const {
+    register: registerEmail,
+    handleSubmit: handleSubmitEmail,
+    reset: resetEmail,
+    formState: { errors: emailErrors },
+    setError: setErrorEmail,
+  } = useForm<EmailForm>({ defaultValues: { email: '' } })
 
   const {
     register: registerPassword,
@@ -110,6 +127,7 @@ export function UsersPage() {
       user: data.user.trim(),
       password: data.password,
       roleId: Number(data.roleId),
+      email: data.email.trim() || null,
     })
 
     if (result.success) {
@@ -136,6 +154,28 @@ export function UsersPage() {
   const handleGenerateNewPassword = () => {
     setValuePassword('password', generatePassword(), { shouldValidate: true })
     setShowNewPassword(true)
+  }
+
+  const openEmailModal = (userId: number, email: string) => {
+    setSelectedUserId(userId)
+    resetEmail({ email })
+    setEmailModalOpen(true)
+  }
+
+  const closeEmailModal = () => {
+    setEmailModalOpen(false)
+    setSelectedUserId(null)
+    resetEmail({ email: '' })
+  }
+
+  const onSubmitEmail = async (data: EmailForm) => {
+    if (selectedUserId === null) return
+    const result = await updateEmail(selectedUserId, data.email.trim() || null)
+    if (result.success) {
+      closeEmailModal()
+    } else {
+      setErrorEmail('root', { message: result.error ?? 'Error al guardar el correo' })
+    }
   }
 
   const onSubmitPassword = async (data: PasswordForm) => {
@@ -192,6 +232,7 @@ export function UsersPage() {
               <th className="px-4 py-3 font-medium">ID</th>
               <th className="px-4 py-3 font-medium">Nombre</th>
               <th className="px-4 py-3 font-medium">Usuario</th>
+              <th className="px-4 py-3 font-medium">Correo</th>
               <th className="px-4 py-3 font-medium">Rol</th>
               <th className="px-4 py-3 font-medium">Estado</th>
               <th className="px-4 py-3 font-medium text-right">Acciones</th>
@@ -200,13 +241,13 @@ export function UsersPage() {
           <tbody className="divide-y divide-border">
             {loading && users.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                   Cargando usuarios...
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                   No hay usuarios registrados
                 </td>
               </tr>
@@ -221,6 +262,13 @@ export function UsersPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-slate-400">{user.user}</td>
+                  <td className="px-4 py-3">
+                    {user.email ? (
+                      <span className="text-slate-400">{user.email}</span>
+                    ) : (
+                      <span className="text-xs text-slate-600">Sin correo</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-slate-400">
                     {roleMap.get(user.roleId) ?? `Rol #${user.roleId}`}
                   </td>
@@ -236,11 +284,20 @@ export function UsersPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        onClick={() => openEmailModal(user.id, user.email ?? '')}
+                        aria-label="Editar correo"
+                        title="Editar correo"
+                      >
+                        <IoMailOutline size={16} />
+                      </Button>
                       <Button
                         variant="ghost"
                         onClick={() => openPasswordModal(user.id)}
                         aria-label="Cambiar contraseña"
+                        title="Cambiar contraseña"
                       >
                         <IoKeyOutline size={16} />
                       </Button>
@@ -252,6 +309,45 @@ export function UsersPage() {
           </tbody>
         </table>
       </div>
+
+      <Modal
+        open={emailModalOpen}
+        onClose={closeEmailModal}
+        title="Correo del usuario"
+        size="sm"
+      >
+        <form onSubmit={handleSubmitEmail(onSubmitEmail)} className="space-y-4">
+          {emailErrors.root && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+              {emailErrors.root.message}
+            </div>
+          )}
+          <p className="text-sm text-slate-400">
+            Se usa para invitar a la persona al evento de Google Calendar cuando se
+            agenda una reunión. Déjalo vacío para quitarlo.
+          </p>
+          <Input
+            label="Correo"
+            type="email"
+            placeholder="aaron@websy.pe"
+            error={emailErrors.email?.message}
+            {...registerEmail('email')}
+          />
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={closeEmailModal}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" className="w-full sm:w-auto" loading={saving}>
+              Guardar
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       <Modal open={modalOpen} onClose={closeModal} title="Agregar usuario" size="md">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -273,6 +369,14 @@ export function UsersPage() {
             placeholder="Ej. Ing Jauregui"
             error={errors.user?.message}
             {...register('user', { required: 'El usuario es obligatorio' })}
+          />
+
+          <Input
+            label="Correo (opcional)"
+            type="email"
+            placeholder="aaron@websy.pe"
+            error={errors.email?.message}
+            {...register('email')}
           />
 
           <div className="flex flex-col gap-1.5">

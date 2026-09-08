@@ -49,13 +49,13 @@ const TRAMOS: Record<TramoPago, TramoPagoInfo> = {
   },
 }
 
-/** Orden en que se muestran en la leyenda: de lo que falta cobrar a lo cobrado. */
-export const TRAMOS_PAGO: TramoPagoInfo[] = [
-  TRAMOS.inicial,
-  TRAMOS.parcial,
-  TRAMOS.completo,
-  TRAMOS.desconocido,
-]
+/**
+ * Orden en que se muestran en la leyenda: de lo que falta cobrar a lo cobrado.
+ * `desconocido` queda afuera a propósito: ningún proyecto entra sin un pago
+ * cargado, así que anunciarlo en la leyenda sería ruido. El tramo sigue
+ * existiendo como red de contención si el campo llega vacío.
+ */
+export const TRAMOS_PAGO: TramoPagoInfo[] = [TRAMOS.inicial, TRAMOS.parcial, TRAMOS.completo]
 
 /**
  * Porcentaje cobrado, o `null` si el texto no dice nada aprovechable.

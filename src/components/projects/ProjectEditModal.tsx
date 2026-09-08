@@ -42,6 +42,7 @@ interface ProjectForm {
   estadoProyecto: string
   diasSinResponder: string
   fechaEntrega: string
+  fechaEntregaDiseno: string
   programadorId: string
   disenadorId: string
 }
@@ -115,6 +116,7 @@ export function ProjectEditModal({
         diasSinResponder:
           project.diasSinResponder !== null ? String(project.diasSinResponder) : '',
         fechaEntrega: toDateInputValue(project.fechaEntrega),
+        fechaEntregaDiseno: toDateInputValue(project.fechaEntregaDiseno),
         programadorId: project.desarrolladorId != null ? String(project.desarrolladorId) : '',
         disenadorId: project.disenadorId != null ? String(project.disenadorId) : '',
       })
@@ -145,6 +147,7 @@ export function ProjectEditModal({
     estadoProyecto: data.estadoProyecto.trim(),
     diasSinResponder: data.diasSinResponder.trim() ? Number(data.diasSinResponder) : null,
     fechaEntrega: data.fechaEntrega.trim() || null,
+    fechaEntregaDiseno: data.fechaEntregaDiseno.trim() || null,
     desarrolladorId: data.programadorId ? Number(data.programadorId) : null,
     disenadorId: data.disenadorId ? Number(data.disenadorId) : null,
   })
@@ -164,7 +167,9 @@ export function ProjectEditModal({
       payload.estadoProyecto !==
         (actual.estadoProyecto === 'Desarollo' ? 'Desarrollo' : actual.estadoProyecto) ||
       payload.diasSinResponder !== actual.diasSinResponder ||
-      toDateInputValue(payload.fechaEntrega) !== toDateInputValue(actual.fechaEntrega)
+      toDateInputValue(payload.fechaEntrega) !== toDateInputValue(actual.fechaEntrega) ||
+      toDateInputValue(payload.fechaEntregaDiseno) !==
+        toDateInputValue(actual.fechaEntregaDiseno)
     )
   }
 
@@ -278,11 +283,24 @@ export function ProjectEditModal({
             {...register('tecnologia')}
           />
           <Controller
+            name="fechaEntregaDiseno"
+            control={control}
+            render={({ field }) => (
+              <DateInput
+                label="Entrega del diseño"
+                name={field.name}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
+          />
+          <Controller
             name="fechaEntrega"
             control={control}
             render={({ field }) => (
               <DateInput
-                label="Fecha de entrega"
+                label="Entrega final"
                 name={field.name}
                 value={field.value}
                 onChange={field.onChange}

@@ -22,6 +22,8 @@ export interface Project {
   enlaceMateriales: string | null
   diasSinResponder: number | null
   fechaEntrega: string | null
+  /** Compromiso de entrega del diseño, aparte de la entrega final. */
+  fechaEntregaDiseno: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null
@@ -146,6 +148,7 @@ export type TipoNotificacion =
   | 'EtapaFinalizada'
   | 'ReunionProgramada'
   | 'NotaRecibida'
+  | 'NotaRespondida'
 
 export interface Notificacion {
   id: number
@@ -179,6 +182,19 @@ export interface Reunion {
   updatedAt: string
 }
 
+export type EstadoNota = 'Pendiente' | 'EnCurso' | 'Resuelta'
+
+export type CategoriaNota = 'Consulta' | 'Bloqueo' | 'Material' | 'Cambio' | 'Otro'
+
+export interface RespuestaNota {
+  id: number
+  autorId: number | null
+  autor: UsuarioResumen | null
+  contenido: string
+  createdAt: string
+}
+
+/** Un ticket del equipo para administración, con su hilo de respuestas. */
 export interface NotaAdmin {
   id: number
   proyectoId: number
@@ -186,6 +202,10 @@ export interface NotaAdmin {
   autorId: number | null
   autor: UsuarioResumen | null
   contenido: string
+  estado: EstadoNota
+  categoria: CategoriaNota
+  respuestas: RespuestaNota[]
+  ultimaRespuestaAt: string | null
   leidaAt: string | null
   createdAt: string
 }

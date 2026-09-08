@@ -13,6 +13,10 @@ const TIPO_META: Record<TipoNotificacion, { icon: IconType; className: string }>
   EtapaFinalizada: { icon: IoCashOutline, className: 'bg-amber-500/20 text-amber-300' },
   ReunionProgramada: { icon: IoVideocamOutline, className: 'bg-emerald-500/20 text-emerald-300' },
   NotaRecibida: { icon: IoChatbubbleEllipsesOutline, className: 'bg-sky-500/20 text-sky-300' },
+  NotaRespondida: {
+    icon: IoChatbubbleEllipsesOutline,
+    className: 'bg-fuchsia-500/20 text-fuchsia-300',
+  },
 }
 
 interface NotificacionItemProps {

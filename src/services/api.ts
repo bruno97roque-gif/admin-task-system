@@ -99,6 +99,7 @@ export interface CreateProjectRequest {
   comentario: string
   tipoProyecto?: string | null
   enlaceMateriales?: string | null
+  fechaEntregaDiseno?: string | null
   disenadorId?: number | null
   desarrolladorId?: number | null
   usuariosIds?: number[]
@@ -124,6 +125,7 @@ export interface UpdateProjectRequest {
   enlaceMateriales?: string | null
   diasSinResponder: number | null
   fechaEntrega: string | null
+  fechaEntregaDiseno?: string | null
   disenadorId?: number | null
   desarrolladorId?: number | null
 }
@@ -269,10 +271,28 @@ export function getMisNotasRequest() {
   return apiFetch<import('../types').NotaAdmin[]>('/notas/mias')
 }
 
-export function createNotaRequest(data: { proyectoId: number; contenido: string }) {
+export function createNotaRequest(data: {
+  proyectoId: number
+  contenido: string
+  categoria?: string
+}) {
   return apiFetch<import('../types').NotaAdmin>('/notas', {
     method: 'POST',
     body: JSON.stringify(data),
+  })
+}
+
+export function responderNotaRequest(id: number, contenido: string) {
+  return apiFetch<import('../types').NotaAdmin>(`/notas/${id}/respuestas`, {
+    method: 'POST',
+    body: JSON.stringify({ contenido }),
+  })
+}
+
+export function cambiarEstadoNotaRequest(id: number, estado: string) {
+  return apiFetch<import('../types').NotaAdmin>(`/notas/${id}/estado`, {
+    method: 'PATCH',
+    body: JSON.stringify({ estado }),
   })
 }
 

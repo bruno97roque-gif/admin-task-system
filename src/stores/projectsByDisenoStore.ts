@@ -10,7 +10,7 @@ function buildUpdatePayloadFromProject(
   project: Project,
   overrides: {
     comentario: string
-    fechaEntrega: string | null
+    fechaEntregaDiseno: string | null
     estadoProyecto: string
   },
 ): UpdateProjectRequest {
@@ -25,7 +25,10 @@ function buildUpdatePayloadFromProject(
     estadoPago: project.estadoPago,
     estadoProyecto: overrides.estadoProyecto,
     diasSinResponder: project.diasSinResponder,
-    fechaEntrega: overrides.fechaEntrega,
+    // El diseñador solo toca la fecha del diseño; la de entrega final es de
+    // administración y no se pisa desde acá.
+    fechaEntrega: project.fechaEntrega,
+    fechaEntregaDiseno: overrides.fechaEntregaDiseno,
   }
 }
 
@@ -39,7 +42,7 @@ interface ProjectsByDisenoState {
     project: Project,
     data: {
       comentario: string
-      fechaEntrega: string | null
+      fechaEntregaDiseno: string | null
       estadoProyecto: string
     },
   ) => Promise<{ success: boolean; error?: string }>
@@ -72,7 +75,7 @@ export const useProjectsByDisenoStore = create<ProjectsByDisenoState>((set) => (
         project.id,
         buildUpdatePayloadFromProject(project, {
           comentario: data.comentario.trim(),
-          fechaEntrega: data.fechaEntrega,
+          fechaEntregaDiseno: data.fechaEntregaDiseno,
           estadoProyecto: data.estadoProyecto,
         }),
       )

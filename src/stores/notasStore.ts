@@ -1,11 +1,12 @@
 import { create } from 'zustand'
-import type { NotaAdmin } from '../types'
+import type { EstadoNota, NotaAdmin } from '../types'
 import {
+  cambiarEstadoNotaRequest,
   createNotaRequest,
   deleteNotaRequest,
   getMisNotasRequest,
   getNotasRequest,
-  marcarNotaLeidaRequest,
+  responderNotaRequest,
 } from '../services/api'
 
 type Resultado = { success: boolean; error?: string }
@@ -17,8 +18,13 @@ interface NotasState {
   error: string | null
   /** `todas` es el panel de administración; sin eso trae solo las propias. */
   fetchNotas: (todas: boolean) => Promise<void>
-  createNota: (data: { proyectoId: number; contenido: string }) => Promise<Resultado>
-  marcarLeida: (id: number) => Promise<Resultado>
+  createNota: (data: {
+    proyectoId: number
+    contenido: string
+    categoria?: string
+  }) => Promise<Resultado>
+  responder: (id: number, contenido: string) => Promise<Resultado>
+  cambiarEstado: (id: number, estado: EstadoNota) => Promise<Resultado>
   deleteNota: (id: number) => Promise<Resultado>
 }
 
@@ -38,7 +44,7 @@ export const useNotasStore = create<NotasState>((set) => ({
       const notas = todas ? await getNotasRequest() : await getMisNotasRequest()
       set({ notas, loading: false })
     } catch (error) {
-      set({ loading: false, error: mensajeDe(error, 'Error al cargar notas') })
+      set({ loading: false, error: mensajeDe(error, 'Error al cargar los tickets') })
     }
   },
 
@@ -49,19 +55,36 @@ export const useNotasStore = create<NotasState>((set) => ({
       set((state) => ({ notas: [creada, ...state.notas], saving: false }))
       return { success: true }
     } catch (error) {
-      const message = mensajeDe(error, 'Error al enviar la nota')
+      const message = mensajeDe(error, 'Error al enviar el ticket')
       set({ saving: false, error: message })
       return { success: false, error: message }
     }
   },
 
-  marcarLeida: async (id) => {
+  responder: async (id, contenido) => {
+    set({ saving: true, error: null })
     try {
-      const leida = await marcarNotaLeidaRequest(id)
-      set((state) => ({ notas: state.notas.map((n) => (n.id === id ? leida : n)) }))
+      const actualizada = await responderNotaRequest(id, contenido)
+      set((state) => ({
+        notas: state.notas.map((n) => (n.id === id ? actualizada : n)),
+        saving: false,
+      }))
       return { success: true }
     } catch (error) {
-      const message = mensajeDe(error, 'Error al marcar la nota')
+      const message = mensajeDe(error, 'Error al responder')
+      set({ saving: false, error: message })
+      return { success: false, error: message }
+    }
+  },
+
+  cambiarEstado: async (id, estado) => {
+    set({ error: null })
+    try {
+      const actualizada = await cambiarEstadoNotaRequest(id, estado)
+      set((state) => ({ notas: state.notas.map((n) => (n.id === id ? actualizada : n)) }))
+      return { success: true }
+    } catch (error) {
+      const message = mensajeDe(error, 'Error al cambiar el estado')
       set({ error: message })
       return { success: false, error: message }
     }
@@ -74,7 +97,7 @@ export const useNotasStore = create<NotasState>((set) => ({
       set((state) => ({ notas: state.notas.filter((n) => n.id !== id) }))
       return { success: true }
     } catch (error) {
-      const message = mensajeDe(error, 'Error al eliminar la nota')
+      const message = mensajeDe(error, 'Error al eliminar el ticket')
       set({ error: message })
       return { success: false, error: message }
     }

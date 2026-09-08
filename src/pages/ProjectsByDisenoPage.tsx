@@ -33,7 +33,7 @@ import { toDateInputValue } from '../utils/date'
 
 interface ProjectEditForm {
   comentario: string
-  fechaEntrega: string
+  fechaEntregaDiseno: string
   estadoProyecto: string
 }
 
@@ -61,7 +61,7 @@ export function ProjectsByDisenoPage() {
     formState: { errors },
     setError,
   } = useForm<ProjectEditForm>({
-    defaultValues: { comentario: '', fechaEntrega: '', estadoProyecto: '' },
+    defaultValues: { comentario: '', fechaEntregaDiseno: '', estadoProyecto: '' },
   })
 
   const users = useUsersStore((s) => s.users)
@@ -114,14 +114,14 @@ export function ProjectsByDisenoPage() {
     setEditingProject(project)
     reset({
       comentario: project.comentario ?? '',
-      fechaEntrega: toDateInputValue(project.fechaEntrega),
+      fechaEntregaDiseno: toDateInputValue(project.fechaEntregaDiseno),
       estadoProyecto: project.estadoProyecto,
     })
   }
 
   const closeEdit = () => {
     setEditingProject(null)
-    reset({ comentario: '', fechaEntrega: '', estadoProyecto: '' })
+    reset({ comentario: '', fechaEntregaDiseno: '', estadoProyecto: '' })
   }
 
   const onSubmit = async (data: ProjectEditForm) => {
@@ -129,7 +129,7 @@ export function ProjectsByDisenoPage() {
 
     const result = await updateProject(editingProject, {
       comentario: data.comentario,
-      fechaEntrega: data.fechaEntrega.trim() || null,
+      fechaEntregaDiseno: data.fechaEntregaDiseno.trim() || null,
       estadoProyecto: data.estadoProyecto,
     })
     if (result.success) {
@@ -236,11 +236,11 @@ export function ProjectsByDisenoPage() {
             </div>
           )}
           <Controller
-            name="fechaEntrega"
+            name="fechaEntregaDiseno"
             control={control}
             render={({ field }) => (
               <DateInput
-                label="Fecha de entrega"
+                label="Fecha de entrega del diseño"
                 name={field.name}
                 value={field.value}
                 onChange={field.onChange}

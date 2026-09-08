@@ -33,18 +33,19 @@ export function NotificacionesPanel({ open, onClose }: NotificacionesPanelProps)
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [open, onClose])
 
-  if (!open) return null
-
   const onClickItem = (n: Notificacion) => {
     if (!n.leidaAt) marcarLeida(n.id)
   }
 
+  // Se mantiene montado para poder animar también el cierre; quién está
+  // visible lo decide `data-abierto` desde `.panel-lateral-*` en index.css.
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="panel-lateral-raiz fixed inset-0 z-50" data-abierto={open}>
       <button
         type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+        className="panel-lateral-fondo absolute inset-0 bg-black/50 backdrop-blur-[2px]"
         aria-label="Cerrar notificaciones"
+        tabIndex={open ? 0 : -1}
         onClick={onClose}
       />
 
@@ -52,7 +53,8 @@ export function NotificacionesPanel({ open, onClose }: NotificacionesPanelProps)
         role="dialog"
         aria-modal
         aria-label="Notificaciones"
-        className="absolute inset-y-0 right-0 flex w-[min(100%,24rem)] flex-col border-l border-border bg-surface-raised shadow-2xl"
+        aria-hidden={!open}
+        className="panel-lateral absolute inset-y-0 right-0 w-[min(100%,24rem)] flex-col border-l border-border bg-surface-raised shadow-2xl"
       >
         <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-4">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/20">

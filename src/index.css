@@ -37,6 +37,69 @@ textarea {
   @apply outline-none;
 }
 
+/* Panel lateral (NotificacionesPanel): entra deslizándose desde la derecha y
+   sale igual. La clave es `transition-behavior: allow-discrete`, que permite
+   animar también la salida pese a terminar en `display: none`; sin eso el
+   panel desaparecería de golpe. `@starting-style` define desde dónde entra.
+   Si el navegador no lo soporta, aparece y desaparece sin animación. */
+.panel-lateral-raiz,
+.panel-lateral-fondo,
+.panel-lateral {
+  display: none;
+  transition-duration: 0.28s;
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  transition-behavior: allow-discrete;
+}
+
+.panel-lateral-raiz {
+  transition-property: display;
+}
+
+.panel-lateral-fondo {
+  opacity: 0;
+  transition-property: opacity, display;
+}
+
+.panel-lateral {
+  translate: 100% 0;
+  transition-property: translate, display;
+}
+
+[data-abierto='true'].panel-lateral-raiz,
+[data-abierto='true'] .panel-lateral-fondo {
+  display: block;
+}
+
+[data-abierto='true'] .panel-lateral {
+  display: flex;
+}
+
+[data-abierto='true'] .panel-lateral-fondo {
+  opacity: 1;
+}
+
+[data-abierto='true'] .panel-lateral {
+  translate: 0 0;
+}
+
+@starting-style {
+  [data-abierto='true'] .panel-lateral-fondo {
+    opacity: 0;
+  }
+
+  [data-abierto='true'] .panel-lateral {
+    translate: 100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-lateral-raiz,
+  .panel-lateral-fondo,
+  .panel-lateral {
+    transition-duration: 0s;
+  }
+}
+
 /* Pingüino que pasea por el borde inferior (PinguinoPaseando). El gif de
    caminar mira a la izquierda, así que la ida (hacia la derecha) va espejada
    con scaleX(-1) y la vuelta sin espejar. El de quieto mira a la derecha,

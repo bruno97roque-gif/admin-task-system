@@ -24,6 +24,7 @@ import {
   enlaceGoogleCalendar,
   esReunionDeEquipo,
   participantesSinCorreo,
+  proyectosAgendables,
   TIPOS_REUNION,
   tituloEsLibre,
 } from '../utils/reuniones'
@@ -265,13 +266,16 @@ export function ReunionesPage() {
     ]
   }, [activeUsers, roles])
 
+  // Solo los proyectos sobre los que esta persona puede convocar: el
+  // diseñador los suyos en diseño, el desarrollador los suyos, y
+  // administración todos.
   const projectOptions = useMemo(
     () =>
-      projects
-        .filter((p) => !p.deletedAt)
+      proyectosAgendables(projects, user?.roleName, user?.id)
+        .slice()
         .sort((a, b) => a.name.localeCompare(b.name, 'es'))
         .map((p) => ({ value: String(p.id), label: p.name })),
-    [projects],
+    [projects, user],
   )
 
   const openCreate = () => {

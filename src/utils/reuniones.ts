@@ -1,4 +1,7 @@
-import type { Reunion, UsuarioResumen } from '../types'
+import type { Project, Reunion, UsuarioResumen } from '../types'
+import { esEtapaDeDiseno, type EstadoProyecto } from './projectStatus'
+import { isProjectAssignee } from './projectUsers'
+import { esAdministracion } from './roleAccess'
 
 /**
  * Tipos de reunión. Arman el título junto con el proyecto, que va primero:
@@ -82,4 +85,43 @@ export function enlaceGoogleCalendar(reunion: {
 /** Convocados que no tienen correo cargado, por eso no se los puede invitar. */
 export function participantesSinCorreo(reunion: Pick<Reunion, 'participantes'>): string[] {
   return reunion.participantes.filter((p) => !p.email).map((p) => p.name)
+}
+
+/**
+ * Sobre qué proyectos puede agendar cada quien. Es la misma regla que aplica
+ * el API (`quien-agenda.reglas.ts`), replicada acá para no ofrecer en el
+ * selector un proyecto que después va a dar 403.
+ *
+ * El diseñador, sobre los suyos mientras sean cosa de diseño; el
+ * desarrollador, sobre los suyos en cualquier etapa; administración, sobre
+ * todos.
+ */
+export function proyectosAgendables(
+  proyectos: Project[],
+  roleName: string | null | undefined,
+  usuarioId: number | null | undefined,
+): Project[] {
+  const activos = proyectos.filter((p) => !p.deletedAt)
+
+  if (esAdministracion(roleName ?? undefined)) return activos
+  if (usuarioId == null) return []
+
+  if (roleName === 'Diseñador') {
+    return activos.filter(
+      (p) =>
+        p.disenadorId === usuarioId &&
+        esEtapaDeDiseno(p.estadoProyecto as EstadoProyecto),
+    )
+  }
+
+  if (roleName === 'Programador') {
+    return activos.filter((p) => isProjectAssignee(p, 'Programador', usuarioId))
+  }
+
+  // Cualquier otro rol: mientras figure en el proyecto de alguna forma.
+  return activos.filter(
+    (p) =>
+      isProjectAssignee(p, 'Programador', usuarioId) ||
+      isProjectAssignee(p, 'Diseñador', usuarioId),
+  )
 }

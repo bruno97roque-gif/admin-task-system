@@ -14,6 +14,7 @@ import { LoaderBlock } from '../components/ui/Loader'
 import { ProjectEditModal } from '../components/projects/ProjectEditModal'
 import { PersonColorLegend } from '../components/projects/PersonColorLegend'
 import { getUserColor } from '../utils/userColors'
+import { tramoDePago } from '../utils/estadoPago'
 
 const ETAPAS_DISENADOR = ['Brief', 'Taxonomia', 'Diseno', 'AvanceDiseno', 'DisenoFinalizado']
 
@@ -116,7 +117,7 @@ export function VistaGlobalPage() {
         </div>
       </header>
 
-      <PersonColorLegend />
+      <PersonColorLegend mostrarPagos />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -153,6 +154,9 @@ export function VistaGlobalPage() {
                       const color = getUserColor(
                         esEtapaDiseno ? project.disenadorId : project.desarrolladorId,
                       )
+                      // El fondo dice cuánto se cobró; el punto sigue siendo
+                      // de la persona, que son dos cosas distintas.
+                      const pago = tramoDePago(project.estadoPago)
                       return (
                         <button
                           key={project.id}
@@ -160,10 +164,10 @@ export function VistaGlobalPage() {
                           onClick={() => setEditingProject(project)}
                           className={`flex w-full items-center gap-1.5 truncate rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
                             project.grupo === 'A'
-                              ? 'bg-surface text-slate-200 hover:bg-surface-overlay'
-                              : 'border border-dashed border-border bg-surface/60 text-slate-400 hover:bg-surface/80'
+                              ? pago.fondo
+                              : `border border-dashed border-border ${pago.fondoTenue}`
                           }`}
-                          title={`${project.name}${color ? ` — ${color.label}` : ''}${project.grupo !== 'A' ? ` — Grupo ${project.grupo}` : ''}`}
+                          title={`${project.name}${color ? ` — ${color.label}` : ''} — Pago: ${project.estadoPago || 'sin dato'}${project.grupo !== 'A' ? ` — Grupo ${project.grupo}` : ''}`}
                         >
                           {color && (
                             <span

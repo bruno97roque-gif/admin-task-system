@@ -39,18 +39,36 @@ const navItems = [
   { to: '/reuniones', label: 'Reuniones', icon: IoVideocamOutline },
   // Para administración es el panel de mensajes; para el equipo, el formulario.
   { to: '/notas', label: 'Mensajes', restrictedLabel: 'Dejar nota', icon: IoChatbubblesOutline },
-  { to: '/notificaciones', label: 'Notificaciones', icon: IoNotificationsOutline, badge: true },
   { to: '/usuarios', label: 'Usuarios', icon: IoPersonOutline },
   { to: '/roles', label: 'Roles', icon: IoShieldOutline },
   { to: '/archivados', label: 'Archivados', icon: IoArchiveOutline },
 ]
 
-function Badge({ count }: { count: number }) {
-  if (count <= 0) return null
+/** Campanita con el contador de no leídas. Va al lado del nombre del usuario. */
+function CampanaNotificaciones({ noLeidas, onNavigate }: { noLeidas: number; onNavigate?: () => void }) {
   return (
-    <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-semibold text-white">
-      {count > 99 ? '99+' : count}
-    </span>
+    <NavLink
+      to="/notificaciones"
+      onClick={onNavigate}
+      title="Notificaciones"
+      aria-label={
+        noLeidas > 0 ? `Notificaciones: ${noLeidas} sin leer` : 'Notificaciones'
+      }
+      className={({ isActive }) =>
+        `relative shrink-0 rounded-lg p-2 transition-colors ${
+          isActive
+            ? 'bg-accent/20 text-accent-hover'
+            : 'text-slate-400 hover:bg-surface-overlay hover:text-slate-200'
+        }`
+      }
+    >
+      <IoNotificationsOutline size={20} />
+      {noLeidas > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] leading-4 font-semibold text-white">
+          {noLeidas > 99 ? '99+' : noLeidas}
+        </span>
+      )}
+    </NavLink>
   )
 }
 
@@ -131,7 +149,7 @@ export function Layout() {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {visibleNavItems.map(({ to, label, restrictedLabel, icon: Icon, end, badge }) => (
+          {visibleNavItems.map(({ to, label, restrictedLabel, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -147,7 +165,6 @@ export function Layout() {
             >
               <Icon size={18} className="shrink-0" />
               <span className="truncate">{restricted && restrictedLabel ? restrictedLabel : label}</span>
-              {badge && <Badge count={noLeidas} />}
             </NavLink>
           ))}
         </nav>
@@ -156,12 +173,13 @@ export function Layout() {
           {user && (
             <div className="mb-3 flex items-center gap-2.5">
               <Avatar userId={user.id} name={user.name} size={32} />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm text-slate-300">{user.name}</p>
                 {user.roleName && (
                   <p className="truncate text-xs text-slate-500">{user.roleName}</p>
                 )}
               </div>
+              <CampanaNotificaciones noLeidas={noLeidas} onNavigate={closeSidebar} />
             </div>
           )}
           <button
@@ -192,18 +210,7 @@ export function Layout() {
               <p className="truncate text-xs text-slate-500">{user.name}</p>
             )}
           </div>
-          <NavLink
-            to="/notificaciones"
-            className="relative rounded-lg p-2 text-slate-300 transition-colors hover:bg-surface-overlay hover:text-slate-100"
-            aria-label={noLeidas > 0 ? `${noLeidas} notificaciones sin leer` : 'Notificaciones'}
-          >
-            <IoNotificationsOutline size={22} />
-            {noLeidas > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-white">
-                {noLeidas > 99 ? '99+' : noLeidas}
-              </span>
-            )}
-          </NavLink>
+          <CampanaNotificaciones noLeidas={noLeidas} />
         </header>
 
         <main className="flex min-h-0 flex-1 flex-col">

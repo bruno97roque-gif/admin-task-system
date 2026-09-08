@@ -28,6 +28,7 @@ import { ProjectsBycModal } from '../components/projects/ProjectsBycModal'
 import { LoaderBlock } from '../components/ui/Loader'
 import { CornerRestGif } from '../components/ui/CornerRestGif'
 import { PersonColorLegend } from '../components/projects/PersonColorLegend'
+import { MisReunionesPanel } from '../components/reuniones/MisReunionesPanel'
 import { toDateInputValue } from '../utils/date'
 
 // Este tablero es solo del desarrollo: nada de las etapas de diseño ni de
@@ -228,6 +229,7 @@ export function ProjectsByProgramadorPage() {
                 resetSignal={resetKey}
               />
             ))}
+            {isProgramador && <MisReunionesPanel />}
           </div>
         )}
       </div>

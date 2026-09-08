@@ -28,6 +28,7 @@ import { ProjectsBycModal } from '../components/projects/ProjectsBycModal'
 import { LoaderBlock } from '../components/ui/Loader'
 import { CornerRestGif } from '../components/ui/CornerRestGif'
 import { PersonColorLegend } from '../components/projects/PersonColorLegend'
+import { MisReunionesPanel } from '../components/reuniones/MisReunionesPanel'
 import { toDateInputValue } from '../utils/date'
 
 interface ProjectEditForm {
@@ -217,6 +218,7 @@ export function ProjectsByDisenoPage() {
                 resetSignal={resetKey}
               />
             ))}
+            {isDisenador && <MisReunionesPanel />}
           </div>
         )}
       </div>

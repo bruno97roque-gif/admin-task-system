@@ -10,7 +10,6 @@ import { ProjectsAdminPage } from '../pages/ProjectsAdminPage'
 import { ProjectsByDisenoPage } from '../pages/ProjectsByDisenoPage'
 import { ProjectsByProgramadorPage } from '../pages/ProjectsByProgramadorPage'
 import { ProjectsPage } from '../pages/ProjectsPage'
-import { RecordatoriosPage } from '../pages/RecordatoriosPage'
 import { ReunionesPage } from '../pages/ReunionesPage'
 import { ProyectosTerminadosPage } from '../pages/ProyectosTerminadosPage'
 import { RolesPage } from '../pages/RolesPage'
@@ -39,7 +38,6 @@ export function AppRouter() {
               <Route path="projects/admin" element={<ProjectsAdminPage />} />
               <Route path="proyectos/programador" element={<ProjectsByProgramadorPage />} />
               <Route path="proyectos/diseno" element={<ProjectsByDisenoPage />} />
-              <Route path="recordatorios" element={<RecordatoriosPage />} />
               <Route path="reuniones" element={<ReunionesPage />} />
               <Route path="notas" element={<NotasPage />} />
               <Route path="notificaciones" element={<NotificacionesPage />} />

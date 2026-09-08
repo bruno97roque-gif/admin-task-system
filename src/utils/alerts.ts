@@ -1,6 +1,6 @@
 /**
- * Sonido y notificación del navegador, compartidos entre los recordatorios
- * (cada 5 minutos) y las notificaciones internas (cuando llega una nueva).
+ * Sonido y notificación del navegador para las notificaciones internas
+ * (cuando llega una nueva).
  */
 
 export function playAlertSound() {

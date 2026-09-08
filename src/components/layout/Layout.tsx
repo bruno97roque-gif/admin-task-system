@@ -3,7 +3,6 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import {
   IoAnalyticsOutline,
   IoArchiveOutline,
-  IoCalendarOutline,
   IoChatbubblesOutline,
   IoCheckmarkCircleOutline,
   IoCloseOutline,
@@ -21,9 +20,7 @@ import {
   IoVideocamOutline,
 } from 'react-icons/io5'
 import { useAuthStore } from '../../stores/authStore'
-import { useRecordatoriosReminders } from '../../hooks/useRecordatoriosReminders'
 import { useNotificaciones } from '../../hooks/useNotificaciones'
-import { ReminderAlert } from '../reminders/ReminderAlert'
 import { NotificacionesAlert } from '../notificaciones/NotificacionesAlert'
 import { canAccessNavPath, isRestrictedRole } from '../../utils/roleAccess'
 import { Avatar } from '../ui/Avatar'
@@ -44,7 +41,6 @@ const navItems = [
   { to: '/notificaciones', label: 'Notificaciones', icon: IoNotificationsOutline, badge: true },
   { to: '/usuarios', label: 'Usuarios', icon: IoPersonOutline },
   { to: '/roles', label: 'Roles', icon: IoShieldOutline },
-  { to: '/recordatorios', label: 'Recordatorios', icon: IoCalendarOutline },
   { to: '/archivados', label: 'Archivados', icon: IoArchiveOutline },
 ]
 
@@ -74,8 +70,6 @@ export function Layout() {
     [user?.roleName],
   )
 
-  const showReminders = !restricted
-  const { showAlert, dismissAlert, goToRecordatorios } = useRecordatoriosReminders(showReminders)
   const { nuevas, descartarNuevas, noLeidas } = useNotificaciones(user?.id)
 
   useEffect(() => {
@@ -222,15 +216,7 @@ export function Layout() {
         </main>
       </div>
 
-      {showReminders && showAlert && (
-        <ReminderAlert
-          open={showAlert}
-          onDismiss={dismissAlert}
-          onGoToRecordatorios={goToRecordatorios}
-        />
-      )}
-
-      {nuevas.length > 0 && !(showReminders && showAlert) && (
+      {nuevas.length > 0 && (
         <NotificacionesAlert nuevas={nuevas} onDismiss={descartarNuevas} />
       )}
     </div>

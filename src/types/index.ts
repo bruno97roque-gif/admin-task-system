@@ -37,12 +37,6 @@ export interface ProjectArchivado extends Project {
   etapaAlArchivar: string | null
 }
 
-export interface Recordatorio {
-  id: number
-  descripcion: string
-  estado: boolean
-}
-
 export interface Role {
   id: number
   name: string

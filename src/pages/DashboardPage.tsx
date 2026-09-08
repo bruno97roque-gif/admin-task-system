@@ -1,26 +1,24 @@
 import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router'
 import {
-  IoAlarmOutline,
   IoCheckmarkCircleOutline,
   IoCodeSlashOutline,
   IoColorPaletteOutline,
   IoFolderOpenOutline,
   IoPeopleOutline,
   IoStatsChartOutline,
-  IoTimeOutline,
+  IoVideocamOutline,
 } from 'react-icons/io5'
 import { useProjectsStore } from '../stores/projectsStore'
-import { useRecordatoriosStore } from '../stores/recordatoriosStore'
+import { useReunionesStore } from '../stores/reunionesStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 import {
   getActiveProjectCountsByRole,
   type UserProjectCount,
 } from '../utils/assignableUsers'
-import descansoGif from '../assets/descanso.gif'
 import { getEstadoProyectoLabel } from '../utils/projectStatus'
-import { formatDateDisplay } from '../utils/date'
+import { formatDateDisplay, formatDateTimeDisplay } from '../utils/date'
 import { Avatar } from '../components/ui/Avatar'
 
 const FINALIZED_STATUS = 'ProyectoFinalizado'
@@ -105,15 +103,16 @@ export function DashboardPage() {
   const fetchRoles = useRolesStore((s) => s.fetchRoles)
   const projects = useProjectsStore((s) => s.projects)
   const fetchProjects = useProjectsStore((s) => s.fetchProjects)
-  const recordatorios = useRecordatoriosStore((s) => s.recordatorios)
-  const fetchRecordatorios = useRecordatoriosStore((s) => s.fetchRecordatorios)
+  const reuniones = useReunionesStore((s) => s.reuniones)
+  const reunionesCargadasEn = useReunionesStore((s) => s.cargadoEn)
+  const fetchReuniones = useReunionesStore((s) => s.fetchReuniones)
 
   useEffect(() => {
     fetchUsers()
     fetchRoles()
     fetchProjects()
-    fetchRecordatorios()
-  }, [fetchUsers, fetchRoles, fetchProjects, fetchRecordatorios])
+    fetchReuniones(true)
+  }, [fetchUsers, fetchRoles, fetchProjects, fetchReuniones])
 
   const isFinalized = (estado: string) => estado === FINALIZED_STATUS
 
@@ -132,7 +131,13 @@ export function DashboardPage() {
     [activeProjects, users, roles],
   )
 
-  const pendingRecordatorios = recordatorios.filter((r) => r.estado)
+  // Una reunión sigue siendo «próxima» hasta una hora después de su inicio.
+  const proximasReuniones = useMemo(() => {
+    const limite = reunionesCargadasEn - 60 * 60 * 1000
+    return reuniones
+      .filter((r) => new Date(r.fecha).getTime() >= limite)
+      .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+  }, [reuniones, reunionesCargadasEn])
 
   const enDesarrolloCount = useMemo(
     () => projects.filter((p) => p.estadoProyecto === 'Desarrollo').length,
@@ -180,12 +185,12 @@ export function DashboardPage() {
       to: '/proyectos',
     },
     {
-      label: 'Recordatorios activos',
-      value: pendingRecordatorios.length,
-      icon: IoAlarmOutline,
-      color: 'text-amber-400',
-      bg: 'bg-amber-500/10',
-      to: '/recordatorios',
+      label: 'Próximas reuniones',
+      value: proximasReuniones.length,
+      icon: IoVideocamOutline,
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/10',
+      to: '/reuniones',
     },
     {
       label: 'Proyectos finalizados',
@@ -292,31 +297,41 @@ export function DashboardPage() {
           )}
         </section>
 
-        <section className="flex flex-col rounded-xl border border-border bg-[#222034] p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-100">
-            <IoTimeOutline className="text-amber-400" />
-            Recordatorios activos
+        <section className="flex flex-col rounded-xl border border-border bg-surface-raised p-5">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
+            <IoVideocamOutline className="text-emerald-400" />
+            Próximas reuniones
           </h2>
-          {pendingRecordatorios.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
-              <img
-                src={descansoGif}
-                alt=""
-                draggable={false}
-                className="h-64 w-64 rounded-lg object-cover select-none"
-              />
-              <p className="text-sm text-slate-500">No hay recordatorios activos</p>
+          <p className="mb-4 text-xs text-slate-500">Las cinco más cercanas, con su link de Meet</p>
+          {proximasReuniones.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
+              <p className="text-sm text-slate-500">No hay reuniones agendadas</p>
+              <Link to="/reuniones" className="mt-2 text-sm text-accent-hover hover:underline">
+                Agendar una
+              </Link>
             </div>
           ) : (
             <ul className="space-y-3">
-              {pendingRecordatorios.slice(0, 5).map((item) => (
+              {proximasReuniones.slice(0, 5).map((reunion) => (
                 <li
-                  key={item.id}
-                  className="rounded-lg border border-border bg-surface px-3 py-2.5"
+                  key={reunion.id}
+                  className="flex flex-col gap-1 rounded-lg border border-border bg-surface px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <p className="line-clamp-2 text-sm font-medium text-slate-200">
-                    {item.descripcion}
-                  </p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-200">{reunion.titulo}</p>
+                    <p className="text-xs text-slate-500">
+                      {formatDateTimeDisplay(reunion.fecha)}
+                      {reunion.proyecto ? ` · ${reunion.proyecto.name}` : ''}
+                    </p>
+                  </div>
+                  <a
+                    href={reunion.linkMeet}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 text-xs font-medium text-emerald-400 hover:underline"
+                  >
+                    Unirse a Meet
+                  </a>
                 </li>
               ))}
             </ul>

@@ -185,37 +185,6 @@ export function updateProjectUsuariosRequest(
   })
 }
 
-export function getRecordatoriosRequest() {
-  return apiFetch<import('../types').Recordatorio[]>('/recordatorio')
-}
-
-export function getRecordatorioRequest(id: number) {
-  return apiFetch<import('../types').Recordatorio>(`/recordatorio/${id}`)
-}
-
-export function createRecordatorioRequest(data: { descripcion: string }) {
-  return apiFetch<import('../types').Recordatorio>('/recordatorio', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  })
-}
-
-export function updateRecordatorioRequest(
-  id: number,
-  data: { descripcion?: string; estado?: boolean },
-) {
-  return apiFetch<import('../types').Recordatorio>(`/recordatorio/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  })
-}
-
-export function deleteRecordatorioRequest(id: number) {
-  return apiFetch<void>(`/recordatorio/${id}`, {
-    method: 'DELETE',
-  })
-}
-
 export function updatePasswordRequest(id: number, password: string) {
   return apiFetch<void>(`/user/${id}`, {
     method: 'PATCH',

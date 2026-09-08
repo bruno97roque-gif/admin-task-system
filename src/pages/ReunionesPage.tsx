@@ -130,15 +130,25 @@ function ReunionCard({
       </div>
 
       <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
-        <a
-          href={reunion.linkMeet}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 sm:w-auto"
-        >
-          <IoVideocamOutline size={16} />
-          Unirse a Meet
-        </a>
+        {reunion.linkMeet ? (
+          <a
+            href={reunion.linkMeet}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 sm:w-auto"
+          >
+            <IoVideocamOutline size={16} />
+            Unirse a Meet
+          </a>
+        ) : (
+          <span
+            title="La agendó alguien sin cuenta de Workspace. Administración crea el evento en Calendar, donde Meet se genera solo, y después carga el link acá."
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 sm:w-auto"
+          >
+            <IoWarningOutline size={16} />
+            Falta el link
+          </span>
+        )}
         {/* Llevarla al Calendar es solo abrir un link: lo puede hacer
             cualquiera que vea la reunión. Ojo: la URL de Calendar es un
             «template», así que siempre crea un evento NUEVO — no sabe
@@ -260,6 +270,13 @@ export function ReunionesPage() {
   const puedeAdministrar = (reunion: Reunion) =>
     esAdmin || (user !== null && reunion.creadorId === user.id)
 
+  // Las próximas que todavía no tienen link: son las que esperan que
+  // administración cree el evento en Calendar.
+  const pendientesDeCalendar = useMemo(
+    () => proximas.filter((r) => !r.linkMeet).length,
+    [proximas],
+  )
+
   const activeUsers = useMemo(() => users.filter((u) => u.active), [users])
   const participantGroups = useMemo(() => {
     const disenadores = getUsersByRoleName(activeUsers, roles, 'Diseñador')
@@ -377,6 +394,21 @@ export function ReunionesPage() {
         </div>
       )}
 
+      {/* El equipo agenda sin link porque no tiene Workspace; el evento de
+          Google lo crea administración. Esto es su cola de pendientes. */}
+      {esAdmin && pendientesDeCalendar > 0 && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          <IoWarningOutline size={18} className="mt-0.5 shrink-0" />
+          <span>
+            {pendientesDeCalendar === 1
+              ? 'Hay 1 reunión próxima sin link de Meet: '
+              : `Hay ${pendientesDeCalendar} reuniones próximas sin link de Meet: `}
+            créales el evento con «Crear en Calendar», añade ahí Google Meet y pega el
+            link acá con el lápiz.
+          </span>
+        </div>
+      )}
+
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Próximas</h2>
         {loading && reuniones.length === 0 ? (
@@ -490,31 +522,43 @@ export function ReunionesPage() {
           />
           <div>
             <Input
-              label="Link de Google Meet"
+              label="Link de Google Meet (opcional)"
               type="url"
               placeholder="https://meet.google.com/abc-defg-hij"
               error={errors.linkMeet?.message}
               {...register('linkMeet', {
-                required: 'El link de Meet es obligatorio',
                 validate: (value) =>
+                  value.trim() === '' ||
                   MEET_REGEX.test(value.trim()) ||
                   'Tiene que ser un enlace de Google Meet (https://meet.google.com/...)',
               })}
             />
-            {/* El link va primero y después se lleva al Calendar: la URL de
-                Calendar prellena el evento pero no puede crear la videollamada,
-                así que el link hay que traerlo de Meet. */}
+            {/* La URL de Calendar prellena el evento pero no puede crear la
+                videollamada. Quien tiene Workspace la genera al guardar en
+                Calendar; el resto deja el campo vacío. */}
             <p className="mt-1.5 text-xs text-slate-500">
-              ¿No tienes el link?{' '}
-              <a
-                href={MEET_NUEVO_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-accent underline"
-              >
-                Genera uno en Meet
-              </a>{' '}
-              y pégalo acá. Después, desde la tarjeta, lo llevas a Google Calendar.
+              {esAdmin ? (
+                <>
+                  Puedes dejarlo vacío y crear el evento en Google Calendar desde la
+                  tarjeta: ahí «Añadir Google Meet» genera el link, y después lo pegas
+                  acá. O{' '}
+                  <a
+                    href={MEET_NUEVO_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-accent underline"
+                  >
+                    genera uno ahora
+                  </a>
+                  .
+                </>
+              ) : (
+                <>
+                  Déjalo vacío si no tienes uno: administración recibe el aviso, crea el
+                  evento en Calendar y manda las invitaciones. Si ya tienes un link,
+                  pégalo y se ahorra ese paso.
+                </>
+              )}
             </p>
           </div>
           <Controller

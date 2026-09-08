@@ -61,7 +61,12 @@ export function enlaceGoogleCalendar(reunion: {
   const inicio = new Date(reunion.fecha)
   const fin = new Date(inicio.getTime() + DURACION_MINUTOS * 60 * 1000)
 
-  const detalles = [reunion.descripcion?.trim(), `Meet: ${reunion.linkMeet}`]
+  // Sin link todavía: el evento va sin «location», y en Calendar se le agrega
+  // «Añadir Google Meet», que con Workspace lo genera solo.
+  const detalles = [
+    reunion.descripcion?.trim(),
+    reunion.linkMeet ? `Meet: ${reunion.linkMeet}` : null,
+  ]
     .filter(Boolean)
     .join('\n\n')
 
@@ -74,8 +79,9 @@ export function enlaceGoogleCalendar(reunion: {
     text: reunion.titulo,
     dates: `${aFormatoCalendar(inicio)}/${aFormatoCalendar(fin)}`,
     details: detalles,
-    location: reunion.linkMeet,
   })
+
+  if (reunion.linkMeet) params.set('location', reunion.linkMeet)
 
   if (invitados.length > 0) params.set('add', invitados.join(','))
 

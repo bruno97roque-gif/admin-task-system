@@ -298,7 +298,7 @@ export function DashboardPage() {
           )}
         </section>
 
-        <section className="flex flex-col rounded-xl border border-border bg-surface-raised p-5">
+        <section className="flex flex-col rounded-xl border border-border bg-[#222034] p-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
             <IoVideocamOutline className="text-emerald-400" />
             Próximas reuniones

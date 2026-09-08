@@ -1,15 +1,15 @@
 export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 /**
- * Webmail de DonWeb. El enlace es siempre el mismo salvo el correo, así que
- * se arma en `utils/webmail.ts` en vez de guardarlo por usuario.
+ * Webmail de Ferozo (DonWeb). Es un Roundcube, y acepta `_user` para dejar el
+ * correo escrito en el formulario: cada persona solo pone su contraseña.
  *
- * `WEBMAIL_CUENTA_ID` es el id de la cuenta de hosting: sale del enlace que
- * da el panel de Ferozo (`…/webmail?a=correo&id=ESTE`). Si alguna vez se
- * migra de hosting, esto es lo único que hay que cambiar.
+ * Ojo con el enlace que da el panel de DonWeb
+ * (`micuenta.donweb.com/…/acceso-remoto/webmail`): ese pasa por el login del
+ * **panel de cliente**, así que solo funciona para el titular del hosting y
+ * no sirve para el equipo. Por eso se apunta al webmail directo.
+ *
+ * `websydev.site/webmail` redirige acá; si alguna vez cambia el hosting, esto
+ * es lo único que hay que tocar, o se pisa con `VITE_WEBMAIL_URL`.
  */
-export const WEBMAIL_BASE =
-  import.meta.env.VITE_WEBMAIL_BASE ??
-  'https://micuenta.donweb.com/es-pe/acceso-remoto/webmail'
-
-export const WEBMAIL_CUENTA_ID = import.meta.env.VITE_WEBMAIL_CUENTA_ID ?? '1229497'
+export const WEBMAIL_URL = import.meta.env.VITE_WEBMAIL_URL ?? 'https://ferozo.email/'

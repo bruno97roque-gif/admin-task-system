@@ -162,7 +162,7 @@ export function DashboardPage() {
 
   const stats = [
     {
-      label: 'Programadores',
+      label: 'En desarrollo',
       value: enDesarrolloCount,
       icon: IoCodeSlashOutline,
       color: 'text-purple-400',
@@ -170,7 +170,7 @@ export function DashboardPage() {
       to: '/proyectos/programador',
     },
     {
-      label: 'Diseñadores',
+      label: 'En diseño',
       value: enDisenoCount,
       icon: IoColorPaletteOutline,
       color: 'text-pink-400',
@@ -186,7 +186,7 @@ export function DashboardPage() {
       to: '/proyectos',
     },
     {
-      label: 'Próximas reuniones',
+      label: 'Reuniones',
       value: proximasReuniones.length,
       icon: IoVideocamOutline,
       color: 'text-emerald-400',
@@ -194,7 +194,7 @@ export function DashboardPage() {
       to: '/reuniones',
     },
     {
-      label: 'Proyectos finalizados',
+      label: 'Finalizados',
       value: projects.filter((p) => isFinalized(p.estadoProyecto)).length,
       icon: IoCheckmarkCircleOutline,
       color: 'text-emerald-400',
@@ -225,11 +225,11 @@ export function DashboardPage() {
           >
             <div className="flex items-start justify-between gap-2">
               <p className="min-w-0 truncate text-sm text-slate-400">{label}</p>
-              <div className={`shrink-0 rounded-xl p-3 ${bg}`}>
-                <Icon className={color} size={24} />
+              <div className={`shrink-0 rounded-lg p-2 ${bg}`}>
+                <Icon className={color} size={22} />
               </div>
             </div>
-            <p className="text-3xl font-bold text-slate-100">{value}</p>
+            <p className="text-2xl leading-none font-bold text-slate-100">{value}</p>
           </Link>
         ))}
       </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import {
   IoAddOutline,
   IoEyeOffOutline,
@@ -18,6 +18,7 @@ import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { Select } from '../components/ui/Select'
 import { generatePassword } from '../utils/password'
+import { ejemploDeCorreo } from '../utils/correo'
 import { esAdministracion } from '../utils/roleAccess'
 import { enlaceWebmail } from '../utils/webmail'
 
@@ -64,6 +65,9 @@ export function UsersPage() {
   const [passwordModalOpen, setPasswordModalOpen] = useState(false)
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
+  // Rol de la persona cuyo correo se está editando: define qué dominio
+  // sugerir en el placeholder.
+  const [rolDelCorreo, setRolDelCorreo] = useState<string | undefined>(undefined)
   const [showNewPassword, setShowNewPassword] = useState(false)
 
   const {
@@ -71,9 +75,14 @@ export function UsersPage() {
     handleSubmit,
     reset,
     setValue,
+    control,
     formState: { errors },
     setError,
   } = useForm<UserForm>({ defaultValues: emptyForm })
+
+  // El dominio del correo depende del rol elegido, así que el placeholder
+  // sigue al selector mientras se carga el alta.
+  const roleIdElegido = useWatch({ control, name: 'roleId' })
 
   const {
     register: registerEmail,
@@ -159,8 +168,9 @@ export function UsersPage() {
     setShowNewPassword(true)
   }
 
-  const openEmailModal = (userId: number, email: string) => {
+  const openEmailModal = (userId: number, email: string, roleName?: string) => {
     setSelectedUserId(userId)
+    setRolDelCorreo(roleName)
     resetEmail({ email })
     setEmailModalOpen(true)
   }
@@ -168,6 +178,7 @@ export function UsersPage() {
   const closeEmailModal = () => {
     setEmailModalOpen(false)
     setSelectedUserId(null)
+    setRolDelCorreo(undefined)
     resetEmail({ email: '' })
   }
 
@@ -303,7 +314,9 @@ export function UsersPage() {
                     <div className="flex justify-end gap-1">
                       <Button
                         variant="ghost"
-                        onClick={() => openEmailModal(user.id, user.email ?? '')}
+                        onClick={() =>
+                          openEmailModal(user.id, user.email ?? '', roleMap.get(user.roleId))
+                        }
                         aria-label="Editar correo"
                         title="Editar correo"
                       >
@@ -345,7 +358,7 @@ export function UsersPage() {
           <Input
             label="Correo"
             type="email"
-            placeholder="aaron@websy.pe"
+            placeholder={ejemploDeCorreo(rolDelCorreo)}
             error={emailErrors.email?.message}
             {...registerEmail('email')}
           />
@@ -390,7 +403,7 @@ export function UsersPage() {
           <Input
             label="Correo (opcional)"
             type="email"
-            placeholder="aaron@websy.pe"
+            placeholder={ejemploDeCorreo(roleMap.get(Number(roleIdElegido)))}
             error={errors.email?.message}
             {...register('email')}
           />

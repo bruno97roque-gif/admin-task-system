@@ -8,6 +8,7 @@ export type TramoPago = 'inicial' | 'parcial' | 'completo' | 'desconocido'
 
 export interface TramoPagoInfo {
   tramo: TramoPago
+  /** Cómo se lo nombra en la leyenda: el hito del plan, no el porcentaje. */
   label: string
   /** Fondo de la tarjeta en el flujo activo (grupo A). */
   fondo: string
@@ -20,21 +21,21 @@ export interface TramoPagoInfo {
 const TRAMOS: Record<TramoPago, TramoPagoInfo> = {
   inicial: {
     tramo: 'inicial',
-    label: 'Hasta 51%',
+    label: 'Primer pago',
     fondo: 'bg-rose-500/25 text-slate-100 hover:bg-rose-500/35',
     fondoTenue: 'bg-rose-500/12 text-slate-400 hover:bg-rose-500/20',
     swatch: 'bg-rose-500',
   },
   parcial: {
     tramo: 'parcial',
-    label: 'Del 52% al 99%',
+    label: 'Segundo pago',
     fondo: 'bg-amber-500/25 text-slate-100 hover:bg-amber-500/35',
     fondoTenue: 'bg-amber-500/12 text-slate-400 hover:bg-amber-500/20',
     swatch: 'bg-amber-500',
   },
   completo: {
     tramo: 'completo',
-    label: 'Cobrado 100%',
+    label: 'Completo',
     fondo: 'bg-emerald-500/25 text-slate-100 hover:bg-emerald-500/35',
     fondoTenue: 'bg-emerald-500/12 text-slate-400 hover:bg-emerald-500/20',
     swatch: 'bg-emerald-500',

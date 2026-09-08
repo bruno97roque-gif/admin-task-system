@@ -1,24 +1,21 @@
+import sonidoNotificacion from '../assets/notificacion.mp3'
+
 /**
  * Sonido y notificación del navegador para las notificaciones internas
  * (cuando llega una nueva).
  */
 
+// Una sola instancia para toda la sesión: si caen varios avisos seguidos, el
+// sonido se reinicia en vez de encimarse.
+const audio = new Audio(sonidoNotificacion)
+audio.volume = 0.6
+
 export function playAlertSound() {
   try {
-    const ctx = new AudioContext()
-    const oscillator = ctx.createOscillator()
-    const gain = ctx.createGain()
-
-    oscillator.connect(gain)
-    gain.connect(ctx.destination)
-
-    oscillator.frequency.value = 880
-    oscillator.type = 'sine'
-    gain.gain.setValueAtTime(0.3, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5)
-
-    oscillator.start(ctx.currentTime)
-    oscillator.stop(ctx.currentTime + 0.5)
+    audio.currentTime = 0
+    // El navegador bloquea el audio hasta que la persona interactúa con la
+    // página; ahí la promesa se rechaza y no hay nada que hacer.
+    void audio.play().catch(() => {})
   } catch {
     // Audio no disponible
   }

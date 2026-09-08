@@ -21,7 +21,7 @@ import {
 } from 'react-icons/io5'
 import { useAuthStore } from '../../stores/authStore'
 import { useNotificaciones } from '../../hooks/useNotificaciones'
-import { NotificacionesAlert } from '../notificaciones/NotificacionesAlert'
+import { NotificacionesPanel } from '../notificaciones/NotificacionesPanel'
 import { canAccessNavPath, isRestrictedRole } from '../../utils/roleAccess'
 import { Avatar } from '../ui/Avatar'
 import { Logo } from '../ui/Logo'
@@ -44,31 +44,31 @@ const navItems = [
   { to: '/archivados', label: 'Archivados', icon: IoArchiveOutline },
 ]
 
-/** Campanita con el contador de no leídas. Va al lado del nombre del usuario. */
-function CampanaNotificaciones({ noLeidas, onNavigate }: { noLeidas: number; onNavigate?: () => void }) {
+/** Campanita con el contador de no leídas. Abre el panel lateral. */
+function CampanaNotificaciones({
+  noLeidas,
+  onClick,
+  size = 20,
+}: {
+  noLeidas: number
+  onClick: () => void
+  size?: number
+}) {
   return (
-    <NavLink
-      to="/notificaciones"
-      onClick={onNavigate}
+    <button
+      type="button"
+      onClick={onClick}
       title="Notificaciones"
-      aria-label={
-        noLeidas > 0 ? `Notificaciones: ${noLeidas} sin leer` : 'Notificaciones'
-      }
-      className={({ isActive }) =>
-        `relative shrink-0 rounded-lg p-2 transition-colors ${
-          isActive
-            ? 'bg-accent/20 text-accent-hover'
-            : 'text-slate-400 hover:bg-surface-overlay hover:text-slate-200'
-        }`
-      }
+      aria-label={noLeidas > 0 ? `Notificaciones: ${noLeidas} sin leer` : 'Notificaciones'}
+      className="relative shrink-0 rounded-lg p-2 text-slate-400 transition-colors hover:bg-surface-overlay hover:text-slate-200"
     >
-      <IoNotificationsOutline size={20} />
+      <IoNotificationsOutline size={size} />
       {noLeidas > 0 && (
         <span className="absolute -top-0.5 -right-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] leading-4 font-semibold text-white">
           {noLeidas > 99 ? '99+' : noLeidas}
         </span>
       )}
-    </NavLink>
+    </button>
   )
 }
 
@@ -77,9 +77,13 @@ export function Layout() {
   const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
   const location = useLocation()
-  const isFullWidthPage = ['/vista-global', '/proyectos', '/proyectos-terminados'].includes(
-    location.pathname,
-  )
+  const isFullWidthPage = [
+    '/vista-global',
+    '/proyectos',
+    '/proyectos-terminados',
+    '/projects/admin',
+    '/archivados',
+  ].includes(location.pathname)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const restricted = isRestrictedRole(user?.roleName)
@@ -90,6 +94,17 @@ export function Layout() {
   )
 
   const { nuevas, descartarNuevas, noLeidas } = useNotificaciones(user?.id)
+  const [panelAbiertoAMano, setPanelAbiertoAMano] = useState(false)
+
+  // El panel se abre solo cuando llega algo nuevo: avisa sin bloquear la
+  // pantalla y deja las novedades donde se consultan. Se deriva del estado en
+  // vez de sincronizarlo con un efecto.
+  const panelNotificaciones = panelAbiertoAMano || nuevas.length > 0
+
+  const cerrarPanelNotificaciones = () => {
+    setPanelAbiertoAMano(false)
+    descartarNuevas()
+  }
 
   useEffect(() => {
     if (!sidebarOpen) return
@@ -179,7 +194,13 @@ export function Layout() {
                   <p className="truncate text-xs text-slate-500">{user.roleName}</p>
                 )}
               </div>
-              <CampanaNotificaciones noLeidas={noLeidas} onNavigate={closeSidebar} />
+              <CampanaNotificaciones
+                noLeidas={noLeidas}
+                onClick={() => {
+                  closeSidebar()
+                  setPanelAbiertoAMano(true)
+                }}
+              />
             </div>
           )}
           <button
@@ -210,7 +231,11 @@ export function Layout() {
               <p className="truncate text-xs text-slate-500">{user.name}</p>
             )}
           </div>
-          <CampanaNotificaciones noLeidas={noLeidas} />
+          <CampanaNotificaciones
+            noLeidas={noLeidas}
+            size={22}
+            onClick={() => setPanelAbiertoAMano(true)}
+          />
         </header>
 
         <main className="flex min-h-0 flex-1 flex-col">
@@ -224,9 +249,10 @@ export function Layout() {
         </main>
       </div>
 
-      {nuevas.length > 0 && (
-        <NotificacionesAlert nuevas={nuevas} onDismiss={descartarNuevas} />
-      )}
+      <NotificacionesPanel
+        open={panelNotificaciones}
+        onClose={cerrarPanelNotificaciones}
+      />
 
       <PinguinoPaseando />
     </div>

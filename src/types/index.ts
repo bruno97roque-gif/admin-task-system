@@ -52,6 +52,8 @@ export interface AuthUser {
   user: string
   roleId: number
   roleName: string
+  /** Correo corporativo; con él se arma el acceso al webmail. */
+  email?: string | null
 }
 
 export interface AppUser {

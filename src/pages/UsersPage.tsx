@@ -6,6 +6,7 @@ import {
   IoEyeOutline,
   IoKeyOutline,
   IoMailOutline,
+  IoOpenOutline,
   IoPeopleOutline,
   IoRefreshOutline,
   IoShuffleOutline,
@@ -17,6 +18,7 @@ import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { Select } from '../components/ui/Select'
 import { generatePassword } from '../utils/password'
+import { enlaceWebmail } from '../utils/webmail'
 
 interface UserForm {
   name: string
@@ -264,7 +266,16 @@ export function UsersPage() {
                   <td className="px-4 py-3 text-slate-400">{user.user}</td>
                   <td className="px-4 py-3">
                     {user.email ? (
-                      <span className="text-slate-400">{user.email}</span>
+                      <a
+                        href={enlaceWebmail(user.email) ?? '#'}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Abrir su webmail"
+                        className="inline-flex items-center gap-1.5 text-slate-400 hover:text-accent-hover hover:underline"
+                      >
+                        <IoOpenOutline size={13} className="shrink-0" />
+                        {user.email}
+                      </a>
                     ) : (
                       <span className="text-xs text-slate-600">Sin correo</span>
                     )}

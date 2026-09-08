@@ -12,6 +12,7 @@ import {
   IoGridOutline,
   IoLayersOutline,
   IoLogOutOutline,
+  IoMailOutline,
   IoMenuOutline,
   IoNotificationsOutline,
   IoPersonOutline,
@@ -26,6 +27,7 @@ import { canAccessNavPath, isRestrictedRole } from '../../utils/roleAccess'
 import { Avatar } from '../ui/Avatar'
 import { Logo } from '../ui/Logo'
 import { PinguinoPaseando } from '../ui/PinguinoPaseando'
+import { enlaceWebmail } from '../../utils/webmail'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: IoGridOutline, end: true },
@@ -87,6 +89,7 @@ export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const restricted = isRestrictedRole(user?.roleName)
+  const webmail = enlaceWebmail(user?.email)
 
   const visibleNavItems = useMemo(
     () => navItems.filter((item) => canAccessNavPath(user?.roleName, item.to)),
@@ -194,6 +197,18 @@ export function Layout() {
                   <p className="truncate text-xs text-slate-500">{user.roleName}</p>
                 )}
               </div>
+              {webmail && (
+                <a
+                  href={webmail}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Abrir mi correo"
+                  aria-label="Abrir mi correo"
+                  className="shrink-0 rounded-lg p-2 text-slate-400 transition-colors hover:bg-surface-overlay hover:text-slate-200"
+                >
+                  <IoMailOutline size={20} />
+                </a>
+              )}
               <CampanaNotificaciones
                 noLeidas={noLeidas}
                 onClick={() => {

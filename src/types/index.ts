@@ -109,3 +109,65 @@ export interface Analitica {
   desarrolladoresPorMes: AnaliticaPersonaMes[]
   duracionPromedio: AnaliticaDuracion[]
 }
+
+/** Usuario tal como viene anidado en reuniones, notas y notificaciones. */
+export interface UsuarioResumen {
+  id: number
+  name: string
+  user: string
+  roleId: number
+}
+
+export interface ProyectoResumen {
+  id: number
+  name: string
+}
+
+export type TipoNotificacion =
+  | 'ProyectoAsignado'
+  | 'EtapaFinalizada'
+  | 'ReunionProgramada'
+  | 'NotaRecibida'
+
+export interface Notificacion {
+  id: number
+  usuarioId: number
+  tipo: TipoNotificacion
+  titulo: string
+  mensaje: string
+  proyectoId: number | null
+  proyecto: ProyectoResumen | null
+  leidaAt: string | null
+  createdAt: string
+}
+
+export interface BandejaNotificaciones {
+  noLeidas: number
+  notificaciones: Notificacion[]
+}
+
+export interface Reunion {
+  id: number
+  titulo: string
+  descripcion: string | null
+  fecha: string
+  linkMeet: string
+  proyectoId: number | null
+  proyecto: ProyectoResumen | null
+  creadorId: number | null
+  creador: UsuarioResumen | null
+  participantes: UsuarioResumen[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NotaAdmin {
+  id: number
+  proyectoId: number
+  proyecto: ProyectoResumen
+  autorId: number | null
+  autor: UsuarioResumen | null
+  contenido: string
+  leidaAt: string | null
+  createdAt: string
+}

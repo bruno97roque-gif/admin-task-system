@@ -222,3 +222,89 @@ export function updatePasswordRequest(id: number, password: string) {
     body: JSON.stringify({ password }),
   })
 }
+
+// --- Notificaciones -------------------------------------------------------
+
+export function getNotificacionesRequest() {
+  return apiFetch<import('../types').BandejaNotificaciones>('/notificaciones')
+}
+
+export function marcarNotificacionLeidaRequest(id: number) {
+  return apiFetch<import('../types').Notificacion>(`/notificaciones/${id}/leer`, {
+    method: 'PATCH',
+  })
+}
+
+export function marcarTodasLeidasRequest() {
+  return apiFetch<{ marcadas: number }>('/notificaciones/leer-todas', {
+    method: 'POST',
+  })
+}
+
+// --- Reuniones ------------------------------------------------------------
+
+export interface ReunionRequest {
+  titulo: string
+  descripcion?: string | null
+  fecha: string
+  linkMeet: string
+  proyectoId?: number | null
+  participantesIds: number[]
+}
+
+export function getReunionesRequest() {
+  return apiFetch<import('../types').Reunion[]>('/reuniones')
+}
+
+export function getMisReunionesRequest() {
+  return apiFetch<import('../types').Reunion[]>('/reuniones/mias')
+}
+
+export function createReunionRequest(data: ReunionRequest) {
+  return apiFetch<import('../types').Reunion>('/reuniones', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function updateReunionRequest(id: number, data: Partial<ReunionRequest>) {
+  return apiFetch<import('../types').Reunion>(`/reuniones/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteReunionRequest(id: number) {
+  return apiFetch<import('../types').Reunion>(`/reuniones/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+// --- Notas a administración -----------------------------------------------
+
+export function getNotasRequest() {
+  return apiFetch<import('../types').NotaAdmin[]>('/notas')
+}
+
+export function getMisNotasRequest() {
+  return apiFetch<import('../types').NotaAdmin[]>('/notas/mias')
+}
+
+export function createNotaRequest(data: { proyectoId: number; contenido: string }) {
+  return apiFetch<import('../types').NotaAdmin>('/notas', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function marcarNotaLeidaRequest(id: number) {
+  return apiFetch<import('../types').NotaAdmin>(`/notas/${id}/leer`, {
+    method: 'PATCH',
+  })
+}
+
+export function deleteNotaRequest(id: number) {
+  return apiFetch<import('../types').NotaAdmin>(`/notas/${id}`, {
+    method: 'DELETE',
+  })
+}

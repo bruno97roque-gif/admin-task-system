@@ -4,6 +4,7 @@ import {
   IoAnalyticsOutline,
   IoArchiveOutline,
   IoCalendarOutline,
+  IoChatbubblesOutline,
   IoCheckmarkCircleOutline,
   IoCloseOutline,
   IoCodeSlashOutline,
@@ -13,13 +14,17 @@ import {
   IoLayersOutline,
   IoLogOutOutline,
   IoMenuOutline,
+  IoNotificationsOutline,
   IoPersonOutline,
   IoShieldOutline,
   IoTimeOutline,
+  IoVideocamOutline,
 } from 'react-icons/io5'
 import { useAuthStore } from '../../stores/authStore'
 import { useRecordatoriosReminders } from '../../hooks/useRecordatoriosReminders'
+import { useNotificaciones } from '../../hooks/useNotificaciones'
 import { ReminderAlert } from '../reminders/ReminderAlert'
+import { NotificacionesAlert } from '../notificaciones/NotificacionesAlert'
 import { canAccessNavPath, isRestrictedRole } from '../../utils/roleAccess'
 import { Avatar } from '../ui/Avatar'
 import { Logo } from '../ui/Logo'
@@ -33,11 +38,24 @@ const navItems = [
   { to: '/proyectos/diseno', label: 'Diseñadores', icon: IoColorPaletteOutline },
   { to: '/proyectos-terminados', label: 'Finalizados', icon: IoCheckmarkCircleOutline },
   { to: '/analitica', label: 'Analítica', icon: IoAnalyticsOutline },
+  { to: '/reuniones', label: 'Reuniones', icon: IoVideocamOutline },
+  // Para administración es el panel de mensajes; para el equipo, el formulario.
+  { to: '/notas', label: 'Mensajes', restrictedLabel: 'Dejar nota', icon: IoChatbubblesOutline },
+  { to: '/notificaciones', label: 'Notificaciones', icon: IoNotificationsOutline, badge: true },
   { to: '/usuarios', label: 'Usuarios', icon: IoPersonOutline },
   { to: '/roles', label: 'Roles', icon: IoShieldOutline },
   { to: '/recordatorios', label: 'Recordatorios', icon: IoCalendarOutline },
   { to: '/archivados', label: 'Archivados', icon: IoArchiveOutline },
 ]
+
+function Badge({ count }: { count: number }) {
+  if (count <= 0) return null
+  return (
+    <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-semibold text-white">
+      {count > 99 ? '99+' : count}
+    </span>
+  )
+}
 
 export function Layout() {
   const user = useAuthStore((s) => s.user)
@@ -49,13 +67,16 @@ export function Layout() {
   )
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  const restricted = isRestrictedRole(user?.roleName)
+
   const visibleNavItems = useMemo(
     () => navItems.filter((item) => canAccessNavPath(user?.roleName, item.to)),
     [user?.roleName],
   )
 
-  const showReminders = !isRestrictedRole(user?.roleName)
+  const showReminders = !restricted
   const { showAlert, dismissAlert, goToRecordatorios } = useRecordatoriosReminders(showReminders)
+  const { nuevas, descartarNuevas, noLeidas } = useNotificaciones(user?.id)
 
   useEffect(() => {
     if (!sidebarOpen) return
@@ -115,7 +136,7 @@ export function Layout() {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {visibleNavItems.map(({ to, label, icon: Icon, end }) => (
+          {visibleNavItems.map(({ to, label, restrictedLabel, icon: Icon, end, badge }) => (
             <NavLink
               key={to}
               to={to}
@@ -130,7 +151,8 @@ export function Layout() {
               }
             >
               <Icon size={18} className="shrink-0" />
-              <span className="truncate">{label}</span>
+              <span className="truncate">{restricted && restrictedLabel ? restrictedLabel : label}</span>
+              {badge && <Badge count={noLeidas} />}
             </NavLink>
           ))}
         </nav>
@@ -175,6 +197,18 @@ export function Layout() {
               <p className="truncate text-xs text-slate-500">{user.name}</p>
             )}
           </div>
+          <NavLink
+            to="/notificaciones"
+            className="relative rounded-lg p-2 text-slate-300 transition-colors hover:bg-surface-overlay hover:text-slate-100"
+            aria-label={noLeidas > 0 ? `${noLeidas} notificaciones sin leer` : 'Notificaciones'}
+          >
+            <IoNotificationsOutline size={22} />
+            {noLeidas > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-white">
+                {noLeidas > 99 ? '99+' : noLeidas}
+              </span>
+            )}
+          </NavLink>
         </header>
 
         <main className="flex min-h-0 flex-1 flex-col">
@@ -194,6 +228,10 @@ export function Layout() {
           onDismiss={dismissAlert}
           onGoToRecordatorios={goToRecordatorios}
         />
+      )}
+
+      {nuevas.length > 0 && !(showReminders && showAlert) && (
+        <NotificacionesAlert nuevas={nuevas} onDismiss={descartarNuevas} />
       )}
     </div>
   )

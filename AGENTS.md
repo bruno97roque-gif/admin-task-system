@@ -41,8 +41,10 @@
 ## Rutas Y Roles
 
 - `/login` es pública; el resto pasa por `ProtectedRoute` y `RoleGuard` dentro de `AppRouter`.
-- `Programador` solo puede acceder a `/proyectos/programador` y `Diseñador` solo a `/proyectos/diseno`. `src/utils/roleAccess.ts` centraliza sus redirecciones y menú.
+- `Programador` solo puede acceder a `/proyectos/programador` y `Diseñador` solo a `/proyectos/diseno`, más las rutas compartidas `/vista-global`, `/reuniones`, `/notas` y `/notificaciones`. `src/utils/roleAccess.ts` centraliza sus redirecciones y menú.
 - Los roles no restringidos tienen el menú completo. Las alertas periódicas de recordatorios se desactivan para `Programador` y `Diseñador`.
+- `/notas` cambia según el rol: para administración es el panel «Mensajes» (`GET /notas`, marcar leída, borrar); para el equipo es «Dejar nota» (`POST /notas` sobre un proyecto donde esté asignado, y `GET /notas/mias`). `/reuniones` ídem: administración agenda (`GET /reuniones`) y el equipo ve `GET /reuniones/mias`.
+- Las notificaciones internas las trae `useNotificaciones` (`src/hooks/`) con polling cada 30 s desde el `Layout`; la campanita muestra `noLeidas` y las nuevas abren `NotificacionesAlert` con sonido y notificación del navegador (`src/utils/alerts.ts`, compartido con los recordatorios).
 - Para proyectos de grupos B/C usa `projectsAdminStore` y `GET /projects/admin`; no reemplaces ese endpoint por filtrar la lista general en el cliente.
 
 ## Convenciones

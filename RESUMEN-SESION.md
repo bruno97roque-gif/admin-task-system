@@ -95,3 +95,22 @@ Nueva página: cierres de diseño/desarrollo por mes (gráfico), leaderboard por
 - La notificación de Discord por cobro terminó usando el campo libre **"Estado pago"** (porcentaje) en vez del sistema de hitos estructurado del backend, porque ese sistema nunca tuvo pantalla propia en el front.
 - Hay que agregar `DISCORD_WEBHOOK_URL` en Railway si todavía no está (ya se probó en vivo que funciona una vez configurada).
 - El PR [#11](https://github.com/bruno97roque-gif/admin-task-system/pull/11) (color de Rubid + leyenda de colores en Developers/Diseñadores/Vista Global) queda pendiente de mergear.
+
+---
+
+## Notificaciones, reuniones y notas — rama `feat/notificaciones-reuniones-notas` (front y API, 2026-09-07)
+
+Todavía sin PR ni merge. La migración del API es aditiva (solo tablas nuevas) y **no está aplicada en Railway**.
+
+### Backend
+
+- **Notificaciones internas** por usuario (`notificaciones`): al diseñador cuando un proyecto entra a Diseño, al desarrollador cuando entra a Desarrollo (también si se reasigna con el proyecto ya en esa etapa), y a todos los Admin/Owner cuando el diseño o el desarrollo finalizan, con el hito a cobrar y el % que falta del monto. `GET /notificaciones` devuelve las últimas 50 y cuántas faltan leer.
+- **Reuniones** (`/reuniones`): administración agenda con título, fecha y hora, link de Google Meet obligatorio, proyecto opcional y participantes; cada convocado recibe notificación. El equipo consulta `GET /reuniones/mias`.
+- **Notas a administración** (`/notas`): el equipo deja notas sobre sus propios proyectos; solo administración las lista, marca leídas y borra. Cada nota notifica a administración.
+
+### Frontend
+
+- Campanita con contador en el menú lateral y en el header móvil. Polling cada 30 s; cuando llega algo nuevo se abre un modal con sonido y notificación del navegador. Página `/notificaciones` para leer y marcar.
+- `/reuniones`: para administración, listado y formulario (crear, editar, eliminar); para Developers y Diseñadores, «Mis reuniones» con botón «Unirse a Meet».
+- `/notas`: para el equipo, «Dejar nota» (elige proyecto + texto) y sus notas enviadas; para administración, panel «Mensajes» con proyecto, autor, fecha y marcar como leída.
+- Developers y Diseñadores ahora entran también a esas tres rutas, además de la suya y Vista Global.

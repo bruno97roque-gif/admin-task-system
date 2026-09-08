@@ -3,17 +3,18 @@ import { useForm, Controller } from 'react-hook-form'
 import {
   IoArrowUndoOutline,
   IoBriefcaseOutline,
-  IoLayersOutline,
+  IoSnowOutline,
   IoRefreshOutline,
 } from 'react-icons/io5'
 import type { Project } from '../types'
 import { useAuthStore } from '../stores/authStore'
 import { useProjectsByDisenoStore } from '../stores/projectsByDisenoStore'
+import { useProjectsAdminStore } from '../stores/projectsAdminStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 import { getUsersByRoleName } from '../utils/assignableUsers'
 import { isProjectAssignee } from '../utils/projectUsers'
-import { getEstadoProyectoOptions } from '../utils/projectStatus'
+import { ETAPAS_DISENO, getEstadoProyectoOptions } from '../utils/projectStatus'
 import { type OrderMode } from '../utils/projectOrder'
 import { authUserToAppUser } from '../utils/user'
 import { Button } from '../components/ui/Button'
@@ -24,12 +25,16 @@ import { Textarea } from '../components/ui/Textarea'
 import { ProjectColumn } from '../components/projects/ProjectColumn'
 import { ProjectDetails } from '../components/projects/ProjectDetails'
 import { ProjectFilters } from '../components/projects/ProjectFilters'
-import { ProjectsBycModal } from '../components/projects/ProjectsBycModal'
+import { AbrirTicketRapido } from '../components/notas/AbrirTicketRapido'
 import { LoaderBlock } from '../components/ui/Loader'
 import { CornerRestGif } from '../components/ui/CornerRestGif'
 import { PersonColorLegend } from '../components/projects/PersonColorLegend'
 import { MisReunionesPanel } from '../components/reuniones/MisReunionesPanel'
 import { toDateInputValue } from '../utils/date'
+
+// El tablero es del tramo de diseño: lo que traiga la cola de congelados
+// fuera de estas etapas no pinta acá.
+const ETAPAS_TABLERO: string[] = ETAPAS_DISENO
 
 interface ProjectEditForm {
   comentario: string
@@ -48,10 +53,15 @@ export function ProjectsByDisenoPage() {
   const fetchProjects = useProjectsByDisenoStore((s) => s.fetchProjectsByDiseno)
   const updateProject = useProjectsByDisenoStore((s) => s.updateProject)
 
+  const congelados = useProjectsAdminStore((s) => s.projects)
+  const fetchCongelados = useProjectsAdminStore((s) => s.fetchProjects)
+
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [estadoFiltro, setEstadoFiltro] = useState('')
   const [ordenFiltro, setOrdenFiltro] = useState<OrderMode>('personalizado')
-  const [showBycModal, setShowBycModal] = useState(false)
+  // Los congelados (grupos B y C) se suman al tablero en vez de abrirse
+  // en una ventana aparte, igual que en Vista Global.
+  const [mostrarByC, setMostrarByC] = useState(false)
   const [resetKey, setResetKey] = useState(0)
   const {
     register,
@@ -77,6 +87,12 @@ export function ProjectsByDisenoPage() {
     }
   }, [disenadorId, fetchProjects, fetchRoles, fetchUsers, isDisenador])
 
+  // La cola de congelados (grupos B y C) es otro endpoint: se pide recién
+  // cuando se prende el interruptor.
+  useEffect(() => {
+    if (mostrarByC) fetchCongelados()
+  }, [mostrarByC, fetchCongelados])
+
   const disenadores = useMemo(
     () => {
       if (isDisenador && authUser) return [authUserToAppUser(authUser)]
@@ -87,9 +103,25 @@ export function ProjectsByDisenoPage() {
     [authUser, isDisenador, roles, users],
   )
 
+  // Los congelados se suman a las mismas columnas en vez de abrirse en una
+  // ventana aparte; el id evita duplicar si alguno ya venía en el tablero.
+  const proyectosVisibles = useMemo(() => {
+    if (!mostrarByC) return projects
+    const yaEstan = new Set(projects.map((p) => p.id))
+    return [
+      ...projects,
+      ...congelados.filter(
+        (p) => !yaEstan.has(p.id) && ETAPAS_TABLERO.includes(p.estadoProyecto),
+      ),
+    ]
+  }, [projects, congelados, mostrarByC])
+
   const filteredProjects = useMemo(
-    () => projects.filter((project) => !estadoFiltro || project.estadoProyecto === estadoFiltro),
-    [projects, estadoFiltro],
+    () =>
+      proyectosVisibles.filter(
+        (project) => !estadoFiltro || project.estadoProyecto === estadoFiltro,
+      ),
+    [proyectosVisibles, estadoFiltro],
   )
 
   const columns = useMemo(() => {
@@ -133,6 +165,9 @@ export function ProjectsByDisenoPage() {
       estadoProyecto: data.estadoProyecto,
     })
     if (result.success) {
+      // Un congelado no vive en el tablero propio: su cola se relee para
+      // que el cambio se vea.
+      if (!projects.some((p) => p.id === editingProject.id)) fetchCongelados()
       closeEdit()
     } else {
       setError('root', { message: result.error ?? 'Error al guardar el proyecto' })
@@ -153,12 +188,12 @@ export function ProjectsByDisenoPage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           {isDisenador && (
             <Button
-              variant="secondary"
+              variant={mostrarByC ? 'primary' : 'secondary'}
               className="w-full sm:w-auto"
-              onClick={() => setShowBycModal(true)}
+              onClick={() => setMostrarByC((v) => !v)}
             >
-              <IoLayersOutline size={18} />
-              Ver proyectos B y C
+              <IoSnowOutline size={18} />
+              {mostrarByC ? 'Ocultar congelados' : 'Mostrar congelados'}
             </Button>
           )}
           <Button
@@ -230,6 +265,12 @@ export function ProjectsByDisenoPage() {
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {editingProject && <ProjectDetails project={editingProject} />}
+          {editingProject && (
+            <AbrirTicketRapido
+              proyectoId={editingProject.id}
+              nombreProyecto={editingProject.name}
+            />
+          )}
           {errors.root && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
               {errors.root.message}
@@ -277,15 +318,6 @@ export function ProjectsByDisenoPage() {
           </div>
         </form>
       </Modal>
-
-      {isDisenador && disenadorId !== undefined && (
-        <ProjectsBycModal
-          open={showBycModal}
-          onClose={() => setShowBycModal(false)}
-          roleName="Diseñador"
-          userId={disenadorId}
-        />
-      )}
 
       <CornerRestGif />
     </div>

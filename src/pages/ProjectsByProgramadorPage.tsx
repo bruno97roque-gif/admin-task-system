@@ -3,12 +3,13 @@ import { useForm, Controller } from 'react-hook-form'
 import {
   IoArrowUndoOutline,
   IoBriefcaseOutline,
-  IoLayersOutline,
+  IoSnowOutline,
   IoRefreshOutline,
 } from 'react-icons/io5'
 import type { Project } from '../types'
 import { useAuthStore } from '../stores/authStore'
 import { useProjectsByProgramadorStore } from '../stores/projectsByProgramadorStore'
+import { useProjectsAdminStore } from '../stores/projectsAdminStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 import { getUsersByRoleName } from '../utils/assignableUsers'
@@ -24,7 +25,7 @@ import { Textarea } from '../components/ui/Textarea'
 import { ProjectColumn } from '../components/projects/ProjectColumn'
 import { ProjectDetails } from '../components/projects/ProjectDetails'
 import { ProjectFilters } from '../components/projects/ProjectFilters'
-import { ProjectsBycModal } from '../components/projects/ProjectsBycModal'
+import { AbrirTicketRapido } from '../components/notas/AbrirTicketRapido'
 import { LoaderBlock } from '../components/ui/Loader'
 import { CornerRestGif } from '../components/ui/CornerRestGif'
 import { PersonColorLegend } from '../components/projects/PersonColorLegend'
@@ -56,10 +57,15 @@ export function ProjectsByProgramadorPage() {
   const saving = useProjectsByProgramadorStore((s) => s.saving)
   const updateProjectComentario = useProjectsByProgramadorStore((s) => s.updateProjectComentario)
 
+  const congelados = useProjectsAdminStore((s) => s.projects)
+  const fetchCongelados = useProjectsAdminStore((s) => s.fetchProjects)
+
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [estadoFiltro, setEstadoFiltro] = useState('')
   const [ordenFiltro, setOrdenFiltro] = useState<OrderMode>('personalizado')
-  const [showBycModal, setShowBycModal] = useState(false)
+  // Los congelados (grupos B y C) se suman al tablero en vez de abrirse
+  // en una ventana aparte, igual que en Vista Global.
+  const [mostrarByC, setMostrarByC] = useState(false)
   const [resetKey, setResetKey] = useState(0)
 
   const {
@@ -86,6 +92,12 @@ export function ProjectsByProgramadorPage() {
     }
   }, [fetchProjects, fetchUsers, fetchRoles, programadorId, isProgramador])
 
+  // La cola de congelados (grupos B y C) es otro endpoint: se pide recién
+  // cuando se prende el interruptor.
+  useEffect(() => {
+    if (mostrarByC) fetchCongelados()
+  }, [mostrarByC, fetchCongelados])
+
   const programadores = useMemo(() => {
     if (isProgramador && authUser) {
       return [authUserToAppUser(authUser)]
@@ -93,12 +105,20 @@ export function ProjectsByProgramadorPage() {
     return getUsersByRoleName(users, roles, 'Programador')
   }, [authUser, isProgramador, users, roles])
 
+  // Los congelados se suman a las mismas columnas en vez de abrirse en una
+  // ventana aparte; el id evita duplicar si alguno ya venía en el tablero.
+  const proyectosVisibles = useMemo(() => {
+    if (!mostrarByC) return projects
+    const yaEstan = new Set(projects.map((p) => p.id))
+    return [...projects, ...congelados.filter((p) => !yaEstan.has(p.id))]
+  }, [projects, congelados, mostrarByC])
+
   const filteredProjects = useMemo(
     () =>
-      projects
+      proyectosVisibles
         .filter((project) => ETAPAS_DEVELOPERS.includes(project.estadoProyecto))
         .filter((project) => !estadoFiltro || project.estadoProyecto === estadoFiltro),
-    [projects, estadoFiltro],
+    [proyectosVisibles, estadoFiltro],
   )
 
   const columns = useMemo(() => {
@@ -142,6 +162,9 @@ export function ProjectsByProgramadorPage() {
       estadoProyecto: data.estadoProyecto,
     })
     if (result.success) {
+      // Un congelado no vive en el tablero propio: su cola se relee para
+      // que el cambio se vea.
+      if (!projects.some((p) => p.id === editingProject.id)) fetchCongelados()
       closeEditComentario()
     } else {
       setError('root', { message: result.error ?? 'Error al guardar el proyecto' })
@@ -163,12 +186,12 @@ export function ProjectsByProgramadorPage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           {isProgramador && (
             <Button
-              variant="secondary"
+              variant={mostrarByC ? 'primary' : 'secondary'}
               className="w-full sm:w-auto"
-              onClick={() => setShowBycModal(true)}
+              onClick={() => setMostrarByC((v) => !v)}
             >
-              <IoLayersOutline size={18} />
-              Ver proyectos B y C
+              <IoSnowOutline size={18} />
+              {mostrarByC ? 'Ocultar congelados' : 'Mostrar congelados'}
             </Button>
           )}
           <Button
@@ -241,6 +264,12 @@ export function ProjectsByProgramadorPage() {
       >
         <form onSubmit={handleSubmit(onSubmitComentario)} className="space-y-4">
           {editingProject && <ProjectDetails project={editingProject} />}
+          {editingProject && (
+            <AbrirTicketRapido
+              proyectoId={editingProject.id}
+              nombreProyecto={editingProject.name}
+            />
+          )}
           {errors.root && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
               {errors.root.message}
@@ -288,15 +317,6 @@ export function ProjectsByProgramadorPage() {
           </div>
         </form>
       </Modal>
-
-      {isProgramador && programadorId !== undefined && (
-        <ProjectsBycModal
-          open={showBycModal}
-          onClose={() => setShowBycModal(false)}
-          roleName="Programador"
-          userId={programadorId}
-        />
-      )}
 
       <CornerRestGif />
     </div>

@@ -37,17 +37,47 @@ textarea {
   @apply outline-none;
 }
 
-/* Pingüino que pasea por el borde inferior (PinguinoPaseando). El gif mira a
-   la derecha: al volver se espeja con scaleX(-1). En escritorio arranca
-   después de la barra lateral (16rem) para no pasar por debajo de ella. */
+/* Pingüino que pasea por el borde inferior (PinguinoPaseando). El gif de
+   caminar mira a la izquierda, así que la ida (hacia la derecha) va espejada
+   con scaleX(-1) y la vuelta sin espejar. El de quieto mira a la derecha,
+   por eso lleva su propio espejado para coincidir. Al pasar el mouse se
+   pausa el recorrido y se cambia de gif. En escritorio arranca después de
+   la barra lateral (16rem) para no pasar por debajo de ella. */
 .pinguino {
   --pinguino-alto: 56px;
+  --pinguino-ancho: 72px;
   --pinguino-inicio: 0px;
   height: var(--pinguino-alto);
-  width: auto;
+  width: var(--pinguino-ancho);
   left: var(--pinguino-inicio);
-  image-rendering: pixelated;
   animation: pinguino-paseo 45s linear infinite;
+}
+
+.pinguino img {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  height: var(--pinguino-alto);
+  width: auto;
+  translate: -50% 0;
+  image-rendering: pixelated;
+}
+
+.pinguino-quieto {
+  display: none;
+  transform: scaleX(-1);
+}
+
+.pinguino:hover {
+  animation-play-state: paused;
+}
+
+.pinguino:hover .pinguino-caminando {
+  display: none;
+}
+
+.pinguino:hover .pinguino-quieto {
+  display: block;
 }
 
 @media (min-width: 64rem) {
@@ -58,16 +88,16 @@ textarea {
 
 @keyframes pinguino-paseo {
   0% {
-    transform: translateX(0) scaleX(1);
+    transform: translateX(0) scaleX(-1);
   }
   49.999% {
-    transform: translateX(calc(100vw - var(--pinguino-inicio) - var(--pinguino-alto))) scaleX(1);
+    transform: translateX(calc(100vw - var(--pinguino-inicio) - var(--pinguino-ancho))) scaleX(-1);
   }
   50% {
-    transform: translateX(calc(100vw - var(--pinguino-inicio) - var(--pinguino-alto))) scaleX(-1);
+    transform: translateX(calc(100vw - var(--pinguino-inicio) - var(--pinguino-ancho))) scaleX(1);
   }
   100% {
-    transform: translateX(0) scaleX(-1);
+    transform: translateX(0) scaleX(1);
   }
 }
 

@@ -20,6 +20,18 @@ export function isRestrictedRole(roleName: string | undefined): boolean {
   return roleName === 'Programador' || roleName === 'Diseñador'
 }
 
+/** Los mismos nombres que usa el backend en `ROLES_ADMINISTRACION`. */
+const ROLES_ADMINISTRACION = ['Admin', 'Owner']
+
+/**
+ * Administración usa Google Workspace, no el webmail de Ferozo. Se distingue
+ * por nombre y no por «no restringido» para que un rol nuevo no herede el
+ * comportamiento sin querer.
+ */
+export function esAdministracion(roleName: string | undefined): boolean {
+  return roleName !== undefined && ROLES_ADMINISTRACION.includes(roleName)
+}
+
 function esPropiaOCompartida(roleName: string | undefined, path: string): boolean {
   if (RUTAS_COMPARTIDAS.includes(path)) return true
   if (roleName === 'Programador') return path === PROGRAMADOR_HOME

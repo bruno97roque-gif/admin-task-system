@@ -23,7 +23,11 @@ import {
 import { useAuthStore } from '../../stores/authStore'
 import { useNotificaciones } from '../../hooks/useNotificaciones'
 import { NotificacionesPanel } from '../notificaciones/NotificacionesPanel'
-import { canAccessNavPath, isRestrictedRole } from '../../utils/roleAccess'
+import {
+  canAccessNavPath,
+  esAdministracion,
+  isRestrictedRole,
+} from '../../utils/roleAccess'
 import { Avatar } from '../ui/Avatar'
 import { Logo } from '../ui/Logo'
 import { PinguinoPaseando } from '../ui/PinguinoPaseando'
@@ -89,7 +93,8 @@ export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const restricted = isRestrictedRole(user?.roleName)
-  const webmail = enlaceWebmail(user?.email)
+  // Administración usa Google Workspace, no el webmail del hosting.
+  const webmail = esAdministracion(user?.roleName) ? null : enlaceWebmail(user?.email)
 
   const visibleNavItems = useMemo(
     () => navItems.filter((item) => canAccessNavPath(user?.roleName, item.to)),

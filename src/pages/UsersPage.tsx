@@ -18,6 +18,7 @@ import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { Select } from '../components/ui/Select'
 import { generatePassword } from '../utils/password'
+import { esAdministracion } from '../utils/roleAccess'
 import { enlaceWebmail } from '../utils/webmail'
 
 interface UserForm {
@@ -265,7 +266,13 @@ export function UsersPage() {
                   </td>
                   <td className="px-4 py-3 text-slate-400">{user.user}</td>
                   <td className="px-4 py-3">
-                    {user.email ? (
+                    {!user.email ? (
+                      <span className="text-xs text-slate-600">Sin correo</span>
+                    ) : esAdministracion(roleMap.get(user.roleId)) ? (
+                      // Administración usa Workspace: el webmail del hosting
+                      // no le sirve, así que el correo va como texto.
+                      <span className="text-slate-400">{user.email}</span>
+                    ) : (
                       <a
                         href={enlaceWebmail(user.email) ?? '#'}
                         target="_blank"
@@ -276,8 +283,6 @@ export function UsersPage() {
                         <IoOpenOutline size={13} className="shrink-0" />
                         {user.email}
                       </a>
-                    ) : (
-                      <span className="text-xs text-slate-600">Sin correo</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-slate-400">

@@ -9,6 +9,7 @@ import {
   IoRefreshOutline,
   IoTrashOutline,
   IoVideocamOutline,
+  IoWarningOutline,
 } from 'react-icons/io5'
 import type { Reunion } from '../types'
 import { useAuthStore } from '../stores/authStore'
@@ -58,6 +59,9 @@ const emptyForm: ReunionForm = {
 }
 
 const MEET_REGEX = /^https:\/\/meet\.google\.com\//
+
+/** Crea una sala de Meet nueva y devuelve su link, para pegarlo acá. */
+const MEET_NUEVO_URL = 'https://meet.google.com/new'
 
 /** Una reunión sigue siendo «próxima» hasta una hora después de su inicio. */
 const MARGEN_EN_CURSO_MS = 60 * 60 * 1000
@@ -136,20 +140,23 @@ function ReunionCard({
           Unirse a Meet
         </a>
         {/* Llevarla al Calendar es solo abrir un link: lo puede hacer
-            cualquiera que vea la reunión. */}
+            cualquiera que vea la reunión. Ojo: la URL de Calendar es un
+            «template», así que siempre crea un evento NUEVO — no sabe
+            actualizar uno que ya exista. El texto del botón lo dice para que
+            nadie duplique sin querer. */}
         <a
           href={enlaceGoogleCalendar(reunion)}
           target="_blank"
           rel="noreferrer"
           title={
             sinCorreo.length > 0
-              ? `Sin correo cargado: ${sinCorreo.join(', ')}. No se los podrá invitar.`
-              : 'Crear el evento en Google Calendar e invitar a los convocados'
+              ? `Crea un evento NUEVO en Google Calendar. Sin correo cargado: ${sinCorreo.join(', ')}, a esos no se los podrá invitar.`
+              : 'Crea un evento NUEVO en Google Calendar con los convocados. Si ya lo creaste antes, editalo desde Calendar en vez de volver a tocar acá.'
           }
           className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-overlay px-3 py-2 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-600"
         >
           <IoCalendarNumberOutline size={16} />
-          Calendar
+          Crear en Calendar
           {sinCorreo.length > 0 && <span className="text-amber-400">!</span>}
         </a>
         {puedeEditar && (
@@ -425,6 +432,18 @@ export function ReunionesPage() {
               {errors.root.message}
             </div>
           )}
+          {/* Websy avisa a los convocados por su cuenta, pero no puede tocar
+              Google Calendar: el evento de allá hay que corregirlo a mano. */}
+          {editing && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              <IoWarningOutline size={16} className="mt-px shrink-0" />
+              <span>
+                Los convocados reciben el cambio acá mismo. Si además ya habías creado el
+                evento en Google Calendar, ese hay que editarlo allá: volver a tocar «Crear
+                en Calendar» agrega un evento nuevo en vez de corregir el que existe.
+              </span>
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               label="Tipo de reunión"
@@ -469,18 +488,35 @@ export function ReunionesPage() {
             error={errors.fecha?.message}
             {...register('fecha', { required: 'La fecha es obligatoria' })}
           />
-          <Input
-            label="Link de Google Meet"
-            type="url"
-            placeholder="https://meet.google.com/abc-defg-hij"
-            error={errors.linkMeet?.message}
-            {...register('linkMeet', {
-              required: 'El link de Meet es obligatorio',
-              validate: (value) =>
-                MEET_REGEX.test(value.trim()) ||
-                'Tiene que ser un enlace de Google Meet (https://meet.google.com/...)',
-            })}
-          />
+          <div>
+            <Input
+              label="Link de Google Meet"
+              type="url"
+              placeholder="https://meet.google.com/abc-defg-hij"
+              error={errors.linkMeet?.message}
+              {...register('linkMeet', {
+                required: 'El link de Meet es obligatorio',
+                validate: (value) =>
+                  MEET_REGEX.test(value.trim()) ||
+                  'Tiene que ser un enlace de Google Meet (https://meet.google.com/...)',
+              })}
+            />
+            {/* El link va primero y después se lleva al Calendar: la URL de
+                Calendar prellena el evento pero no puede crear la videollamada,
+                así que el link hay que traerlo de Meet. */}
+            <p className="mt-1.5 text-xs text-slate-500">
+              ¿No tienes el link?{' '}
+              <a
+                href={MEET_NUEVO_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-accent underline"
+              >
+                Genera uno en Meet
+              </a>{' '}
+              y pégalo acá. Después, desde la tarjeta, lo llevas a Google Calendar.
+            </p>
+          </div>
           <Controller
             control={control}
             name="participantesIds"

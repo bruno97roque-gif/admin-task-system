@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import type { Project } from '../../types'
 import type { UpdateProjectRequest } from '../../services/api'
+import { useAuthStore } from '../../stores/authStore'
 import { useRolesStore } from '../../stores/rolesStore'
 import { useSeguimientosStore } from '../../stores/seguimientosStore'
 import { useUsersStore } from '../../stores/usersStore'
@@ -69,6 +70,10 @@ export function ProjectEditModal({
   updateProject,
   updateProjectResponsables,
 }: ProjectEditModalProps) {
+  // El rol sale de la sesión y no de una prop: el modal se abre desde la vista
+  // de administración y también desde Vista Global, a la que entra el equipo.
+  const roleName = useAuthStore((s) => s.user?.roleName)
+
   const seguimientos = useSeguimientosStore((s) => s.seguimientos)
   const fetchSeguimientos = useSeguimientosStore((s) => s.fetchSeguimientos)
 
@@ -244,6 +249,7 @@ export function ProjectEditModal({
             options={getEstadoProyectoOptions(
               project?.estadoProyecto ?? '',
               project?.tipoProyecto ?? null,
+              roleName,
             )}
             placeholder="Selecciona un estado"
             error={errors.estadoProyecto?.message}

@@ -264,6 +264,7 @@ export function ProjectsByProgramadorPage() {
                 ? getEstadoProyectoOptions(
                     editingProject.estadoProyecto,
                     editingProject.tipoProyecto,
+                    authUser?.roleName,
                   )
                 : []
             }

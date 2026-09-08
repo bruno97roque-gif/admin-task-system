@@ -64,15 +64,30 @@ export function etapasPermitidas(actual: EstadoProyecto): EstadoProyecto[] {
   return ESTADO_PROYECTO_ORDER.slice(0, i + 2)
 }
 
+/**
+ * Etapas que solo administración puede abrir; la API responde 403 al resto.
+ * Arrancar el desarrollo es decisión suya, y antes cobra el hito de
+ * aprobación de diseño.
+ */
+export const ETAPAS_SOLO_ADMINISTRACION: EstadoProyecto[] = ['Desarrollo']
+
 export function getEstadoProyectoOptions(
   current: string,
   tipoProyecto: string | null,
+  roleName?: string,
 ): { value: string; label: string }[] {
   const legal = new Set<string>(etapasPermitidas(current as EstadoProyecto))
   if (legal.size === 0) return ESTADO_PROYECTO_OPTIONS
 
   if (current === 'Brief' && tipoProyecto !== 'Ecommerce') {
     legal.add('Diseno')
+  }
+
+  // Sin rol se muestran todas: quien no lo pasa es una vista de administración.
+  if (roleName === 'Programador' || roleName === 'Diseñador') {
+    for (const etapa of ETAPAS_SOLO_ADMINISTRACION) {
+      if (etapa !== current) legal.delete(etapa)
+    }
   }
 
   return ESTADO_PROYECTO_OPTIONS.filter((option) => legal.has(option.value))

@@ -253,6 +253,7 @@ export function ProjectsByDisenoPage() {
                 ? getEstadoProyectoOptions(
                     editingProject.estadoProyecto,
                     editingProject.tipoProyecto,
+                    authUser?.roleName,
                   )
                 : []
             }

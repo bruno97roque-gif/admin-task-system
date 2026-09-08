@@ -52,11 +52,17 @@ export const useNotasStore = create<NotasState>((set) => ({
       const pagina = todas
         ? await getNotasRequest(consulta)
         : await getMisNotasRequest(consulta)
+
+      // Defensivo a propósito: si la respuesta no trae la forma esperada (una
+      // pestaña vieja contra una API nueva, por ejemplo), la lista queda vacía
+      // en vez de dejar `notas` en undefined y tumbar el render.
+      const items = Array.isArray(pagina?.items) ? pagina.items : []
+
       set({
-        notas: pagina.items,
-        total: pagina.total,
-        pagina: pagina.pagina,
-        porPagina: pagina.porPagina,
+        notas: items,
+        total: pagina?.total ?? items.length,
+        pagina: pagina?.pagina ?? 1,
+        porPagina: pagina?.porPagina ?? 10,
         loading: false,
       })
     } catch (error) {

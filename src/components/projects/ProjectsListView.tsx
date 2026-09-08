@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Pagination } from '../ui/Pagination'
 import { useForm } from 'react-hook-form'
 import {
   IoAddOutline,
@@ -139,6 +140,8 @@ export function ProjectsListView({
   const [grupoFilter, setGrupoFilter] = useState('')
   const [estadoProyectoFilter, setEstadoProyectoFilter] = useState('')
   const [orden, setOrden] = useState<OrdenProyectos>('defecto')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
   const [deleteName, setDeleteName] = useState('')
@@ -201,11 +204,21 @@ export function ProjectsListView({
     return sorted
   }, [projects, searchQuery, grupoFilter, estadoProyectoFilter, showTipoProyecto, orden])
 
+  // Paginación en el navegador sobre la lista ya filtrada y ordenada. La
+  // página se acota por si un filtro dejó menos resultados que la actual.
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / pageSize))
+  const currentPage = Math.min(page, totalPages)
+  const pageProjects = useMemo(
+    () => filteredProjects.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filteredProjects, currentPage, pageSize],
+  )
+
   const clearFilters = () => {
     setSearchQuery('')
     setGrupoFilter('')
     setEstadoProyectoFilter('')
     setOrden('defecto')
+    setPage(1)
   }
 
   const openCreate = async () => {
@@ -327,7 +340,10 @@ export function ProjectsListView({
         <div className="min-w-[220px] flex-1">
           <ProjectSearchInput
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={(value) => {
+              setSearchQuery(value)
+              setPage(1)
+            }}
             projects={projects}
             showTipoProyecto={showTipoProyecto}
           />
@@ -338,7 +354,10 @@ export function ProjectsListView({
             options={grupoOptions}
             placeholder="Todos"
             value={grupoFilter}
-            onChange={(e) => setGrupoFilter(e.target.value)}
+            onChange={(e) => {
+              setGrupoFilter(e.target.value)
+              setPage(1)
+            }}
           />
         </div>
         <div className="w-full sm:w-48">
@@ -347,7 +366,10 @@ export function ProjectsListView({
             options={ESTADO_PROYECTO_OPTIONS}
             placeholder="Todos"
             value={estadoProyectoFilter}
-            onChange={(e) => setEstadoProyectoFilter(e.target.value)}
+            onChange={(e) => {
+              setEstadoProyectoFilter(e.target.value)
+              setPage(1)
+            }}
           />
         </div>
         <div className="w-full sm:w-44">
@@ -355,7 +377,10 @@ export function ProjectsListView({
             label="Ordenar por"
             options={ORDEN_OPTIONS}
             value={orden}
-            onChange={(e) => setOrden(e.target.value as OrdenProyectos)}
+            onChange={(e) => {
+              setOrden(e.target.value as OrdenProyectos)
+              setPage(1)
+            }}
           />
         </div>
         {hasActiveFilters && (
@@ -409,7 +434,7 @@ export function ProjectsListView({
                 </td>
               </tr>
             ) : (
-              filteredProjects.map((project) => (
+              pageProjects.map((project) => (
                 <tr key={project.id} className="hover:bg-surface/50">
                   <td className="px-4 py-3 text-slate-400">{project.id}</td>
                   <td className="px-4 py-3">
@@ -526,6 +551,20 @@ export function ProjectsListView({
           </tbody>
         </table>
       </div>
+
+      {filteredProjects.length > 0 && (
+        <Pagination
+          page={currentPage}
+          pageSize={pageSize}
+          total={filteredProjects.length}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size)
+            setPage(1)
+          }}
+          itemLabel={['proyecto', 'proyectos']}
+        />
+      )}
 
       <Modal open={createModalOpen} onClose={closeCreateModal} title="Agregar proyecto" size="lg">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

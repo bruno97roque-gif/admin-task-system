@@ -25,6 +25,7 @@ import { NotificacionesAlert } from '../notificaciones/NotificacionesAlert'
 import { canAccessNavPath, isRestrictedRole } from '../../utils/roleAccess'
 import { Avatar } from '../ui/Avatar'
 import { Logo } from '../ui/Logo'
+import { PinguinoPaseando } from '../ui/PinguinoPaseando'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: IoGridOutline, end: true },
@@ -219,6 +220,8 @@ export function Layout() {
       {nuevas.length > 0 && (
         <NotificacionesAlert nuevas={nuevas} onDismiss={descartarNuevas} />
       )}
+
+      <PinguinoPaseando />
     </div>
   )
 }

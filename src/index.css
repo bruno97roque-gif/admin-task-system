@@ -73,7 +73,7 @@ textarea {
    El factor final lo baja un poco: erguido queda igual más alto que
    caminando, y a escala exacta el salto al pasar el mouse cantaba mucho. */
 .pinguino-quieto {
-  --pinguino-quieto-escala: 0.725;
+  --pinguino-quieto-escala: 0.71;
   display: none;
   height: calc(var(--pinguino-alto) * 448 / 300 * 8 / 6 * var(--pinguino-quieto-escala));
   transform: scaleX(-1);

@@ -57,14 +57,22 @@ textarea {
   position: absolute;
   bottom: 0;
   left: 50%;
-  height: var(--pinguino-alto);
   width: auto;
   translate: -50% 0;
   image-rendering: pixelated;
 }
 
+.pinguino-caminando {
+  height: var(--pinguino-alto);
+}
+
+/* Los dos gifs están dibujados a distinta escala: el de caminar usa píxeles
+   de arte de 8px sobre un lienzo de 300 de alto, y el de quieto píxeles de
+   6px sobre 448. Para que el pingüino se vea del mismo tamaño en los dos hay
+   que igualar el píxel de arte, no la altura del lienzo: (448/300)×(8/6). */
 .pinguino-quieto {
   display: none;
+  height: calc(var(--pinguino-alto) * 448 / 300 * 8 / 6);
   transform: scaleX(-1);
 }
 

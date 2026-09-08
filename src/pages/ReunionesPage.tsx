@@ -404,7 +404,9 @@ export function ReunionesPage() {
               ? 'Hay 1 reunión próxima sin link de Meet: '
               : `Hay ${pendientesDeCalendar} reuniones próximas sin link de Meet: `}
             créales el evento con «Crear en Calendar», añade ahí Google Meet y pega el
-            link acá con el lápiz.
+            link acá con el lápiz. En el mismo evento, «Opciones de videollamada →
+            Registros de la reunión» deja dejar activadas la grabación y la
+            transcripción.
           </span>
         </div>
       )}

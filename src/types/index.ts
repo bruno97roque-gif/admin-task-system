@@ -162,6 +162,14 @@ export interface Notificacion {
   createdAt: string
 }
 
+/** Una página de la bandeja de tickets. */
+export interface PaginaNotas {
+  items: NotaAdmin[]
+  total: number
+  pagina: number
+  porPagina: number
+}
+
 export interface BandejaNotificaciones {
   noLeidas: number
   notificaciones: Notificacion[]

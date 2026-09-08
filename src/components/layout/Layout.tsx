@@ -37,8 +37,8 @@ const navItems = [
   { to: '/proyectos-terminados', label: 'Finalizados', icon: IoCheckmarkCircleOutline },
   { to: '/analitica', label: 'Analítica', icon: IoAnalyticsOutline },
   { to: '/reuniones', label: 'Reuniones', icon: IoVideocamOutline },
-  // Para administración es el panel de mensajes; para el equipo, el formulario.
-  { to: '/notas', label: 'Mensajes', restrictedLabel: 'Dejar nota', icon: IoChatbubblesOutline },
+  // Para administración es la bandeja; para el equipo, sus propios tickets.
+  { to: '/notas', label: 'Tickets', restrictedLabel: 'Mis tickets', icon: IoChatbubblesOutline },
   { to: '/usuarios', label: 'Usuarios', icon: IoPersonOutline },
   { to: '/roles', label: 'Roles', icon: IoShieldOutline },
   { to: '/archivados', label: 'Archivados', icon: IoArchiveOutline },

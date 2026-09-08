@@ -25,6 +25,7 @@ import {
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { Pagination } from '../components/ui/Pagination'
 import { Select } from '../components/ui/Select'
 import { Textarea } from '../components/ui/Textarea'
 
@@ -187,6 +188,8 @@ export function NotasPage() {
   const esAdmin = !isRestrictedRole(user?.roleName)
 
   const notas = useNotasStore((s) => s.notas)
+  const total = useNotasStore((s) => s.total)
+  const porPagina = useNotasStore((s) => s.porPagina)
   const loading = useNotasStore((s) => s.loading)
   const saving = useNotasStore((s) => s.saving)
   const error = useNotasStore((s) => s.error)
@@ -200,6 +203,8 @@ export function NotasPage() {
   const fetchProjects = useProjectsStore((s) => s.fetchProjects)
 
   const [filtroEstado, setFiltroEstado] = useState('abiertos')
+  const [pagina, setPagina] = useState(1)
+  const [tamanoPagina, setTamanoPagina] = useState(10)
   const [toDelete, setToDelete] = useState<NotaAdmin | null>(null)
   const [enviada, setEnviada] = useState(false)
 
@@ -211,9 +216,24 @@ export function NotasPage() {
     formState: { errors, isSubmitting },
   } = useForm<NotaForm>({ defaultValues: emptyForm })
 
+  // El filtro y la página se resuelven en el servidor: la bandeja crece sin
+  // techo y cada ticket arrastra su hilo.
+  const consulta = useMemo(
+    () => ({
+      pagina,
+      porPagina: tamanoPagina,
+      abiertos: filtroEstado === 'abiertos',
+      estado:
+        filtroEstado === 'abiertos' || filtroEstado === 'todos' ? undefined : filtroEstado,
+    }),
+    [pagina, tamanoPagina, filtroEstado],
+  )
+
   useEffect(() => {
-    fetchNotas(esAdmin)
-  }, [fetchNotas, esAdmin])
+    fetchNotas(esAdmin, consulta)
+  }, [fetchNotas, esAdmin, consulta])
+
+  const recargar = () => fetchNotas(esAdmin, consulta)
 
   useEffect(() => {
     if (!esAdmin) fetchProjects()
@@ -226,12 +246,6 @@ export function NotasPage() {
       .sort((a, b) => a.name.localeCompare(b.name, 'es'))
       .map((p) => ({ value: String(p.id), label: p.name }))
   }, [projects, esAdmin, user])
-
-  const visibles = useMemo(() => {
-    if (filtroEstado === 'todos') return notas
-    if (filtroEstado === 'abiertos') return notas.filter((n) => n.estado !== 'Resuelta')
-    return notas.filter((n) => n.estado === filtroEstado)
-  }, [notas, filtroEstado])
 
   const pendientes = notas.filter((n) => n.estado === 'Pendiente').length
 
@@ -266,7 +280,7 @@ export function NotasPage() {
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">
-            {esAdmin ? 'Mensajes del equipo' : 'Mis tickets'}
+            {esAdmin ? 'Tickets del equipo' : 'Mis tickets'}
           </h1>
           <p className="text-sm text-slate-400">
             {esAdmin
@@ -279,7 +293,7 @@ export function NotasPage() {
         <Button
           variant="secondary"
           className="w-full sm:w-auto"
-          onClick={() => fetchNotas(esAdmin)}
+          onClick={recargar}
           loading={loading}
         >
           <IoRefreshOutline size={18} />
@@ -346,7 +360,10 @@ export function NotasPage() {
               ...ESTADO_OPTIONS,
             ]}
             value={filtroEstado}
-            onChange={(e) => setFiltroEstado(e.target.value)}
+            onChange={(e) => {
+              setFiltroEstado(e.target.value)
+              setPagina(1)
+            }}
           />
         </div>
       </div>
@@ -354,7 +371,7 @@ export function NotasPage() {
       <div className="space-y-3">
         {loading && notas.length === 0 ? (
           <p className="py-12 text-center text-slate-500">Cargando tickets...</p>
-        ) : visibles.length === 0 ? (
+        ) : notas.length === 0 ? (
           <p className="py-12 text-center text-slate-500">
             {esAdmin
               ? 'No hay tickets en este filtro'
@@ -363,7 +380,7 @@ export function NotasPage() {
                 : 'No hay tickets en este filtro'}
           </p>
         ) : (
-          visibles.map((nota) => (
+          notas.map((nota) => (
             <TicketCard
               key={nota.id}
               nota={nota}
@@ -376,6 +393,20 @@ export function NotasPage() {
           ))
         )}
       </div>
+
+      {total > 0 && (
+        <Pagination
+          page={pagina}
+          pageSize={porPagina}
+          total={total}
+          onPageChange={setPagina}
+          onPageSizeChange={(size) => {
+            setTamanoPagina(size)
+            setPagina(1)
+          }}
+          itemLabel={['ticket', 'tickets']}
+        />
+      )}
 
       {!esAdmin && notas.length > 0 && (
         <p className="mt-4 flex items-center gap-1.5 text-xs text-slate-500">
@@ -393,7 +424,11 @@ export function NotasPage() {
             : ''
         }
         onConfirm={async () => {
-          if (toDelete) await deleteNota(toDelete.id)
+          if (toDelete) {
+            await deleteNota(toDelete.id)
+            // La página quedó con un hueco: se recarga para completarla.
+            await recargar()
+          }
           setToDelete(null)
         }}
         onCancel={() => setToDelete(null)}

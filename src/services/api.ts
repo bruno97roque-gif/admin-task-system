@@ -263,12 +263,31 @@ export function deleteReunionRequest(id: number) {
 
 // --- Notas a administración -----------------------------------------------
 
-export function getNotasRequest() {
-  return apiFetch<import('../types').NotaAdmin[]>('/notas')
+export interface ConsultaNotas {
+  pagina?: number
+  porPagina?: number
+  abiertos?: boolean
+  estado?: string
 }
 
-export function getMisNotasRequest() {
-  return apiFetch<import('../types').NotaAdmin[]>('/notas/mias')
+function queryNotas(consulta: ConsultaNotas): string {
+  const params = new URLSearchParams()
+  if (consulta.pagina) params.set('pagina', String(consulta.pagina))
+  if (consulta.porPagina) params.set('porPagina', String(consulta.porPagina))
+  if (consulta.abiertos) params.set('abiertos', 'true')
+  if (consulta.estado) params.set('estado', consulta.estado)
+  const query = params.toString()
+  return query ? `?${query}` : ''
+}
+
+export function getNotasRequest(consulta: ConsultaNotas = {}) {
+  return apiFetch<import('../types').PaginaNotas>(`/notas${queryNotas(consulta)}`)
+}
+
+export function getMisNotasRequest(consulta: ConsultaNotas = {}) {
+  return apiFetch<import('../types').PaginaNotas>(
+    `/notas/mias${queryNotas(consulta)}`,
+  )
 }
 
 export function createNotaRequest(data: {

@@ -20,31 +20,31 @@ export interface TramoPagoInfo {
 const TRAMOS: Record<TramoPago, TramoPagoInfo> = {
   inicial: {
     tramo: 'inicial',
-    label: 'Hasta 50%',
-    fondo: 'bg-rose-500/10 text-slate-200 hover:bg-rose-500/20',
-    fondoTenue: 'bg-rose-500/5 text-slate-400 hover:bg-rose-500/10',
-    swatch: 'bg-rose-500/50',
+    label: 'Hasta 51%',
+    fondo: 'bg-rose-500/25 text-slate-100 hover:bg-rose-500/35',
+    fondoTenue: 'bg-rose-500/12 text-slate-400 hover:bg-rose-500/20',
+    swatch: 'bg-rose-500',
   },
   parcial: {
     tramo: 'parcial',
-    label: 'Del 50% al 99%',
-    fondo: 'bg-amber-500/10 text-slate-200 hover:bg-amber-500/20',
-    fondoTenue: 'bg-amber-500/5 text-slate-400 hover:bg-amber-500/10',
-    swatch: 'bg-amber-500/50',
+    label: 'Del 52% al 99%',
+    fondo: 'bg-amber-500/25 text-slate-100 hover:bg-amber-500/35',
+    fondoTenue: 'bg-amber-500/12 text-slate-400 hover:bg-amber-500/20',
+    swatch: 'bg-amber-500',
   },
   completo: {
     tramo: 'completo',
     label: 'Cobrado 100%',
-    fondo: 'bg-emerald-500/10 text-slate-200 hover:bg-emerald-500/20',
-    fondoTenue: 'bg-emerald-500/5 text-slate-400 hover:bg-emerald-500/10',
-    swatch: 'bg-emerald-500/50',
+    fondo: 'bg-emerald-500/25 text-slate-100 hover:bg-emerald-500/35',
+    fondoTenue: 'bg-emerald-500/12 text-slate-400 hover:bg-emerald-500/20',
+    swatch: 'bg-emerald-500',
   },
   desconocido: {
     tramo: 'desconocido',
     label: 'Sin dato',
     fondo: 'bg-surface text-slate-200 hover:bg-surface-overlay',
     fondoTenue: 'bg-surface/60 text-slate-400 hover:bg-surface/80',
-    swatch: 'bg-slate-600',
+    swatch: 'bg-slate-500',
   },
 }
 
@@ -82,7 +82,9 @@ export function tramoDePago(estadoPago: string | null | undefined): TramoPagoInf
   const porcentaje = porcentajePagado(estadoPago)
   if (porcentaje === null) return TRAMOS.desconocido
   if (porcentaje >= 100) return TRAMOS.completo
-  // El 80 del plan 50/30/20 cae acá: sigue faltando el saldo.
-  if (porcentaje >= 50) return TRAMOS.parcial
+  // El corte va en 52: el 50 clavado del abono inicial es «recién arranca»,
+  // y del 52 para arriba (el 80 del plan 50/30/20, por ejemplo) ya es
+  // «falta el saldo».
+  if (porcentaje >= 52) return TRAMOS.parcial
   return TRAMOS.inicial
 }

@@ -1,6 +1,32 @@
 import { DESARROLLADOR_COLORS, DISENADOR_COLORS, getUserColor } from '../../utils/userColors'
 import { TRAMOS_PAGO } from '../../utils/estadoPago'
 
+/** Barra vertical que separa un bloque de la leyenda del siguiente. */
+function Separador() {
+  return <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+}
+
+function PuntosDePersonas({ ids }: { ids: number[] }) {
+  return (
+    <>
+      {ids.map((id) => {
+        const color = getUserColor(id)
+        if (!color) return null
+        return (
+          <span key={id} className="flex items-center gap-1.5">
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: color.hex }}
+              aria-hidden="true"
+            />
+            {color.label}
+          </span>
+        )
+      })}
+    </>
+  )
+}
+
 /** Leyenda de qué color le corresponde a cada diseñador/desarrollador, para
  * mapear los puntos de color que aparecen en las tarjetas de proyecto.
  *
@@ -8,44 +34,22 @@ import { TRAMOS_PAGO } from '../../utils/estadoPago'
  * fondo de cada tarjeta. */
 export function PersonColorLegend({ mostrarPagos = false }: { mostrarPagos?: boolean }) {
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-400">
+    <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400">
       <span className="font-medium text-slate-500">Diseñadores</span>
-      {DISENADOR_COLORS.map((id) => {
-        const color = getUserColor(id)
-        if (!color) return null
-        return (
-          <span key={id} className="flex items-center gap-1.5">
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: color.hex }}
-              aria-hidden="true"
-            />
-            {color.label}
-          </span>
-        )
-      })}
-      <span className="ml-2 font-medium text-slate-500">Desarrolladores</span>
-      {DESARROLLADOR_COLORS.map((id) => {
-        const color = getUserColor(id)
-        if (!color) return null
-        return (
-          <span key={id} className="flex items-center gap-1.5">
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: color.hex }}
-              aria-hidden="true"
-            />
-            {color.label}
-          </span>
-        )
-      })}
+      <PuntosDePersonas ids={DISENADOR_COLORS} />
+
+      <Separador />
+      <span className="font-medium text-slate-500">Desarrolladores</span>
+      <PuntosDePersonas ids={DESARROLLADOR_COLORS} />
+
       {mostrarPagos && (
         <>
-          <span className="ml-2 font-medium text-slate-500">Pagos</span>
+          <Separador />
+          <span className="font-medium text-slate-300">Pagos</span>
           {TRAMOS_PAGO.map((pago) => (
             <span key={pago.tramo} className="flex items-center gap-1.5">
               <span
-                className={`h-2.5 w-2.5 shrink-0 rounded-sm ${pago.swatch}`}
+                className={`h-3 w-3 shrink-0 rounded-sm ${pago.swatch}`}
                 aria-hidden="true"
               />
               {pago.label}

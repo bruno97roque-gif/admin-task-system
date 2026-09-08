@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { IoAnalyticsOutline, IoRefreshOutline } from 'react-icons/io5'
 import { useAnaliticaStore } from '../stores/analiticaStore'
+import { FlujoMensual } from '../components/analitica/FlujoMensual'
 import { MonthlyBarChart } from '../components/analitica/MonthlyBarChart'
 import { Leaderboard } from '../components/analitica/Leaderboard'
 import { Button } from '../components/ui/Button'
@@ -127,6 +128,15 @@ export function AnaliticaPage() {
                   : 'Todavía no hay proyectos con ambas marcas de tiempo'}
               </p>
             </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-surface-raised p-4">
+            <h2 className="text-sm font-semibold text-slate-200">Entradas y salidas por mes</h2>
+            <p className="mb-4 text-xs text-slate-500">
+              Cuántos proyectos se dieron de alta y cuántos se cerraron o archivaron. Haz
+              clic en un mes para ver cuáles fueron.
+            </p>
+            <FlujoMensual data={data.flujoMensual} />
           </div>
 
           <div className="rounded-xl border border-border bg-surface-raised p-4">

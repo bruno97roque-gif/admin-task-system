@@ -101,7 +101,26 @@ export interface AnaliticaDuracion {
   proyectos: AnaliticaProyectoDuracion[]
 }
 
+export interface AnaliticaProyectoMovimiento {
+  proyectoId: number
+  nombre: string
+  fecha: string
+  /** Solo en las salidas: si se cerró bien o se archivó. */
+  motivo?: 'ProyectoFinalizado' | 'Archivado'
+}
+
+/** Altas y cierres de un mes, con el detalle de qué proyectos fueron. */
+export interface AnaliticaFlujoMes {
+  mes: string
+  entraron: number
+  salieron: number
+  neto: number
+  entrantes: AnaliticaProyectoMovimiento[]
+  salientes: AnaliticaProyectoMovimiento[]
+}
+
 export interface Analitica {
+  flujoMensual: AnaliticaFlujoMes[]
   porMes: AnaliticaMes[]
   disenadoresPorMes: AnaliticaPersonaMes[]
   desarrolladoresPorMes: AnaliticaPersonaMes[]

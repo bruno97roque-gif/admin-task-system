@@ -204,20 +204,24 @@ export function DashboardPage() {
   ]
 
   return (
-    <div>
-      <header className="mb-6 sm:mb-8">
+    // En escritorio con altura suficiente (1080p y más) el dashboard entra
+    // completo en la pantalla: altura fija (100dvh menos el padding del
+    // layout) y la fila de abajo absorbe lo que sobra, con scroll interno en
+    // sus listas si hiciera falta. En pantallas más bajas fluye normal.
+    <div className="flex flex-col lg:[@media(min-height:900px)]:h-[calc(100dvh-4rem)]">
+      <header className="mb-4 sm:mb-6">
         <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">Dashboard</h1>
         <p className="text-sm text-slate-400">
           Resumen general del sistema de proyectos
         </p>
       </header>
 
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+      <div className="mb-6 grid shrink-0 grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
         {stats.map(({ label, value, icon: Icon, color, bg, to }) => (
           <Link
             key={label}
             to={to}
-            className="flex h-28 min-w-0 flex-col justify-between rounded-xl border border-border bg-surface-raised p-5 transition-colors hover:border-accent/50"
+            className="flex h-24 min-w-0 flex-col justify-between rounded-xl border border-border bg-surface-raised p-4 transition-colors hover:border-accent/50"
           >
             <div className="flex items-start justify-between gap-2">
               <p className="min-w-0 truncate text-sm text-slate-400">{label}</p>
@@ -230,8 +234,8 @@ export function DashboardPage() {
         ))}
       </div>
 
-      <section className="mb-8 rounded-xl border border-border bg-surface-raised p-5 sm:p-6">
-        <h2 className="mb-6 flex items-center gap-2 text-lg font-semibold text-slate-100">
+      <section className="mb-6 shrink-0 rounded-xl border border-border bg-surface-raised p-5">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-100">
           <IoPeopleOutline className="text-accent" />
           Proyectos activos por miembro
         </h2>
@@ -262,8 +266,8 @@ export function DashboardPage() {
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border border-border bg-surface-raised p-5">
+      <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-2">
+        <section className="flex min-h-0 flex-col rounded-xl border border-border bg-surface-raised p-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
             <IoFolderOpenOutline className="text-accent" />
             Proyectos recientes
@@ -274,7 +278,7 @@ export function DashboardPage() {
           {projects.length === 0 ? (
             <p className="text-sm text-slate-500">No hay proyectos registrados</p>
           ) : (
-            <ul className="space-y-3">
+            <ul className="min-h-0 space-y-2 overflow-y-auto">
               {recentProjects.map((project) => (
                 <li
                   key={project.id}
@@ -298,19 +302,19 @@ export function DashboardPage() {
           )}
         </section>
 
-        <section className="flex flex-col rounded-xl border border-border bg-[#222034] p-5">
+        <section className="flex min-h-0 flex-col rounded-xl border border-border bg-[#222034] p-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
             <IoVideocamOutline className="text-emerald-400" />
             Próximas reuniones
           </h2>
           <p className="mb-4 text-xs text-slate-500">Las cinco más cercanas, con su link de Meet</p>
           {proximasReuniones.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 text-center">
               <img
                 src={descansoGif}
                 alt=""
                 draggable={false}
-                className="h-64 w-64 rounded-lg object-cover select-none"
+                className="min-h-0 w-auto max-w-64 flex-1 rounded-lg object-contain select-none"
               />
               <p className="text-sm text-slate-500">No hay reuniones agendadas</p>
               <Link to="/reuniones" className="text-sm text-accent-hover hover:underline">
@@ -318,7 +322,7 @@ export function DashboardPage() {
               </Link>
             </div>
           ) : (
-            <ul className="space-y-3">
+            <ul className="min-h-0 space-y-3 overflow-y-auto">
               {proximasReuniones.slice(0, 5).map((reunion) => (
                 <li
                   key={reunion.id}

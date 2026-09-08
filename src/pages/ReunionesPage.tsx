@@ -64,13 +64,14 @@ const MARGEN_EN_CURSO_MS = 60 * 60 * 1000
 function ReunionCard({
   reunion,
   pasada,
-  esAdmin,
+  puedeEditar,
   onEdit,
   onDelete,
 }: {
   reunion: Reunion
   pasada: boolean
-  esAdmin: boolean
+  /** Administración toca cualquiera; el resto, solo las que agendó. */
+  puedeEditar: boolean
   onEdit: (r: Reunion) => void
   onDelete: (r: Reunion) => void
 }) {
@@ -111,6 +112,11 @@ function ReunionCard({
             ))
           )}
         </div>
+        {reunion.creador && (
+          <p className="mt-2 text-xs text-slate-500">
+            Agendada por <span className="text-slate-400">{reunion.creador.name}</span>
+          </p>
+        )}
         {reunion.descripcion && (
           <p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-400">
             {reunion.descripcion}
@@ -128,23 +134,25 @@ function ReunionCard({
           <IoVideocamOutline size={16} />
           Unirse a Meet
         </a>
-        {esAdmin && (
+        {/* Llevarla al Calendar es solo abrir un link: lo puede hacer
+            cualquiera que vea la reunión. */}
+        <a
+          href={enlaceGoogleCalendar(reunion)}
+          target="_blank"
+          rel="noreferrer"
+          title={
+            sinCorreo.length > 0
+              ? `Sin correo cargado: ${sinCorreo.join(', ')}. No se los podrá invitar.`
+              : 'Crear el evento en Google Calendar e invitar a los convocados'
+          }
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-overlay px-3 py-2 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-600"
+        >
+          <IoCalendarNumberOutline size={16} />
+          Calendar
+          {sinCorreo.length > 0 && <span className="text-amber-400">!</span>}
+        </a>
+        {puedeEditar && (
           <>
-            <a
-              href={enlaceGoogleCalendar(reunion)}
-              target="_blank"
-              rel="noreferrer"
-              title={
-                sinCorreo.length > 0
-                  ? `Sin correo cargado: ${sinCorreo.join(', ')}. No se los podrá invitar.`
-                  : 'Crear el evento en Google Calendar e invitar a los convocados'
-              }
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-overlay px-3 py-2 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-600"
-            >
-              <IoCalendarNumberOutline size={16} />
-              Calendar
-              {sinCorreo.length > 0 && <span className="text-amber-400">!</span>}
-            </a>
             <Button variant="secondary" onClick={() => onEdit(reunion)} aria-label="Editar">
               <IoCreateOutline size={16} />
             </Button>
@@ -220,11 +228,12 @@ export function ReunionesPage() {
   }, [fetchReuniones, esAdmin])
 
   useEffect(() => {
-    if (!esAdmin) return
+    // Todos pueden agendar, así que todos necesitan la lista de convocables
+    // y de proyectos para armar el formulario.
     fetchProjects()
     fetchUsers()
     fetchRoles()
-  }, [esAdmin, fetchProjects, fetchUsers, fetchRoles])
+  }, [fetchProjects, fetchUsers, fetchRoles])
 
   const { proximas, pasadas } = useMemo(() => {
     const limite = ahora - MARGEN_EN_CURSO_MS
@@ -236,6 +245,12 @@ export function ReunionesPage() {
       .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
     return { proximas, pasadas }
   }, [reuniones, ahora])
+
+  // Administración toca cualquier reunión; el resto, solo las que agendó.
+  // Es la misma regla que aplica el API, replicada acá para no ofrecer un
+  // botón que después va a dar 403.
+  const puedeAdministrar = (reunion: Reunion) =>
+    esAdmin || (user !== null && reunion.creadorId === user.id)
 
   const activeUsers = useMemo(() => users.filter((u) => u.active), [users])
   const participantGroups = useMemo(() => {
@@ -324,8 +339,8 @@ export function ReunionesPage() {
           </h1>
           <p className="text-sm text-slate-400">
             {esAdmin
-              ? 'Agenda reuniones con el equipo; cada convocado recibe el link de Meet.'
-              : 'Tus próximas reuniones con el link de Meet.'}
+              ? 'Toda la agenda del equipo, con quién convocó cada reunión.'
+              : 'Las tuyas y las que agendaste. Cada convocado recibe el link de Meet.'}
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
@@ -338,12 +353,10 @@ export function ReunionesPage() {
             <IoRefreshOutline size={18} />
             Actualizar
           </Button>
-          {esAdmin && (
-            <Button className="w-full sm:w-auto" onClick={openCreate}>
-              <IoAddOutline size={18} />
-              Nueva reunión
-            </Button>
-          )}
+          <Button className="w-full sm:w-auto" onClick={openCreate}>
+            <IoAddOutline size={18} />
+            Nueva reunión
+          </Button>
         </div>
       </header>
 
@@ -365,7 +378,7 @@ export function ReunionesPage() {
               key={r.id}
               reunion={r}
               pasada={false}
-              esAdmin={esAdmin}
+              puedeEditar={puedeAdministrar(r)}
               onEdit={openEdit}
               onDelete={setToDelete}
             />
@@ -388,7 +401,7 @@ export function ReunionesPage() {
                 key={r.id}
                 reunion={r}
                 pasada
-                esAdmin={esAdmin}
+                puedeEditar={puedeAdministrar(r)}
                 onEdit={openEdit}
                 onDelete={setToDelete}
               />

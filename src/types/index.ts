@@ -151,6 +151,7 @@ export type TipoNotificacion =
   | 'ProyectoAsignado'
   | 'EtapaFinalizada'
   | 'ReunionProgramada'
+  | 'ReunionProxima'
   | 'NotaRecibida'
   | 'NotaRespondida'
 

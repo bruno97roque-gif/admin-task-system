@@ -26,6 +26,7 @@ import { ProjectColumn } from '../components/projects/ProjectColumn'
 import { ProjectDetails } from '../components/projects/ProjectDetails'
 import { ProjectFilters } from '../components/projects/ProjectFilters'
 import { AbrirTicketRapido } from '../components/notas/AbrirTicketRapido'
+import { AbrirMateriales } from '../components/projects/AbrirMateriales'
 import { LoaderBlock } from '../components/ui/Loader'
 import { CornerRestGif } from '../components/ui/CornerRestGif'
 import { PersonColorLegend } from '../components/projects/PersonColorLegend'
@@ -264,6 +265,7 @@ export function ProjectsByProgramadorPage() {
       >
         <form onSubmit={handleSubmit(onSubmitComentario)} className="space-y-4">
           {editingProject && <ProjectDetails project={editingProject} />}
+          {editingProject && <AbrirMateriales enlace={editingProject.enlaceMateriales} />}
           {editingProject && (
             <AbrirTicketRapido
               proyectoId={editingProject.id}

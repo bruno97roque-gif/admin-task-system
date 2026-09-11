@@ -1,5 +1,4 @@
 import {
-  IoFolderOpenOutline,
   IoLayersOutline,
   IoPeopleOutline,
   IoTimeOutline,
@@ -28,18 +27,6 @@ export function ProjectDetails({ project }: { project: Project }) {
           <span>Equipo: {getProjectUserNames(project)}</span>
         </div>
       </dl>
-
-      {project.enlaceMateriales && (
-        <a
-          href={project.enlaceMateriales}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-overlay px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-600"
-        >
-          <IoFolderOpenOutline size={14} className="text-accent" />
-          Abrir carpeta de materiales
-        </a>
-      )}
     </div>
   )
 }

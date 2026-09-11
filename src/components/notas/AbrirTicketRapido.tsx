@@ -70,7 +70,9 @@ export function AbrirTicketRapido({
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:border-accent/50 hover:bg-surface-overlay/40 hover:text-slate-200"
+        // Mismo estilo que «Abrir materiales en Drive»: los dos accesos rápidos
+        // del modal van juntos y ninguno compite con «Guardar».
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2.5 text-sm font-medium text-accent-hover transition-colors hover:bg-accent/20"
       >
         <IoChatbubbleEllipsesOutline size={16} />
         Abrir un ticket sobre este proyecto

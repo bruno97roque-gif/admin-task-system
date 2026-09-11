@@ -31,6 +31,7 @@ import {
 import { Avatar } from '../ui/Avatar'
 import { Logo } from '../ui/Logo'
 import { PinguinoPaseando } from '../ui/PinguinoPaseando'
+import { useCancelarArrastreAlPerderFoco } from '../../hooks/useCancelarArrastreAlPerderFoco'
 import { enlaceWebmail } from '../../utils/webmail'
 
 const navItems = [
@@ -100,6 +101,10 @@ export function Layout() {
     () => navItems.filter((item) => canAccessNavPath(user?.roleName, item.to)),
     [user?.roleName],
   )
+
+  // Un arrastre de tarjeta que queda a medias al cambiar de ventana frena
+  // todos los clics de la página hasta recargar: ver el hook.
+  useCancelarArrastreAlPerderFoco()
 
   const { nuevas, descartarNuevas, noLeidas } = useNotificaciones(user?.id)
   const [panelAbiertoAMano, setPanelAbiertoAMano] = useState(false)

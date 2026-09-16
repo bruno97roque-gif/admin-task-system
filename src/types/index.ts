@@ -185,7 +185,13 @@ export interface Reunion {
   titulo: string
   descripcion: string | null
   fecha: string
+  /** Cadena vacía mientras no haya link. */
   linkMeet: string
+  /** Si el Meet arranca grabando y transcribiendo. */
+  grabarReunion: boolean
+  /** Id del evento en Google Calendar; `null` mientras no se envió. */
+  googleEventId: string | null
+  enviadaAt: string | null
   proyectoId: number | null
   proyecto: ProyectoResumen | null
   creadorId: number | null
@@ -195,7 +201,25 @@ export interface Reunion {
   updatedAt: string
 }
 
-export type EstadoNota = 'Pendiente' | 'EnCurso' | 'Resuelta'
+/** Cómo quedó el evento de Google después de editar una reunión que ya estaba allá. */
+export type SincronizacionGoogle = 'actualizada' | 'sin_cambios' | 'error'
+
+/** Qué pasó con la grabación al enviar una reunión al Calendar. */
+export type EstadoDeGrabacion = 'activada' | 'desactivada' | 'no_disponible' | 'sin_meet'
+
+/** La cuenta de Google de Websy, conectada por administración. */
+export interface EstadoGoogle {
+  /** Si el servidor tiene las variables de Google cargadas. */
+  configurada: boolean
+  conectada: boolean
+  cuenta: string | null
+  conectadaPor: string | null
+  conectadaAt: string | null
+  /** Permisos que la cuenta no concedió: con alguno faltando hay que reconectar. */
+  permisosFaltantes: string[]
+}
+
+export type EstadoNota ='Pendiente' | 'EnCurso' | 'Resuelta'
 
 export type CategoriaNota = 'Consulta' | 'Bloqueo' | 'Material' | 'Cambio' | 'Otro'
 

@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
+import { useSearchParams } from 'react-router'
 import {
   IoAddOutline,
   IoCalendarNumberOutline,
   IoCalendarOutline,
+  IoCheckmarkCircleOutline,
+  IoCloseOutline,
   IoCreateOutline,
+  IoInformationCircleOutline,
   IoPeopleOutline,
+  IoRadioButtonOnOutline,
   IoRefreshOutline,
+  IoSendOutline,
   IoTrashOutline,
   IoVideocamOutline,
   IoWarningOutline,
 } from 'react-icons/io5'
-import type { Reunion } from '../types'
+import type { EstadoDeGrabacion, Reunion, SincronizacionGoogle } from '../types'
 import { useAuthStore } from '../stores/authStore'
 import { useReunionesStore } from '../stores/reunionesStore'
 import { useProjectsStore } from '../stores/projectsStore'
@@ -29,6 +35,7 @@ import {
   TIPOS_REUNION,
   tituloEsLibre,
 } from '../utils/reuniones'
+import { GoogleCalendarBar } from '../components/reuniones/GoogleCalendarBar'
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -46,6 +53,7 @@ interface ReunionForm {
   linkMeet: string
   proyectoId: string
   participantesIds: string[]
+  grabarReunion: boolean
 }
 
 const emptyForm: ReunionForm = {
@@ -56,6 +64,72 @@ const emptyForm: ReunionForm = {
   linkMeet: '',
   proyectoId: '',
   participantesIds: [],
+  // Encendida por defecto: casi todas las reuniones con clientes se graban.
+  grabarReunion: true,
+}
+
+type TipoAviso = 'ok' | 'warn' | 'error'
+
+interface Aviso {
+  tipo: TipoAviso
+  texto: string
+}
+
+const ESTILO_AVISO: Record<TipoAviso, string> = {
+  ok: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
+  warn: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+  error: 'border-red-500/30 bg-red-500/10 text-red-300',
+}
+
+/** Lo que devuelve Google al volver de conectar la cuenta (`?google=`). */
+const AVISO_DE_CONEXION: Record<string, Aviso> = {
+  conectado: {
+    tipo: 'ok',
+    texto: 'Google Calendar quedó conectado. Ya puedes enviar las reuniones desde cada tarjeta.',
+  },
+  cancelado: { tipo: 'warn', texto: 'Se canceló la conexión con Google.' },
+  vencido: {
+    tipo: 'warn',
+    texto: 'El enlace para conectar Google venció. Vuelve a tocar «Conectar Google».',
+  },
+  error: {
+    tipo: 'error',
+    texto: 'No se pudo conectar Google. Vuelve a intentarlo en un momento.',
+  },
+}
+
+const AVISO_DE_GRABACION: Record<EstadoDeGrabacion, Aviso> = {
+  activada: {
+    tipo: 'ok',
+    texto:
+      'Enviada a Google Calendar: Google mandó las invitaciones y el Meet va a grabar y transcribir.',
+  },
+  desactivada: {
+    tipo: 'ok',
+    texto: 'Enviada a Google Calendar: Google mandó las invitaciones. Esta reunión no se graba.',
+  },
+  no_disponible: {
+    tipo: 'warn',
+    texto:
+      'Enviada a Google Calendar, pero no se pudo configurar la grabación. Actívala desde el evento: Opciones de videollamada → Registros de la reunión.',
+  },
+  sin_meet: {
+    tipo: 'warn',
+    texto:
+      'Enviada a Google Calendar, pero Google no generó el Meet. Añádelo desde el evento y pega el link acá con el lápiz.',
+  },
+}
+
+const AVISO_DE_EDICION: Partial<Record<SincronizacionGoogle, Aviso>> = {
+  actualizada: {
+    tipo: 'ok',
+    texto: 'Cambios guardados y actualizados en Google Calendar; Google avisó a los invitados.',
+  },
+  error: {
+    tipo: 'warn',
+    texto:
+      'Los cambios se guardaron acá, pero no se pudo actualizar Google Calendar. Corrige el evento allá.',
+  },
 }
 
 const MEET_REGEX = /^https:\/\/meet\.google\.com\//
@@ -70,17 +144,29 @@ function ReunionCard({
   reunion,
   pasada,
   puedeEditar,
+  puedeEnviar,
+  enviando,
   onEdit,
   onDelete,
+  onEnviar,
 }: {
   reunion: Reunion
   pasada: boolean
   /** Administración toca cualquiera; el resto, solo las que agendó. */
   puedeEditar: boolean
+  /** Administración con Google conectado. */
+  puedeEnviar: boolean
+  enviando: boolean
   onEdit: (r: Reunion) => void
   onDelete: (r: Reunion) => void
+  onEnviar: (r: Reunion) => void
 }) {
   const sinCorreo = participantesSinCorreo(reunion)
+  const enGoogle = reunion.googleEventId !== null
+  const avisoSinCorreo =
+    sinCorreo.length > 0
+      ? ` Sin correo cargado: ${sinCorreo.join(', ')}, a esos no les llega la invitación.`
+      : ''
 
   return (
     <article
@@ -94,6 +180,28 @@ function ReunionCard({
           {reunion.proyecto && (
             <span className="rounded-full bg-surface-overlay px-2 py-0.5 text-xs text-slate-300">
               {reunion.proyecto.name}
+            </span>
+          )}
+          {enGoogle && (
+            <span
+              title={
+                reunion.enviadaAt
+                  ? `Enviada a Google Calendar el ${formatDateTimeDisplay(reunion.enviadaAt)}`
+                  : 'Enviada a Google Calendar'
+              }
+              className="inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 text-xs text-sky-300"
+            >
+              <IoCheckmarkCircleOutline size={13} />
+              En Google Calendar
+            </span>
+          )}
+          {reunion.grabarReunion && (
+            <span
+              title="El Meet arranca grabando y con transcripción"
+              className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs text-red-300"
+            >
+              <IoRadioButtonOnOutline size={12} />
+              Se graba
             </span>
           )}
         </div>
@@ -142,33 +250,50 @@ function ReunionCard({
           </a>
         ) : (
           <span
-            title="La agendó alguien sin cuenta de Workspace. Administración crea el evento en Calendar, donde Meet se genera solo, y después carga el link acá."
+            title="Todavía no está en Google Calendar. Administración la envía desde acá y Google genera el Meet."
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 sm:w-auto"
           >
             <IoWarningOutline size={16} />
             Falta el link
           </span>
         )}
-        {/* Llevarla al Calendar es solo abrir un link: lo puede hacer
-            cualquiera que vea la reunión. Ojo: la URL de Calendar es un
-            «template», así que siempre crea un evento NUEVO — no sabe
-            actualizar uno que ya exista. El texto del botón lo dice para que
-            nadie duplique sin querer. */}
-        <a
-          href={enlaceGoogleCalendar(reunion)}
-          target="_blank"
-          rel="noreferrer"
-          title={
-            sinCorreo.length > 0
-              ? `Crea un evento NUEVO en Google Calendar. Sin correo cargado: ${sinCorreo.join(', ')}, a esos no se los podrá invitar.`
-              : 'Crea un evento NUEVO en Google Calendar con los convocados. Si ya lo creaste antes, editalo desde Calendar en vez de volver a tocar acá.'
-          }
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-overlay px-3 py-2 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-600"
-        >
-          <IoCalendarNumberOutline size={16} />
-          Crear en Calendar
-          {sinCorreo.length > 0 && <span className="text-amber-400">!</span>}
-        </a>
+        {enGoogle ? null : puedeEnviar && !pasada ? (
+          // Con la cuenta conectada, el sistema crea el evento él mismo: con
+          // Meet, invitaciones y la grabación configurada.
+          <Button
+            onClick={() => onEnviar(reunion)}
+            loading={enviando}
+            title={
+              (reunion.linkMeet
+                ? 'Ya tiene un link cargado a mano: enviarla crea el evento con un Meet nuevo, que reemplaza al actual.'
+                : 'Crea el evento en Google Calendar con Meet y manda las invitaciones.') +
+              avisoSinCorreo
+            }
+          >
+            <IoSendOutline size={16} />
+            Enviar al Calendar
+            {sinCorreo.length > 0 && <span className="text-amber-200">!</span>}
+          </Button>
+        ) : (
+          // Sin conexión, llevarla al Calendar es abrir un link prellenado: lo
+          // puede hacer cualquiera que vea la reunión. Esa URL es un
+          // «template» y siempre crea un evento NUEVO; el texto lo dice para
+          // que nadie duplique sin querer.
+          <a
+            href={enlaceGoogleCalendar(reunion)}
+            target="_blank"
+            rel="noreferrer"
+            title={
+              'Crea un evento NUEVO en Google Calendar con los convocados. Si ya lo creaste antes, edítalo desde Calendar en vez de volver a tocar acá.' +
+              avisoSinCorreo
+            }
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-overlay px-3 py-2 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-600"
+          >
+            <IoCalendarNumberOutline size={16} />
+            Crear en Calendar
+            {sinCorreo.length > 0 && <span className="text-amber-400">!</span>}
+          </a>
+        )}
         {puedeEditar && (
           <>
             <Button variant="secondary" onClick={() => onEdit(reunion)} aria-label="Editar">
@@ -203,6 +328,11 @@ export function ReunionesPage() {
   const createReunion = useReunionesStore((s) => s.createReunion)
   const updateReunion = useReunionesStore((s) => s.updateReunion)
   const deleteReunion = useReunionesStore((s) => s.deleteReunion)
+  const google = useReunionesStore((s) => s.google)
+  const enviandoId = useReunionesStore((s) => s.enviandoId)
+  const fetchEstadoGoogle = useReunionesStore((s) => s.fetchEstadoGoogle)
+  const enviarAlCalendar = useReunionesStore((s) => s.enviarAlCalendar)
+  const googleConectada = esAdmin && google?.conectada === true
 
   const projects = useProjectsStore((s) => s.projects)
   const fetchProjects = useProjectsStore((s) => s.fetchProjects)
@@ -215,6 +345,23 @@ export function ReunionesPage() {
   const [editing, setEditing] = useState<Reunion | null>(null)
   const [toDelete, setToDelete] = useState<Reunion | null>(null)
   const [showPasadas, setShowPasadas] = useState(false)
+  const [eliminando, setEliminando] = useState(false)
+  const [errorAlEliminar, setErrorAlEliminar] = useState<string | null>(null)
+
+  // Al volver de conectar Google, el resultado llega en `?google=`. Se lee una
+  // vez para el aviso inicial y se limpia de la URL, para que recargar la
+  // página no lo repita.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [aviso, setAviso] = useState<Aviso | null>(() => {
+    const resultado = searchParams.get('google')
+    return resultado ? (AVISO_DE_CONEXION[resultado] ?? null) : null
+  })
+
+  useEffect(() => {
+    if (searchParams.has('google')) {
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   const {
     register,
@@ -245,6 +392,11 @@ export function ReunionesPage() {
     fetchReuniones(esAdmin)
   }, [fetchReuniones, esAdmin])
 
+  // La conexión con Google es cosa de administración: el resto ni la consulta.
+  useEffect(() => {
+    if (esAdmin) fetchEstadoGoogle()
+  }, [fetchEstadoGoogle, esAdmin])
+
   useEffect(() => {
     // Todos pueden agendar, así que todos necesitan la lista de convocables
     // y de proyectos para armar el formulario.
@@ -270,12 +422,44 @@ export function ReunionesPage() {
   const puedeAdministrar = (reunion: Reunion) =>
     esAdmin || (user !== null && reunion.creadorId === user.id)
 
-  // Las próximas que todavía no tienen link: son las que esperan que
-  // administración cree el evento en Calendar.
+  // Las próximas que esperan que administración las lleve a Calendar: las que
+  // no tienen link ni están en Google. Las que ya tienen un link cargado a
+  // mano no cuentan, aunque no las haya creado el sistema.
   const pendientesDeCalendar = useMemo(
-    () => proximas.filter((r) => !r.linkMeet).length,
+    () => proximas.filter((r) => !r.linkMeet && !r.googleEventId).length,
     [proximas],
   )
+
+  const enviar = async (reunion: Reunion) => {
+    setAviso(null)
+    const result = await enviarAlCalendar(reunion.id)
+    if (result.success) {
+      setAviso(result.grabacion ? AVISO_DE_GRABACION[result.grabacion] : null)
+    } else {
+      setAviso({ tipo: 'error', texto: result.error ?? 'No se pudo enviar al Calendar' })
+      // Si el problema es la conexión (la revocaron, cambió el secreto), la
+      // barra de arriba tiene que mostrarlo.
+      fetchEstadoGoogle()
+    }
+  }
+
+  const confirmarEliminar = async () => {
+    if (!toDelete) return
+    setEliminando(true)
+    const result = await deleteReunion(toDelete.id)
+    setEliminando(false)
+    if (result.success) {
+      setToDelete(null)
+      setErrorAlEliminar(null)
+    } else {
+      setErrorAlEliminar(result.error ?? 'Error al eliminar la reunión')
+    }
+  }
+
+  const cerrarEliminar = () => {
+    setToDelete(null)
+    setErrorAlEliminar(null)
+  }
 
   const activeUsers = useMemo(() => users.filter((u) => u.active), [users])
   const participantGroups = useMemo(() => {
@@ -319,6 +503,7 @@ export function ReunionesPage() {
       linkMeet: reunion.linkMeet,
       proyectoId: reunion.proyectoId ? String(reunion.proyectoId) : '',
       participantesIds: reunion.participantes.map((p) => String(p.id)),
+      grabarReunion: reunion.grabarReunion,
     })
     setModalOpen(true)
   }
@@ -345,13 +530,14 @@ export function ReunionesPage() {
       proyectoId:
         esReunionDeEquipo(data.tipo) || !data.proyectoId ? null : Number(data.proyectoId),
       participantesIds: data.participantesIds.map(Number),
+      grabarReunion: data.grabarReunion,
     }
 
-    const result = editing
-      ? await updateReunion(editing.id, payload)
-      : await createReunion(payload)
+    const result: { success: boolean; error?: string; google?: SincronizacionGoogle } =
+      editing ? await updateReunion(editing.id, payload) : await createReunion(payload)
 
     if (result.success) {
+      setAviso(result.google ? (AVISO_DE_EDICION[result.google] ?? null) : null)
       closeModal()
     } else {
       setError('root', { message: result.error ?? 'Error al guardar la reunión' })
@@ -394,6 +580,30 @@ export function ReunionesPage() {
         </div>
       )}
 
+      {esAdmin && google && <GoogleCalendarBar google={google} />}
+
+      {aviso && (
+        <div
+          role="status"
+          className={`mb-4 flex items-start gap-2 rounded-lg border px-4 py-3 text-sm ${ESTILO_AVISO[aviso.tipo]}`}
+        >
+          {aviso.tipo === 'ok' ? (
+            <IoCheckmarkCircleOutline size={18} className="mt-0.5 shrink-0" />
+          ) : (
+            <IoWarningOutline size={18} className="mt-0.5 shrink-0" />
+          )}
+          <span className="min-w-0 flex-1">{aviso.texto}</span>
+          <button
+            type="button"
+            onClick={() => setAviso(null)}
+            aria-label="Cerrar aviso"
+            className="shrink-0 opacity-70 hover:opacity-100"
+          >
+            <IoCloseOutline size={18} />
+          </button>
+        </div>
+      )}
+
       {/* El equipo agenda sin link porque no tiene Workspace; el evento de
           Google lo crea administración. Esto es su cola de pendientes. */}
       {esAdmin && pendientesDeCalendar > 0 && (
@@ -401,12 +611,21 @@ export function ReunionesPage() {
           <IoWarningOutline size={18} className="mt-0.5 shrink-0" />
           <span>
             {pendientesDeCalendar === 1
-              ? 'Hay 1 reunión próxima sin link de Meet: '
-              : `Hay ${pendientesDeCalendar} reuniones próximas sin link de Meet: `}
-            créales el evento con «Crear en Calendar», añade ahí Google Meet y pega el
-            link acá con el lápiz. En el mismo evento, «Opciones de videollamada →
-            Registros de la reunión» deja dejar activadas la grabación y la
-            transcripción.
+              ? 'Hay 1 reunión próxima que todavía no está en Google Calendar: '
+              : `Hay ${pendientesDeCalendar} reuniones próximas que todavía no están en Google Calendar: `}
+            {googleConectada ? (
+              <>
+                toca «Enviar al Calendar» en cada una. Google genera el Meet, manda las
+                invitaciones y deja la grabación como indica cada reunión.
+              </>
+            ) : (
+              <>
+                créales el evento con «Crear en Calendar», añade ahí Google Meet y pega el
+                link acá con el lápiz. En el mismo evento, «Opciones de videollamada →
+                Registros de la reunión» permite dejar activadas la grabación y la
+                transcripción.
+              </>
+            )}
           </span>
         </div>
       )}
@@ -424,8 +643,11 @@ export function ReunionesPage() {
               reunion={r}
               pasada={false}
               puedeEditar={puedeAdministrar(r)}
+              puedeEnviar={googleConectada}
+              enviando={enviandoId === r.id}
               onEdit={openEdit}
               onDelete={setToDelete}
+              onEnviar={enviar}
             />
           ))
         )}
@@ -447,8 +669,11 @@ export function ReunionesPage() {
                 reunion={r}
                 pasada
                 puedeEditar={puedeAdministrar(r)}
+                puedeEnviar={googleConectada}
+                enviando={enviandoId === r.id}
                 onEdit={openEdit}
                 onDelete={setToDelete}
+                onEnviar={enviar}
               />
             ))}
         </section>
@@ -466,9 +691,18 @@ export function ReunionesPage() {
               {errors.root.message}
             </div>
           )}
-          {/* Websy avisa a los convocados por su cuenta, pero no puede tocar
-              Google Calendar: el evento de allá hay que corregirlo a mano. */}
-          {editing && (
+          {/* Si el sistema creó el evento, la edición se lleva sola a Google.
+              Si no, el evento de allá (si existe) hay que corregirlo a mano. */}
+          {editing?.googleEventId ? (
+            <div className="flex items-start gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-200">
+              <IoInformationCircleOutline size={16} className="mt-px shrink-0" />
+              <span>
+                Esta reunión está en Google Calendar. Si cambias el horario, el título, la
+                descripción o los convocados, el evento se actualiza allá y Google avisa a los
+                invitados.
+              </span>
+            </div>
+          ) : editing && (
             <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
               <IoWarningOutline size={16} className="mt-px shrink-0" />
               <span>
@@ -539,7 +773,14 @@ export function ReunionesPage() {
                 videollamada. Quien tiene Workspace la genera al guardar en
                 Calendar; el resto deja el campo vacío. */}
             <p className="mt-1.5 text-xs text-slate-500">
-              {esAdmin ? (
+              {editing?.googleEventId ? (
+                <>Lo generó Google al enviarla al Calendar.</>
+              ) : googleConectada ? (
+                <>
+                  Déjalo vacío: al tocar «Enviar al Calendar» en la tarjeta, Google genera el
+                  link y manda las invitaciones.
+                </>
+              ) : esAdmin ? (
                 <>
                   Puedes dejarlo vacío y crear el evento en Google Calendar desde la
                   tarjeta: ahí «Añadir Google Meet» genera el link, y después lo pegas
@@ -584,6 +825,23 @@ export function ReunionesPage() {
             rows={3}
             {...register('descripcion')}
           />
+          <div>
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
+              <input
+                type="checkbox"
+                className="rounded border-border bg-surface-raised accent-accent"
+                {...register('grabarReunion')}
+              />
+              Grabar y transcribir la reunión
+            </label>
+            <p className="mt-1 pl-6 text-xs text-slate-500">
+              El Meet arranca grabando y con transcripción; los archivos quedan en el Drive de
+              la cuenta de Websy.{' '}
+              {editing?.googleEventId
+                ? 'Si la cambias, se actualiza en el Meet al guardar.'
+                : 'Se aplica cuando la reunión se envía a Google Calendar.'}
+            </p>
+          </div>
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={closeModal}>
               Cancelar
@@ -598,12 +856,17 @@ export function ReunionesPage() {
       <ConfirmDialog
         open={toDelete !== null}
         title="Eliminar reunión"
-        message={toDelete ? `¿Eliminar "${toDelete.titulo}"?` : ''}
-        onConfirm={async () => {
-          if (toDelete) await deleteReunion(toDelete.id)
-          setToDelete(null)
-        }}
-        onCancel={() => setToDelete(null)}
+        message={
+          toDelete
+            ? toDelete.googleEventId
+              ? `¿Eliminar "${toDelete.titulo}"? También se cancela el evento en Google Calendar y Google avisa a los invitados.`
+              : `¿Eliminar "${toDelete.titulo}"?`
+            : ''
+        }
+        loading={eliminando}
+        error={errorAlEliminar}
+        onConfirm={confirmarEliminar}
+        onCancel={cerrarEliminar}
       />
     </div>
   )

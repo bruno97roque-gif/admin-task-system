@@ -335,14 +335,18 @@ export function DashboardPage() {
                       {reunion.proyecto ? ` · ${reunion.proyecto.name}` : ''}
                     </p>
                   </div>
-                  <a
-                    href={reunion.linkMeet}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="shrink-0 text-xs font-medium text-emerald-400 hover:underline"
-                  >
-                    Unirse a Meet
-                  </a>
+                  {reunion.linkMeet ? (
+                    <a
+                      href={reunion.linkMeet}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0 text-xs font-medium text-emerald-400 hover:underline"
+                    >
+                      Unirse a Meet
+                    </a>
+                  ) : (
+                    <span className="shrink-0 text-xs text-amber-300">Falta el link</span>
+                  )}
                 </li>
               ))}
             </ul>

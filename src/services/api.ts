@@ -231,6 +231,8 @@ export interface ReunionRequest {
   linkMeet: string
   proyectoId?: number | null
   participantesIds: number[]
+  /** Grabar y transcribir el Meet; pesa al enviarla al Calendar. */
+  grabarReunion?: boolean
 }
 
 export function getReunionesRequest() {
@@ -249,7 +251,9 @@ export function createReunionRequest(data: ReunionRequest) {
 }
 
 export function updateReunionRequest(id: number, data: Partial<ReunionRequest>) {
-  return apiFetch<import('../types').Reunion>(`/reuniones/${id}`, {
+  return apiFetch<
+    import('../types').Reunion & { google?: import('../types').SincronizacionGoogle }
+  >(`/reuniones/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   })
@@ -259,6 +263,28 @@ export function deleteReunionRequest(id: number) {
   return apiFetch<import('../types').Reunion>(`/reuniones/${id}`, {
     method: 'DELETE',
   })
+}
+
+/** Crea el evento en Google Calendar con Meet. Solo administración. */
+export function enviarAlCalendarRequest(id: number) {
+  return apiFetch<
+    import('../types').Reunion & { grabacion: import('../types').EstadoDeGrabacion }
+  >(`/reuniones/${id}/enviar-calendar`, { method: 'POST' })
+}
+
+// --- Integración con Google (solo administración) -------------------------
+
+export function getEstadoGoogleRequest() {
+  return apiFetch<import('../types').EstadoGoogle>('/integraciones/google/estado')
+}
+
+/** Devuelve la URL de Google a la que hay que llevar al navegador. */
+export function conectarGoogleRequest() {
+  return apiFetch<{ url: string }>('/integraciones/google/conexion', { method: 'POST' })
+}
+
+export function desconectarGoogleRequest() {
+  return apiFetch<void>('/integraciones/google', { method: 'DELETE' })
 }
 
 // --- Notas a administración -----------------------------------------------

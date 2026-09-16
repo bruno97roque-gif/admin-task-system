@@ -71,15 +71,23 @@ export function MisReunionesPanel() {
                   {reunion.proyecto.name}
                 </span>
               )}
-              <a
-                href={reunion.linkMeet}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-2 flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
-              >
-                <IoVideocamOutline size={14} />
-                Unirse a Meet
-              </a>
+              {reunion.linkMeet ? (
+                <a
+                  href={reunion.linkMeet}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
+                >
+                  <IoVideocamOutline size={14} />
+                  Unirse a Meet
+                </a>
+              ) : (
+                // Todavía no está en Calendar: el link llega cuando
+                // administración la envía, con una notificación.
+                <p className="mt-2 rounded-lg border border-dashed border-amber-500/40 px-3 py-1.5 text-center text-xs text-amber-300">
+                  El link llega cuando se envíe al Calendar
+                </p>
+              )}
             </article>
           ))
         )}

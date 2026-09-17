@@ -209,7 +209,7 @@ export type SincronizacionGoogle = 'actualizada' | 'sin_cambios' | 'error'
 /** Qué pasó con la grabación al enviar una reunión al Calendar. */
 export type EstadoDeGrabacion =
   | 'activada'
-  | 'activada_sin_notas'
+  | 'parcial'
   | 'desactivada'
   | 'no_disponible'
   | 'sin_meet'

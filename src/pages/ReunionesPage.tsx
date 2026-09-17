@@ -119,10 +119,10 @@ const AVISO_DE_GRABACION: Record<EstadoDeGrabacion, Aviso> = {
     texto:
       'Enviada a Google Calendar: Google mandó las invitaciones y el Meet va a grabar, transcribir y tomar notas con Gemini.',
   },
-  activada_sin_notas: {
+  parcial: {
     tipo: 'warn',
     texto:
-      'Enviada a Google Calendar: el Meet va a grabar y transcribir, pero Google no aceptó las notas de Gemini (puede que la licencia no las incluya). Puedes activarlas dentro del Meet.',
+      'Enviada a Google Calendar, pero Google no aceptó todo: lo que sí aceptó queda activado y lo demás se puede encender dentro del Meet.',
   },
   desactivada: {
     tipo: 'ok',

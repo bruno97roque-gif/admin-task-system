@@ -3,6 +3,7 @@ import type {
   EstadoDeGrabacion,
   EstadoGoogle,
   Reunion,
+  RevisionDeGrabacion,
   SincronizacionGoogle,
 } from '../types'
 import type { ReunionRequest } from '../services/api'
@@ -15,6 +16,7 @@ import {
   getEstadoGoogleRequest,
   getMisReunionesRequest,
   getReunionesRequest,
+  revisarGrabacionRequest,
   updateReunionRequest,
 } from '../services/api'
 
@@ -39,7 +41,12 @@ interface ReunionesState {
     data: Partial<ReunionRequest>,
   ) => Promise<Resultado & { google?: SincronizacionGoogle }>
   deleteReunion: (id: number) => Promise<Resultado>
-  enviarAlCalendar: (id: number) => Promise<Resultado & { grabacion?: EstadoDeGrabacion }>
+  enviarAlCalendar: (
+    id: number,
+  ) => Promise<Resultado & { grabacion?: EstadoDeGrabacion; detalleGrabacion?: string }>
+  /** Id de la reunión cuya grabación se está revisando. */
+  revisandoId: number | null
+  revisarGrabacion: (id: number) => Promise<Resultado & { revision?: RevisionDeGrabacion }>
   fetchEstadoGoogle: () => Promise<void>
   /** Pide la URL de Google; la página se encarga de llevar al navegador. */
   conectarGoogle: () => Promise<Resultado & { url?: string }>
@@ -61,6 +68,7 @@ export const useReunionesStore = create<ReunionesState>((set) => ({
   error: null,
   google: null,
   enviandoId: null,
+  revisandoId: null,
 
   fetchReuniones: async (todas) => {
     set({ loading: true, error: null })
@@ -121,15 +129,27 @@ export const useReunionesStore = create<ReunionesState>((set) => ({
   enviarAlCalendar: async (id) => {
     set({ enviandoId: id, error: null })
     try {
-      const { grabacion, ...enviada } = await enviarAlCalendarRequest(id)
+      const { grabacion, detalleGrabacion, ...enviada } = await enviarAlCalendarRequest(id)
       set((state) => ({
         reuniones: state.reuniones.map((r) => (r.id === id ? enviada : r)),
         enviandoId: null,
       }))
-      return { success: true, grabacion }
+      return { success: true, grabacion, detalleGrabacion }
     } catch (error) {
       set({ enviandoId: null })
       return { success: false, error: mensajeDe(error, 'No se pudo enviar al Calendar') }
+    }
+  },
+
+  revisarGrabacion: async (id) => {
+    set({ revisandoId: id })
+    try {
+      const revision = await revisarGrabacionRequest(id)
+      set({ revisandoId: null })
+      return { success: true, revision }
+    } catch (error) {
+      set({ revisandoId: null })
+      return { success: false, error: mensajeDe(error, 'No se pudo revisar la grabación') }
     }
   },
 

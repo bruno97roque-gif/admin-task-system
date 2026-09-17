@@ -18,7 +18,13 @@ import {
   IoVideocamOutline,
   IoWarningOutline,
 } from 'react-icons/io5'
-import type { EstadoDeGrabacion, Reunion, SincronizacionGoogle } from '../types'
+import type {
+  Automatico,
+  EstadoDeGrabacion,
+  Reunion,
+  RevisionDeGrabacion,
+  SincronizacionGoogle,
+} from '../types'
 import { useAuthStore } from '../stores/authStore'
 import { useReunionesStore } from '../stores/reunionesStore'
 import { useProjectsStore } from '../stores/projectsStore'
@@ -146,6 +152,41 @@ const AVISO_DE_EDICION: Partial<Record<SincronizacionGoogle, Aviso>> = {
   },
 }
 
+const COMO_ESTA: Record<Automatico, string> = {
+  ON: 'sí',
+  OFF: 'no',
+  SIN_DEFINIR: 'sin definir (manda la configuración de la organización)',
+}
+
+/** Arma el aviso con lo que Google tiene guardado para el Meet. */
+function avisoDeRevision(revision: RevisionDeGrabacion, pedida: boolean): Aviso {
+  const detalle = revision.detalleGrabacion
+    ? ` Detalle: ${revision.detalleGrabacion}`
+    : ''
+
+  if (!revision.enGoogle) {
+    return {
+      tipo: 'error',
+      texto: `No se pudo leer la configuración del Meet.${detalle}`,
+    }
+  }
+
+  const { grabacion, transcripcion, notasDeGemini } = revision.enGoogle
+  const esperado = pedida ? 'ON' : 'OFF'
+  const todoBien =
+    grabacion === esperado && transcripcion === esperado && notasDeGemini === esperado
+
+  return {
+    tipo: todoBien ? 'ok' : 'warn',
+    texto:
+      `Según Google: grabar: ${COMO_ESTA[grabacion]} · transcribir: ${COMO_ESTA[transcripcion]} · notas de Gemini: ${COMO_ESTA[notasDeGemini]}.` +
+      (todoBien && pedida
+        ? ' Arranca sola cuando entre al Meet alguien de Websy con permiso para grabar.'
+        : '') +
+      detalle,
+  }
+}
+
 /** Una reunión sigue siendo «próxima» hasta una hora después de su inicio. */
 const MARGEN_EN_CURSO_MS = 60 * 60 * 1000
 
@@ -155,9 +196,11 @@ function ReunionCard({
   puedeEditar,
   puedeEnviar,
   enviando,
+  revisando,
   onEdit,
   onDelete,
   onEnviar,
+  onRevisar,
 }: {
   reunion: Reunion
   pasada: boolean
@@ -166,9 +209,11 @@ function ReunionCard({
   /** Administración con Google conectado. */
   puedeEnviar: boolean
   enviando: boolean
+  revisando: boolean
   onEdit: (r: Reunion) => void
   onDelete: (r: Reunion) => void
   onEnviar: (r: Reunion) => void
+  onRevisar: (r: Reunion) => void
 }) {
   const sinCorreo = participantesSinCorreo(reunion)
   const enGoogle = reunion.googleEventId !== null
@@ -281,7 +326,20 @@ function ReunionCard({
             Falta el link
           </span>
         )}
-        {enGoogle ? null : puedeEnviar && !pasada ? (
+        {enGoogle ? (
+          puedeEnviar &&
+          !pasada && (
+            <Button
+              variant="secondary"
+              onClick={() => onRevisar(reunion)}
+              loading={revisando}
+              title="Vuelve a aplicar la grabación en el Meet y muestra lo que Google tiene guardado"
+            >
+              <IoRadioButtonOnOutline size={16} />
+              Revisar grabación
+            </Button>
+          )
+        ) : puedeEnviar && !pasada ? (
           // Con la cuenta conectada, el sistema crea el evento él mismo: con
           // Meet, invitaciones y la grabación configurada.
           <Button
@@ -356,6 +414,8 @@ export function ReunionesPage() {
   const enviandoId = useReunionesStore((s) => s.enviandoId)
   const fetchEstadoGoogle = useReunionesStore((s) => s.fetchEstadoGoogle)
   const enviarAlCalendar = useReunionesStore((s) => s.enviarAlCalendar)
+  const revisandoId = useReunionesStore((s) => s.revisandoId)
+  const revisarGrabacion = useReunionesStore((s) => s.revisarGrabacion)
   const googleConectada = esAdmin && google?.conectada === true
 
   const projects = useProjectsStore((s) => s.projects)
@@ -463,11 +523,27 @@ export function ReunionesPage() {
     setAviso(null)
     const result = await enviarAlCalendar(reunion.id)
     if (result.success) {
-      setAviso(result.grabacion ? AVISO_DE_GRABACION[result.grabacion] : null)
+      const base = result.grabacion ? AVISO_DE_GRABACION[result.grabacion] : null
+      setAviso(
+        base && result.detalleGrabacion
+          ? { ...base, texto: `${base.texto} Detalle: ${result.detalleGrabacion}` }
+          : base,
+      )
     } else {
       setAviso({ tipo: 'error', texto: result.error ?? 'No se pudo enviar al Calendar' })
       // Si el problema es la conexión (la revocaron, cambió el secreto), la
       // barra de arriba tiene que mostrarlo.
+      fetchEstadoGoogle()
+    }
+  }
+
+  const revisar = async (reunion: Reunion) => {
+    setAviso(null)
+    const result = await revisarGrabacion(reunion.id)
+    if (result.success && result.revision) {
+      setAviso(avisoDeRevision(result.revision, reunion.grabarReunion))
+    } else {
+      setAviso({ tipo: 'error', texto: result.error ?? 'No se pudo revisar la grabación' })
       fetchEstadoGoogle()
     }
   }
@@ -680,9 +756,11 @@ export function ReunionesPage() {
               puedeEditar={puedeAdministrar(r)}
               puedeEnviar={googleConectada}
               enviando={enviandoId === r.id}
+              revisando={revisandoId === r.id}
               onEdit={openEdit}
               onDelete={setToDelete}
               onEnviar={enviar}
+              onRevisar={revisar}
             />
           ))
         )}
@@ -706,9 +784,11 @@ export function ReunionesPage() {
                 puedeEditar={puedeAdministrar(r)}
                 puedeEnviar={googleConectada}
                 enviando={enviandoId === r.id}
+                revisando={revisandoId === r.id}
                 onEdit={openEdit}
                 onDelete={setToDelete}
                 onEnviar={enviar}
+                onRevisar={revisar}
               />
             ))}
         </section>

@@ -214,6 +214,18 @@ export type EstadoDeGrabacion =
   | 'no_disponible'
   | 'sin_meet'
 
+/** Cómo tiene Google cada artefacto automático de un Meet. */
+export type Automatico = 'ON' | 'OFF' | 'SIN_DEFINIR'
+
+/** Resultado de revisar la grabación de una reunión ya enviada. */
+export interface RevisionDeGrabacion {
+  grabacion: EstadoDeGrabacion
+  /** El motivo que dio Google cuando algo no se pudo aplicar. */
+  detalleGrabacion?: string
+  /** Lo que Google tiene guardado; `null` si no se pudo leer. */
+  enGoogle: { grabacion: Automatico; transcripcion: Automatico; notasDeGemini: Automatico } | null
+}
+
 /** La cuenta de Google de Websy, conectada por administración. */
 export interface EstadoGoogle {
   /** Si el servidor tiene las variables de Google cargadas. */

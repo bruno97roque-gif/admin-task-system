@@ -271,8 +271,19 @@ export function deleteReunionRequest(id: number) {
 /** Crea el evento en Google Calendar con Meet. Solo administración. */
 export function enviarAlCalendarRequest(id: number) {
   return apiFetch<
-    import('../types').Reunion & { grabacion: import('../types').EstadoDeGrabacion }
+    import('../types').Reunion & {
+      grabacion: import('../types').EstadoDeGrabacion
+      detalleGrabacion?: string
+    }
   >(`/reuniones/${id}/enviar-calendar`, { method: 'POST' })
+}
+
+/** Reaplica la grabación y devuelve lo que Google tiene guardado. Solo administración. */
+export function revisarGrabacionRequest(id: number) {
+  return apiFetch<import('../types').RevisionDeGrabacion>(
+    `/reuniones/${id}/revisar-grabacion`,
+    { method: 'POST' },
+  )
 }
 
 // --- Integración con Google (solo administración) -------------------------

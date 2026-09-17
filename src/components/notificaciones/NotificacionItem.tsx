@@ -3,6 +3,7 @@ import {
   IoBriefcaseOutline,
   IoCashOutline,
   IoChatbubbleEllipsesOutline,
+  IoKeyOutline,
   IoMegaphoneOutline,
   IoTimerOutline,
   IoVideocamOutline,
@@ -23,6 +24,7 @@ const TIPO_META: Record<TipoNotificacion, { icon: IconType; className: string }>
     className: 'bg-fuchsia-500/20 text-fuchsia-300',
   },
   Comunicado: { icon: IoMegaphoneOutline, className: 'bg-orange-500/20 text-orange-300' },
+  RecuperarContrasena: { icon: IoKeyOutline, className: 'bg-yellow-500/20 text-yellow-300' },
 }
 
 interface NotificacionItemProps {

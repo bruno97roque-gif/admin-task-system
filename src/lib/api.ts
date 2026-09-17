@@ -25,7 +25,12 @@ export function setSesionPerdidaHandler(fn: () => void) {
  * Rutas donde un 401 no significa «se cerró tu sesión»: el login (clave mala)
  * y la consulta de sesión al abrir la app.
  */
-const SIN_SESION = new Set(['/api/auth/sign-in/username', '/api/auth/get-session', '/perfil'])
+const SIN_SESION = new Set([
+  '/api/auth/sign-in/username',
+  '/api/auth/get-session',
+  '/perfil',
+  '/auth/recuperar-contrasena',
+])
 
 /** Mensajes de better-auth que pueden llegar en inglés. */
 function enCastellano(status: number, mensaje: string): string {

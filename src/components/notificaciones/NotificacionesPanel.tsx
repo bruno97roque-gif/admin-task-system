@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { IoCheckmarkDoneOutline, IoCloseOutline, IoNotificationsOutline } from 'react-icons/io5'
 import type { Notificacion } from '../../types'
 import { useNotificacionesStore } from '../../stores/notificacionesStore'
@@ -33,8 +33,15 @@ export function NotificacionesPanel({ open, onClose }: NotificacionesPanelProps)
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [open, onClose])
 
+  const navigate = useNavigate()
+
   const onClickItem = (n: Notificacion) => {
     if (!n.leidaAt) marcarLeida(n.id)
+    // Un pedido de contraseña se atiende en Usuarios.
+    if (n.tipo === 'RecuperarContrasena') {
+      onClose()
+      navigate('/usuarios')
+    }
   }
 
   // Se mantiene montado para poder animar también el cierre; quién está

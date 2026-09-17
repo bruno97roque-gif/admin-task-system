@@ -68,8 +68,13 @@ export const useUsersStore = create<UsersState>((set, get) => ({
   updatePassword: async (id, password) => {
     set({ saving: true, error: null })
     try {
-      await updatePasswordRequest(id, password)
-      set({ saving: false })
+      const actualizado = await updatePasswordRequest(id, password)
+      set((state) => ({
+        users: state.users.map((u) =>
+          u.id === id ? { ...u, debeCambiarContrasena: actualizado.debeCambiarContrasena } : u,
+        ),
+        saving: false,
+      }))
       return { success: true }
     } catch (error) {
       const message =

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { IoLockClosedOutline, IoPersonOutline } from 'react-icons/io5'
 import { Navigate, useNavigate } from 'react-router'
@@ -7,6 +8,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Logo } from '../components/ui/Logo'
 import { ComunicadosLogin } from '../components/comunicados/ComunicadosLogin'
+import { RecuperarContrasenaModal } from '../components/auth/RecuperarContrasenaModal'
 
 interface LoginForm {
   user: string
@@ -18,12 +20,14 @@ export function LoginPage() {
   const user = useAuthStore((s) => s.user)
   const login = useAuthStore((s) => s.login)
   const navigate = useNavigate()
+  const [recuperando, setRecuperando] = useState(false)
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
+    getValues,
   } = useForm<LoginForm>({
     defaultValues: {
       user: '',
@@ -111,7 +115,20 @@ export function LoginPage() {
           <Button type="submit" className="mt-6 w-full" loading={isSubmitting}>
             Entrar
           </Button>
+          <button
+            type="button"
+            onClick={() => setRecuperando(true)}
+            className="mt-3 w-full text-center text-sm text-slate-400 transition-colors hover:text-accent-hover"
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
         </form>
+
+        <RecuperarContrasenaModal
+          open={recuperando}
+          usuarioInicial={recuperando ? getValues('user') : ''}
+          onClose={() => setRecuperando(false)}
+        />
       </div>
     </div>
   )

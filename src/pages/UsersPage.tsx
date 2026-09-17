@@ -309,6 +309,14 @@ export function UsersPage() {
                     >
                       {user.active ? 'Activo' : 'Inactivo'}
                     </span>
+                    {user.debeCambiarContrasena && (
+                      <span
+                        title="Tiene una contraseña temporal: la va a cambiar al entrar"
+                        className="ml-1.5 inline-flex rounded-full bg-yellow-500/15 px-2.5 py-0.5 text-xs font-medium text-yellow-300"
+                      >
+                        Contraseña temporal
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
@@ -481,6 +489,10 @@ export function UsersPage() {
         size="sm"
       >
         <form onSubmit={handleSubmitPassword(onSubmitPassword)} className="space-y-4">
+          <p className="text-sm text-slate-400">
+            Queda como contraseña temporal: al entrar, la persona tendrá que elegir una nueva.
+            Sus sesiones abiertas se cierran.
+          </p>
           {passwordErrors.root && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
               {passwordErrors.root.message}

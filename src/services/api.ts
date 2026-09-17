@@ -29,6 +29,14 @@ export function logoutRequest() {
   })
 }
 
+/** Avisa a administración que alguien olvidó su contraseña. Pública. */
+export function recuperarContrasenaRequest(usuario: string) {
+  return apiFetch<{ message: string }>('/auth/recuperar-contrasena', {
+    method: 'POST',
+    body: JSON.stringify({ usuario }),
+  })
+}
+
 /** El usuario de la sesión actual, con su rol y su foto. */
 export function getSesionRequest() {
   return apiFetch<AuthUser>('/perfil')
@@ -208,7 +216,7 @@ export function updateProjectUsuariosRequest(
 }
 
 export function updatePasswordRequest(id: number, password: string) {
-  return apiFetch<void>(`/user/${id}`, {
+  return apiFetch<import('../types').AppUser>(`/user/${id}`, {
     method: 'PATCH',
     body: JSON.stringify({ password }),
   })

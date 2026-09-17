@@ -56,6 +56,8 @@ export interface AuthUser {
   email?: string | null
   /** Versión de la foto subida (`null` si no hay). Falta en sesiones viejas. */
   fotoVersion?: number | null
+  /** Entró con una contraseña temporal: tiene que cambiarla antes de seguir. */
+  debeCambiarContrasena?: boolean
 }
 
 /** Mi perfil, tal como lo devuelve `GET /perfil`. */
@@ -79,6 +81,8 @@ export interface AppUser {
   email?: string | null
   /** Versión de la foto subida, o `null` si no subió ninguna. */
   fotoVersion?: number | null
+  /** Tiene una contraseña temporal que todavía no cambió. */
+  debeCambiarContrasena?: boolean
 }
 
 export interface HistorialEtapa {
@@ -170,6 +174,7 @@ export type TipoNotificacion =
   | 'NotaRecibida'
   | 'NotaRespondida'
   | 'Comunicado'
+  | 'RecuperarContrasena'
 
 export type NivelComunicado = 'Info' | 'Importante' | 'Urgente'
 

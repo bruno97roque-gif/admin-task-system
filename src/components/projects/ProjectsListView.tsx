@@ -628,18 +628,22 @@ export function ProjectsListView({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
+            {/* Obligatorios: un proyecto sin responsables no aparece en ningún
+                tablero y se pierde de vista. */}
             <Select
               label="Programador"
               options={programadorOptions}
-              placeholder="Sin asignar"
-              {...register('programadorId')}
+              placeholder="Elige el programador"
+              error={errors.programadorId?.message}
+              {...register('programadorId', { required: 'Elige el programador' })}
             />
 
             <Select
               label="Diseñador"
               options={disenadorOptions}
-              placeholder="Sin asignar"
-              {...register('disenadorId')}
+              placeholder="Elige el diseñador"
+              error={errors.disenadorId?.message}
+              {...register('disenadorId', { required: 'Elige el diseñador' })}
             />
           </div>
 

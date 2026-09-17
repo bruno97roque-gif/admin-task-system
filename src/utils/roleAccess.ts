@@ -5,10 +5,10 @@ const VISTA_GLOBAL = '/vista-global'
 
 /**
  * Rutas que también ven los roles restringidos, además de la suya y Vista
- * Global: su vista de reuniones, el módulo para dejar notas y la bandeja
- * de notificaciones.
+ * Global: su vista de reuniones, el módulo para dejar notas, la bandeja de
+ * notificaciones y su perfil.
  */
-const RUTAS_COMPARTIDAS = [VISTA_GLOBAL, '/reuniones', '/notas', '/notificaciones']
+const RUTAS_COMPARTIDAS = [VISTA_GLOBAL, '/reuniones', '/notas', '/notificaciones', '/perfil']
 
 export function getHomePathForRole(roleName: string | undefined): string {
   if (roleName === 'Programador') return PROGRAMADOR_HOME

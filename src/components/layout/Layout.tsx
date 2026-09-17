@@ -21,6 +21,7 @@ import {
   IoVideocamOutline,
 } from 'react-icons/io5'
 import { useAuthStore } from '../../stores/authStore'
+import { useUsersStore } from '../../stores/usersStore'
 import { useNotificaciones } from '../../hooks/useNotificaciones'
 import { NotificacionesPanel } from '../notificaciones/NotificacionesPanel'
 import {
@@ -92,6 +93,16 @@ export function Layout() {
     '/archivados',
   ].includes(location.pathname)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Las fotos de perfil de todos salen de la lista de usuarios: se carga una
+  // vez para que cada avatar del sistema sepa si hay foto subida.
+  const hayUsuarios = useUsersStore((s) => s.users.length > 0)
+  const fetchUsers = useUsersStore((s) => s.fetchUsers)
+  useEffect(() => {
+    if (user && !hayUsuarios) void fetchUsers()
+    // Solo al iniciar sesión: las páginas que editan usuarios recargan solas.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   const restricted = isRestrictedRole(user?.roleName)
   // Administración usa Google Workspace, no el webmail del hosting.
@@ -200,13 +211,24 @@ export function Layout() {
         <div className="border-t border-border p-4">
           {user && (
             <div className="mb-3 flex items-center gap-2.5">
-              <Avatar userId={user.id} name={user.name} size={32} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-slate-300">{user.name}</p>
-                {user.roleName && (
-                  <p className="truncate text-xs text-slate-500">{user.roleName}</p>
-                )}
-              </div>
+              <NavLink
+                to="/perfil"
+                onClick={closeSidebar}
+                title="Mi perfil"
+                className={({ isActive }) =>
+                  `-m-1 flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1 transition-colors ${
+                    isActive ? 'bg-accent/20' : 'hover:bg-surface-overlay'
+                  }`
+                }
+              >
+                <Avatar userId={user.id} name={user.name} size={32} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-slate-300">{user.name}</p>
+                  <p className="truncate text-xs text-slate-500">
+                    {user.roleName ? `${user.roleName} · Mi perfil` : 'Mi perfil'}
+                  </p>
+                </div>
+              </NavLink>
               {webmail && (
                 <a
                   href={webmail}

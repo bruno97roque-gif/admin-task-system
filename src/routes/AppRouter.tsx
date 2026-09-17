@@ -6,6 +6,7 @@ import { DashboardPage } from '../pages/DashboardPage'
 import { LoginPage } from '../pages/LoginPage'
 import { NotasPage } from '../pages/NotasPage'
 import { NotificacionesPage } from '../pages/NotificacionesPage'
+import { PerfilPage } from '../pages/PerfilPage'
 import { ProjectsAdminPage } from '../pages/ProjectsAdminPage'
 import { ProjectsByDisenoPage } from '../pages/ProjectsByDisenoPage'
 import { ProjectsByProgramadorPage } from '../pages/ProjectsByProgramadorPage'
@@ -41,6 +42,7 @@ export function AppRouter() {
               <Route path="reuniones" element={<ReunionesPage />} />
               <Route path="notas" element={<NotasPage />} />
               <Route path="notificaciones" element={<NotificacionesPage />} />
+              <Route path="perfil" element={<PerfilPage />} />
             </Route>
           </Route>
         </Route>

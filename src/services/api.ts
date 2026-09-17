@@ -204,6 +204,38 @@ export function updatePasswordRequest(id: number, password: string) {
   })
 }
 
+// --- Mi perfil -------------------------------------------------------------
+
+export function getPerfilRequest() {
+  return apiFetch<import('../types').Perfil>('/perfil')
+}
+
+export function actualizarPerfilRequest(data: { name: string }) {
+  return apiFetch<import('../types').Perfil>('/perfil', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export function cambiarContrasenaRequest(data: { actual: string; nueva: string }) {
+  return apiFetch<void>('/perfil/contrasena', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+/** `imagen` es un data URL, ya recortado y achicado en el navegador. */
+export function subirFotoRequest(imagen: string) {
+  return apiFetch<import('../types').Perfil>('/perfil/foto', {
+    method: 'PUT',
+    body: JSON.stringify({ imagen }),
+  })
+}
+
+export function borrarFotoRequest() {
+  return apiFetch<import('../types').Perfil>('/perfil/foto', { method: 'DELETE' })
+}
+
 // --- Notificaciones -------------------------------------------------------
 
 export function getNotificacionesRequest() {

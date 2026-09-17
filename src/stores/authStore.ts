@@ -14,6 +14,8 @@ interface AuthState {
   setSessionHydrated: (value: boolean) => void
   login: (user: string, password: string) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
+  /** Aplica cambios del perfil propio sin volver a iniciar sesión. */
+  actualizarUsuario: (cambios: Partial<AuthUser>) => void
 }
 
 type PersistedAuth = Pick<AuthState, 'user'>
@@ -57,6 +59,9 @@ export const useAuthStore = create<AuthState>()(
           return { success: false, error: message }
         }
       },
+
+      actualizarUsuario: (cambios) =>
+        set((state) => (state.user ? { user: { ...state.user, ...cambios } } : {})),
 
       logout: async () => {
         try {

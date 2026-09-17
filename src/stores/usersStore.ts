@@ -21,6 +21,8 @@ interface UsersState {
     id: number,
     email: string | null,
   ) => Promise<{ success: boolean; error?: string }>
+  /** Refleja en la lista un cambio hecho en otra parte (p. ej. mi perfil). */
+  actualizarLocal: (id: number, cambios: Partial<AppUser>) => void
 }
 
 export const useUsersStore = create<UsersState>((set, get) => ({
@@ -29,6 +31,11 @@ export const useUsersStore = create<UsersState>((set, get) => ({
   creating: false,
   saving: false,
   error: null,
+
+  actualizarLocal: (id, cambios) =>
+    set((state) => ({
+      users: state.users.map((u) => (u.id === id ? { ...u, ...cambios } : u)),
+    })),
 
   fetchUsers: async () => {
     set({ loading: true, error: null })

@@ -1,3 +1,4 @@
+import { API_URL } from '../config/app'
 import aaron from '../assets/avatars/aaron.webp'
 import gustavo from '../assets/avatars/gustavo.webp'
 import juancarlos from '../assets/avatars/juancarlos.webp'
@@ -16,4 +17,12 @@ const AVATAR_BY_USER_ID: Record<number, string> = {
 
 export function getAvatarUrl(userId: number): string | undefined {
   return AVATAR_BY_USER_ID[userId]
+}
+
+/**
+ * La foto que subió la persona desde su perfil. `v` cambia con cada foto
+ * nueva: el API la sirve con caché larga y así nunca se ve una vieja.
+ */
+export function urlDeFotoSubida(userId: number, version: number): string {
+  return `${API_URL}/user/${userId}/foto?v=${version}`
 }

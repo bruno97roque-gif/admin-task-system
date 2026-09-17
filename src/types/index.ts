@@ -54,6 +54,19 @@ export interface AuthUser {
   roleName: string
   /** Correo corporativo; con él se arma el acceso al webmail. */
   email?: string | null
+  /** Versión de la foto subida (`null` si no hay). Falta en sesiones viejas. */
+  fotoVersion?: number | null
+}
+
+/** Mi perfil, tal como lo devuelve `GET /perfil`. */
+export interface Perfil {
+  id: number
+  name: string
+  user: string
+  email: string | null
+  roleId: number
+  roleName: string
+  fotoVersion: number | null
 }
 
 export interface AppUser {
@@ -64,6 +77,8 @@ export interface AppUser {
   roleId: number
   /** Correo corporativo, para las invitaciones de calendario. */
   email?: string | null
+  /** Versión de la foto subida, o `null` si no subió ninguna. */
+  fotoVersion?: number | null
 }
 
 export interface HistorialEtapa {

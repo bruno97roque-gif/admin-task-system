@@ -28,8 +28,8 @@ import { NotificacionesPanel } from '../notificaciones/NotificacionesPanel'
 import { ComunicadosSistema } from '../comunicados/ComunicadosSistema'
 import {
   canAccessNavPath,
-  esAdministracion,
   isRestrictedRole,
+  usaWorkspace,
 } from '../../utils/roleAccess'
 import { Avatar } from '../ui/Avatar'
 import { Logo } from '../ui/Logo'
@@ -109,7 +109,7 @@ export function Layout() {
 
   const restricted = isRestrictedRole(user?.roleName)
   // Administración usa Google Workspace, no el webmail del hosting.
-  const webmail = esAdministracion(user?.roleName) ? null : enlaceWebmail(user?.email)
+  const webmail = usaWorkspace(user?.roleName) ? null : enlaceWebmail(user?.email)
 
   const visibleNavItems = useMemo(
     () => navItems.filter((item) => canAccessNavPath(user?.roleName, item.to)),

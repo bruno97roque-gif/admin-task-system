@@ -20,16 +20,35 @@ export function isRestrictedRole(roleName: string | undefined): boolean {
   return roleName === 'Programador' || roleName === 'Diseñador'
 }
 
-/** Los mismos nombres que usa el backend en `ROLES_ADMINISTRACION`. */
-const ROLES_ADMINISTRACION = ['Admin', 'Owner']
+/**
+ * Los mismos nombres que usa el backend en `ROLES_ADMINISTRACION`. El
+ * Supervisor tiene los permisos de administración y además trabaja como
+ * desarrollador.
+ */
+const ROLES_ADMINISTRACION = ['Admin', 'Owner', 'Supervisor']
+
+/** Los que usan Google Workspace (@websy.com.pe) en vez del webmail de Ferozo. */
+const ROLES_CON_WORKSPACE = ['Admin', 'Owner']
 
 /**
- * Administración usa Google Workspace, no el webmail de Ferozo. Se distingue
- * por nombre y no por «no restringido» para que un rol nuevo no herede el
- * comportamiento sin querer.
+ * ¿Tiene los permisos de administración? Se distingue por nombre y no por «no
+ * restringido» para que un rol nuevo no herede el comportamiento sin querer.
  */
 export function esAdministracion(roleName: string | undefined): boolean {
   return roleName !== undefined && ROLES_ADMINISTRACION.includes(roleName)
+}
+
+/**
+ * ¿Usa el correo de Google Workspace? El Supervisor tiene permisos de
+ * administración pero su correo es del equipo (@websydev.site).
+ */
+export function usaWorkspace(roleName: string | undefined): boolean {
+  return roleName !== undefined && ROLES_CON_WORKSPACE.includes(roleName)
+}
+
+/** El Supervisor puede alternar entre sus proyectos y los de todos. */
+export function esSupervisor(roleName: string | undefined): boolean {
+  return roleName === 'Supervisor'
 }
 
 function esPropiaOCompartida(roleName: string | undefined, path: string): boolean {

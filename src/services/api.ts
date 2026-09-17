@@ -72,6 +72,13 @@ export function updateUserEmailRequest(id: number, email: string | null) {
   })
 }
 
+export function updateUserRoleRequest(id: number, roleId: number) {
+  return apiFetch<import('../types').AppUser>(`/user/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ roleId }),
+  })
+}
+
 export function createUserRequest(data: CreateUserRequest) {
   return apiFetch<import('../types').AppUser>('/user', {
     method: 'POST',

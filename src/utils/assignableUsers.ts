@@ -9,14 +9,25 @@ export function getRoleIdByName(roles: Role[], roleName: AssignableRoleName): nu
   return roles.find((role) => role.name === roleName)?.id
 }
 
+/**
+ * Roles que cuentan como cada puesto. El Supervisor tiene permisos de
+ * administración pero sigue trabajando como desarrollador: aparece en el
+ * tablero de Developers y se le pueden asignar proyectos.
+ */
+const ROLES_DEL_PUESTO: Record<AssignableRoleName, string[]> = {
+  Programador: ['Programador', 'Supervisor'],
+  Diseñador: ['Diseñador'],
+}
+
 export function getUsersByRoleName(
   users: AppUser[],
   roles: Role[],
   roleName: AssignableRoleName,
 ): AppUser[] {
-  const roleId = getRoleIdByName(roles, roleName)
-  if (!roleId) return []
-  return users.filter((user) => user.roleId === roleId)
+  const roleIds = new Set(
+    roles.filter((role) => ROLES_DEL_PUESTO[roleName].includes(role.name)).map((role) => role.id),
+  )
+  return users.filter((user) => roleIds.has(user.roleId))
 }
 
 export function toSelectOptions(users: AppUser[]) {

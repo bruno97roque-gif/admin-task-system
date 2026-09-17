@@ -10,6 +10,7 @@ import {
   IoPeopleOutline,
   IoRefreshOutline,
   IoShuffleOutline,
+  IoShieldOutline,
 } from 'react-icons/io5'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
@@ -19,7 +20,8 @@ import { Modal } from '../components/ui/Modal'
 import { Select } from '../components/ui/Select'
 import { generatePassword } from '../utils/password'
 import { ejemploDeCorreo } from '../utils/correo'
-import { esAdministracion } from '../utils/roleAccess'
+import { usaWorkspace } from '../utils/roleAccess'
+import { CambiarRolModal } from '../components/users/CambiarRolModal'
 import { enlaceWebmail } from '../utils/webmail'
 
 interface UserForm {
@@ -69,6 +71,7 @@ export function UsersPage() {
   // sugerir en el placeholder.
   const [rolDelCorreo, setRolDelCorreo] = useState<string | undefined>(undefined)
   const [showNewPassword, setShowNewPassword] = useState(false)
+  const [usuarioDelRol, setUsuarioDelRol] = useState<(typeof users)[number] | null>(null)
 
   const {
     register,
@@ -279,7 +282,7 @@ export function UsersPage() {
                   <td className="px-4 py-3">
                     {!user.email ? (
                       <span className="text-xs text-slate-600">Sin correo</span>
-                    ) : esAdministracion(roleMap.get(user.roleId)) ? (
+                    ) : usaWorkspace(roleMap.get(user.roleId)) ? (
                       // Administración usa Workspace: el webmail del hosting
                       // no le sirve, así que el correo va como texto.
                       <span className="text-slate-400">{user.email}</span>
@@ -329,6 +332,14 @@ export function UsersPage() {
                         title="Editar correo"
                       >
                         <IoMailOutline size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setUsuarioDelRol(user)}
+                        aria-label="Cambiar rol"
+                        title="Cambiar rol"
+                      >
+                        <IoShieldOutline size={16} />
                       </Button>
                       <Button
                         variant="ghost"
@@ -556,6 +567,12 @@ export function UsersPage() {
           </div>
         </form>
       </Modal>
+
+      <CambiarRolModal
+        usuario={usuarioDelRol}
+        roles={roles}
+        onClose={() => setUsuarioDelRol(null)}
+      />
     </div>
   )
 }

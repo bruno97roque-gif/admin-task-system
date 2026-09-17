@@ -8,6 +8,9 @@ import {
 } from 'react-icons/io5'
 import type { Project } from '../types'
 import { useAuthStore } from '../stores/authStore'
+import { useVistaPropia } from '../hooks/useVistaPropia'
+import { esSupervisor } from '../utils/roleAccess'
+import { InterruptorVista } from '../components/ui/InterruptorVista'
 import { useProjectsByProgramadorStore } from '../stores/projectsByProgramadorStore'
 import { useProjectsAdminStore } from '../stores/projectsAdminStore'
 import { useRolesStore } from '../stores/rolesStore'
@@ -48,7 +51,11 @@ interface ProjectEditForm {
 
 export function ProjectsByProgramadorPage() {
   const authUser = useAuthStore((s) => s.user)
-  const isProgramador = authUser?.roleName === 'Programador'
+  const esProgramadorDeRol = authUser?.roleName === 'Programador'
+  const isSupervisor = esSupervisor(authUser?.roleName)
+  const [soloMios, setSoloMios] = useVistaPropia('developers')
+  // El Supervisor, con «Mis proyectos», ve el tablero como un programador.
+  const isProgramador = esProgramadorDeRol || (isSupervisor && soloMios)
   const programadorId = isProgramador ? authUser?.id : undefined
 
   const projects = useProjectsByProgramadorStore((s) => s.projects)
@@ -87,11 +94,11 @@ export function ProjectsByProgramadorPage() {
 
   useEffect(() => {
     fetchProjects(programadorId)
-    if (!isProgramador) {
+    if (!esProgramadorDeRol) {
       fetchUsers()
       fetchRoles()
     }
-  }, [fetchProjects, fetchUsers, fetchRoles, programadorId, isProgramador])
+  }, [fetchProjects, fetchUsers, fetchRoles, programadorId, esProgramadorDeRol])
 
   // La cola de congelados (grupos B y C) es otro endpoint: se pide recién
   // cuando se prende el interruptor.
@@ -185,6 +192,7 @@ export function ProjectsByProgramadorPage() {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
+          {isSupervisor && <InterruptorVista soloMios={soloMios} onChange={setSoloMios} />}
           {isProgramador && (
             <Button
               variant={mostrarByC ? 'primary' : 'secondary'}

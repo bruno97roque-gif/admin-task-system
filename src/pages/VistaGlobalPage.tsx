@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { IoSnowOutline, IoRefreshOutline } from 'react-icons/io5'
 import type { Project } from '../types'
 import { useAuthStore } from '../stores/authStore'
+import { useVistaPropia } from '../hooks/useVistaPropia'
+import { esSupervisor } from '../utils/roleAccess'
+import { InterruptorVista } from '../components/ui/InterruptorVista'
 import { useProjectsStore } from '../stores/projectsStore'
 import { isProjectAssignee } from '../utils/projectUsers'
 import {
@@ -32,7 +35,10 @@ const ETAPAS_VISTA_GLOBAL = ESTADO_PROYECTO_ORDER.filter(
 export function VistaGlobalPage() {
   const authUser = useAuthStore((s) => s.user)
   const roleName = authUser?.roleName
-  const isProgramador = roleName === 'Programador'
+  const isSupervisor = esSupervisor(roleName)
+  const [soloMios, setSoloMios] = useVistaPropia('vista-global')
+  // El Supervisor, con «Mis proyectos», la ve como un programador.
+  const isProgramador = roleName === 'Programador' || (isSupervisor && soloMios)
   const isDisenador = roleName === 'Diseñador'
 
   const projects = useProjectsStore((s) => s.projects)
@@ -97,6 +103,7 @@ export function VistaGlobalPage() {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
+          {isSupervisor && <InterruptorVista soloMios={soloMios} onChange={setSoloMios} />}
           <Button
             variant={mostrarByC ? 'primary' : 'secondary'}
             className="w-full sm:w-auto"

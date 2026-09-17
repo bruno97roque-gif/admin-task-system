@@ -1,4 +1,4 @@
-import { esAdministracion } from './roleAccess'
+import { usaWorkspace } from './roleAccess'
 
 /**
  * Websy tiene dos dominios de correo y el rol decide cuál le toca a cada uno:
@@ -13,7 +13,7 @@ export const DOMINIO_ADMINISTRACION = 'websy.com.pe'
 export const DOMINIO_EQUIPO = 'websydev.site'
 
 export function dominioCorporativo(roleName: string | null | undefined): string {
-  return esAdministracion(roleName ?? undefined)
+  return usaWorkspace(roleName ?? undefined)
     ? DOMINIO_ADMINISTRACION
     : DOMINIO_EQUIPO
 }

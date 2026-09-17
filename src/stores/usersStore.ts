@@ -6,6 +6,7 @@ import {
   getUsersRequest,
   updatePasswordRequest,
   updateUserEmailRequest,
+  updateUserRoleRequest,
 } from '../services/api'
 
 interface UsersState {
@@ -21,6 +22,7 @@ interface UsersState {
     id: number,
     email: string | null,
   ) => Promise<{ success: boolean; error?: string }>
+  updateRol: (id: number, roleId: number) => Promise<{ success: boolean; error?: string }>
   /** Refleja en la lista un cambio hecho en otra parte (p. ej. mi perfil). */
   actualizarLocal: (id: number, cambios: Partial<AppUser>) => void
 }
@@ -31,6 +33,21 @@ export const useUsersStore = create<UsersState>((set, get) => ({
   creating: false,
   saving: false,
   error: null,
+
+  updateRol: async (id, roleId) => {
+    try {
+      const actualizado = await updateUserRoleRequest(id, roleId)
+      set((state) => ({
+        users: state.users.map((u) => (u.id === id ? { ...u, roleId: actualizado.roleId } : u)),
+      }))
+      return { success: true }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error al cambiar el rol',
+      }
+    }
+  },
 
   actualizarLocal: (id, cambios) =>
     set((state) => ({

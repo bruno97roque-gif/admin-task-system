@@ -6,6 +6,7 @@ import { getHomePathForRole } from '../utils/roleAccess'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Logo } from '../components/ui/Logo'
+import { ComunicadosLogin } from '../components/comunicados/ComunicadosLogin'
 
 interface LoginForm {
   user: string
@@ -56,6 +57,8 @@ export function LoginPage() {
             Sistema de gestión de proyectos
           </p>
         </div>
+
+        <ComunicadosLogin />
 
         <form
           onSubmit={handleSubmit(onSubmit)}

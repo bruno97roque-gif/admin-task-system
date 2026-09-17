@@ -3,6 +3,7 @@ import {
   IoBriefcaseOutline,
   IoCashOutline,
   IoChatbubbleEllipsesOutline,
+  IoMegaphoneOutline,
   IoTimerOutline,
   IoVideocamOutline,
 } from 'react-icons/io5'
@@ -21,6 +22,7 @@ const TIPO_META: Record<TipoNotificacion, { icon: IconType; className: string }>
     icon: IoChatbubbleEllipsesOutline,
     className: 'bg-fuchsia-500/20 text-fuchsia-300',
   },
+  Comunicado: { icon: IoMegaphoneOutline, className: 'bg-orange-500/20 text-orange-300' },
 }
 
 interface NotificacionItemProps {

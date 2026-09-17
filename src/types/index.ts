@@ -169,6 +169,33 @@ export type TipoNotificacion =
   | 'ReunionProxima'
   | 'NotaRecibida'
   | 'NotaRespondida'
+  | 'Comunicado'
+
+export type NivelComunicado = 'Info' | 'Importante' | 'Urgente'
+
+/** Lo que ve cualquiera de un comunicado. */
+export interface Comunicado {
+  id: number
+  titulo: string
+  mensaje: string
+  nivel: NivelComunicado
+}
+
+export type EstadoComunicado = 'programado' | 'vigente' | 'finalizado'
+
+/** Un comunicado con todo lo que ve administración. */
+export interface ComunicadoAdmin extends Comunicado {
+  enLogin: boolean
+  enSistema: boolean
+  desde: string
+  hasta: string | null
+  creadorId: number | null
+  creador: { id: number; name: string } | null
+  createdAt: string
+  updatedAt: string
+  estado: EstadoComunicado
+  _count: { cierres: number }
+}
 
 export interface Notificacion {
   id: number

@@ -236,6 +236,61 @@ export function borrarFotoRequest() {
   return apiFetch<import('../types').Perfil>('/perfil/foto', { method: 'DELETE' })
 }
 
+// --- Comunicados -----------------------------------------------------------
+
+export interface ComunicadoRequest {
+  titulo: string
+  mensaje: string
+  nivel: import('../types').NivelComunicado
+  enLogin: boolean
+  enSistema: boolean
+  desde?: string
+  hasta?: string | null
+  /** Solo al publicar: deja una notificación a todos. */
+  notificar?: boolean
+}
+
+/** Pública: la usa la página de login. */
+export function getComunicadosLoginRequest() {
+  return apiFetch<import('../types').Comunicado[]>('/comunicados/login')
+}
+
+export function getComunicadosActivosRequest() {
+  return apiFetch<import('../types').Comunicado[]>('/comunicados/activos')
+}
+
+export function cerrarComunicadoRequest(id: number) {
+  return apiFetch<void>(`/comunicados/${id}/cerrar`, { method: 'POST' })
+}
+
+export function getComunicadosRequest() {
+  return apiFetch<import('../types').ComunicadoAdmin[]>('/comunicados')
+}
+
+export function createComunicadoRequest(data: ComunicadoRequest) {
+  return apiFetch<import('../types').ComunicadoAdmin>('/comunicados', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function updateComunicadoRequest(id: number, data: Omit<ComunicadoRequest, 'notificar'>) {
+  return apiFetch<import('../types').ComunicadoAdmin>(`/comunicados/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export function finalizarComunicadoRequest(id: number) {
+  return apiFetch<import('../types').ComunicadoAdmin>(`/comunicados/${id}/finalizar`, {
+    method: 'POST',
+  })
+}
+
+export function deleteComunicadoRequest(id: number) {
+  return apiFetch<void>(`/comunicados/${id}`, { method: 'DELETE' })
+}
+
 // --- Notificaciones -------------------------------------------------------
 
 export function getNotificacionesRequest() {

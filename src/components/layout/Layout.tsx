@@ -13,6 +13,7 @@ import {
   IoLayersOutline,
   IoLogOutOutline,
   IoMailOutline,
+  IoMegaphoneOutline,
   IoMenuOutline,
   IoNotificationsOutline,
   IoPersonOutline,
@@ -24,6 +25,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useUsersStore } from '../../stores/usersStore'
 import { useNotificaciones } from '../../hooks/useNotificaciones'
 import { NotificacionesPanel } from '../notificaciones/NotificacionesPanel'
+import { ComunicadosSistema } from '../comunicados/ComunicadosSistema'
 import {
   canAccessNavPath,
   esAdministracion,
@@ -47,6 +49,7 @@ const navItems = [
   { to: '/reuniones', label: 'Reuniones', icon: IoVideocamOutline },
   // Para administración es la bandeja; para el equipo, sus propios tickets.
   { to: '/notas', label: 'Tickets', restrictedLabel: 'Mis tickets', icon: IoChatbubblesOutline },
+  { to: '/comunicados', label: 'Comunicados', icon: IoMegaphoneOutline },
   { to: '/usuarios', label: 'Usuarios', icon: IoPersonOutline },
   { to: '/roles', label: 'Roles', icon: IoShieldOutline },
   { to: '/archivados', label: 'Archivados', icon: IoArchiveOutline },
@@ -291,6 +294,7 @@ export function Layout() {
               isFullWidthPage ? 'max-w-[100rem]' : 'max-w-7xl'
             }`}
           >
+            <ComunicadosSistema />
             <Outlet />
           </div>
         </main>

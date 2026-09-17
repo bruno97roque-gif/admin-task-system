@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { Layout } from '../components/layout/Layout'
 import { AnaliticaPage } from '../pages/AnaliticaPage'
 import { ArchivadosPage } from '../pages/ArchivadosPage'
+import { ComunicadosPage } from '../pages/ComunicadosPage'
 import { DashboardPage } from '../pages/DashboardPage'
 import { LoginPage } from '../pages/LoginPage'
 import { NotasPage } from '../pages/NotasPage'
@@ -43,6 +44,7 @@ export function AppRouter() {
               <Route path="notas" element={<NotasPage />} />
               <Route path="notificaciones" element={<NotificacionesPage />} />
               <Route path="perfil" element={<PerfilPage />} />
+              <Route path="comunicados" element={<ComunicadosPage />} />
             </Route>
           </Route>
         </Route>

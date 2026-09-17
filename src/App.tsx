@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { refreshSession } from './lib/api'
 import { useAuthStore } from './stores/authStore'
 import { AppRouter } from './routes/AppRouter'
 import { ErrorBoundary } from './components/ui/ErrorBoundary'
@@ -12,9 +11,7 @@ function App() {
     let cancelled = false
 
     async function bootstrapSession() {
-      if (!useAuthStore.getState().isAuthenticated) {
-        await refreshSession()
-      }
+      await useAuthStore.getState().cargarSesion()
       if (!cancelled) {
         useAuthStore.getState().setSessionHydrated(true)
       }

@@ -1,4 +1,3 @@
-import type { LoginResponse } from '../services/api'
 import { API_URL } from '../config/app'
 
 export interface ApiError extends Error {
@@ -12,74 +11,39 @@ export function createApiError(status: number, message: string): ApiError {
   return error
 }
 
-let getAccessToken: () => string | null = () => null
-let setSession: (data: LoginResponse) => void = () => {}
-let clearSession: () => void = () => {}
+/**
+ * Qué hacer cuando el API dice que la sesión ya no vale (venció, la cerraron
+ * desde otro lado, cambió la contraseña). Lo conecta `main.tsx`.
+ */
+let alPerderSesion: () => void = () => {}
 
-export function setAccessTokenGetter(fn: () => string | null) {
-  getAccessToken = fn
+export function setSesionPerdidaHandler(fn: () => void) {
+  alPerderSesion = fn
 }
 
-export function setSessionHandlers(
-  onSetSession: (data: LoginResponse) => void,
-  onClearSession: () => void,
-) {
-  setSession = onSetSession
-  clearSession = onClearSession
-}
+/**
+ * Rutas donde un 401 no significa «se cerró tu sesión»: el login (clave mala)
+ * y la consulta de sesión al abrir la app.
+ */
+const SIN_SESION = new Set(['/api/auth/sign-in/username', '/api/auth/get-session', '/perfil'])
 
-const AUTH_PUBLIC_PATHS = new Set(['/auth/login', '/auth/refresh', '/auth/logout'])
-
-function isAuthPublicPath(path: string): boolean {
-  return AUTH_PUBLIC_PATHS.has(path)
-}
-
-let refreshPromise: Promise<boolean> | null = null
-
-async function doRefresh(): Promise<boolean> {
-  try {
-    const response = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-    })
-
-    if (!response.ok) {
-      clearSession()
-      return false
-    }
-
-    const data = (await response.json()) as LoginResponse
-    setSession(data)
-    return true
-  } catch {
-    clearSession()
-    return false
+/** Mensajes de better-auth que pueden llegar en inglés. */
+function enCastellano(status: number, mensaje: string): string {
+  if (status === 429 && /too many/i.test(mensaje)) {
+    return 'Demasiados intentos. Espera un momento y vuelve a intentarlo.'
   }
+  return mensaje
 }
 
-export function refreshSession(): Promise<boolean> {
-  if (!refreshPromise) {
-    refreshPromise = doRefresh().finally(() => {
-      refreshPromise = null
-    })
-  }
-  return refreshPromise
-}
-
-export async function apiFetch<T>(
-  path: string,
-  options: RequestInit = {},
-  retry = true,
-): Promise<T> {
-  const token = getAccessToken()
+/**
+ * Pedido al API. La sesión viaja sola en una cookie httpOnly
+ * (`credentials: 'include'`): el front no guarda ni manda tokens.
+ */
+export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers)
 
   if (!headers.has('Content-Type') && options.body) {
     headers.set('Content-Type', 'application/json')
-  }
-
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`)
   }
 
   const response = await fetch(`${API_URL}${path}`, {
@@ -88,11 +52,8 @@ export async function apiFetch<T>(
     headers,
   })
 
-  if (response.status === 401 && retry && !isAuthPublicPath(path)) {
-    const refreshed = await refreshSession()
-    if (refreshed) {
-      return apiFetch<T>(path, options, false)
-    }
+  if (response.status === 401 && !SIN_SESION.has(path)) {
+    alPerderSesion()
   }
 
   if (!response.ok) {
@@ -106,12 +67,14 @@ export async function apiFetch<T>(
     } catch {
       // respuesta no JSON
     }
-    throw createApiError(response.status, message)
+    throw createApiError(response.status, enCastellano(response.status, String(message)))
   }
 
   if (response.status === 204) {
     return undefined as T
   }
 
-  return response.json() as Promise<T>
+  // Algunas rutas de better-auth responden 200 sin cuerpo.
+  const texto = await response.text()
+  return (texto ? JSON.parse(texto) : undefined) as T
 }

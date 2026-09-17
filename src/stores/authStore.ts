@@ -1,15 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AuthUser } from '../types'
-import type { LoginResponse } from '../services/api'
-import { loginRequest, logoutRequest } from '../services/api'
+import { getSesionRequest, loginRequest, logoutRequest } from '../services/api'
 
 interface AuthState {
   user: AuthUser | null
-  accessToken: string | null
   isAuthenticated: boolean
   sessionHydrated: boolean
-  setSession: (data: LoginResponse) => void
+  /** Lee la sesión de la cookie al abrir la app. */
+  cargarSesion: () => Promise<void>
   clearSession: () => void
   setSessionHydrated: (value: boolean) => void
   login: (user: string, password: string) => Promise<{ success: boolean; error?: string }>
@@ -20,25 +19,30 @@ interface AuthState {
 
 type PersistedAuth = Pick<AuthState, 'user'>
 
+/**
+ * La sesión vive en una cookie httpOnly que maneja el API (better-auth). Acá
+ * solo queda quién es el usuario; `isAuthenticated` no se guarda: al abrir la
+ * app se confirma con el API.
+ */
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      accessToken: null,
       isAuthenticated: false,
       sessionHydrated: false,
 
-      setSession: (data) =>
-        set({
-          accessToken: data.accessToken,
-          user: data.user,
-          isAuthenticated: true,
-        }),
+      cargarSesion: async () => {
+        try {
+          const user = await getSesionRequest()
+          set({ user, isAuthenticated: true })
+        } catch {
+          set({ user: null, isAuthenticated: false })
+        }
+      },
 
       clearSession: () =>
         set({
           user: null,
-          accessToken: null,
           isAuthenticated: false,
         }),
 
@@ -46,16 +50,12 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (user, password) => {
         try {
-          const data = await loginRequest({ user, password })
-          set({
-            accessToken: data.accessToken,
-            user: data.user,
-            isAuthenticated: true,
-          })
+          await loginRequest({ user, password })
+          const datos = await getSesionRequest()
+          set({ user: datos, isAuthenticated: true })
           return { success: true }
         } catch (error) {
-          const message =
-            error instanceof Error ? error.message : 'Error al iniciar sesión'
+          const message = error instanceof Error ? error.message : 'Error al iniciar sesión'
           return { success: false, error: message }
         }
       },
@@ -67,11 +67,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           await logoutRequest()
         } catch {
-          // La cookie puede no existir; igual limpiamos sesión local
+          // Si la sesión ya no existía, igual se limpia la local.
         } finally {
           set({
             user: null,
-            accessToken: null,
             isAuthenticated: false,
           })
         }

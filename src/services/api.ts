@@ -6,22 +6,32 @@ export interface LoginRequest {
   password: string
 }
 
-export interface LoginResponse {
-  accessToken: string
-  user: AuthUser
-}
-
+/**
+ * Entrar. Lo atiende better-auth: si sale bien deja la cookie de sesión y el
+ * resto de los datos se piden a `/perfil`.
+ */
 export function loginRequest(credentials: LoginRequest) {
-  return apiFetch<LoginResponse>('/auth/login', {
+  return apiFetch<{ token: string }>('/api/auth/sign-in/username', {
     method: 'POST',
-    body: JSON.stringify(credentials),
+    body: JSON.stringify({
+      username: credentials.user,
+      password: credentials.password,
+      rememberMe: true,
+    }),
   })
 }
 
+/** Salir: better-auth borra la sesión en la base y la cookie. */
 export function logoutRequest() {
-  return apiFetch<void>('/auth/logout', {
+  return apiFetch<void>('/api/auth/sign-out', {
     method: 'POST',
+    body: '{}',
   })
+}
+
+/** El usuario de la sesión actual, con su rol y su foto. */
+export function getSesionRequest() {
+  return apiFetch<AuthUser>('/perfil')
 }
 
 export function getRolesRequest() {

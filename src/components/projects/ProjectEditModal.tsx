@@ -166,7 +166,9 @@ export function ProjectEditModal({
       payload.estadoPago !== actual.estadoPago ||
       payload.estadoProyecto !==
         (actual.estadoProyecto === 'Desarollo' ? 'Desarrollo' : actual.estadoProyecto) ||
-      payload.diasSinResponder !== actual.diasSinResponder ||
+      // El API manda los días como texto ('0') aunque el tipo diga número:
+      // se comparan como texto para no ver un cambio donde no lo hay.
+      String(payload.diasSinResponder ?? '') !== String(actual.diasSinResponder ?? '') ||
       toDateInputValue(payload.fechaEntrega) !== toDateInputValue(actual.fechaEntrega) ||
       toDateInputValue(payload.fechaEntregaDiseno) !==
         toDateInputValue(actual.fechaEntregaDiseno)

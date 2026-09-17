@@ -10,6 +10,7 @@ import {
   IoCreateOutline,
   IoInformationCircleOutline,
   IoPeopleOutline,
+  IoPersonAddOutline,
   IoRadioButtonOnOutline,
   IoRefreshOutline,
   IoSendOutline,
@@ -36,6 +37,7 @@ import {
   tituloEsLibre,
 } from '../utils/reuniones'
 import { GoogleCalendarBar } from '../components/reuniones/GoogleCalendarBar'
+import { InvitadosExternosModal } from '../components/reuniones/InvitadosExternosModal'
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -50,20 +52,27 @@ interface ReunionForm {
   titulo: string
   descripcion: string
   fecha: string
-  linkMeet: string
+  /** Id del proyecto, o `PROYECTO_WEBSY` para una reunión interna. */
   proyectoId: string
   participantesIds: string[]
   grabarReunion: boolean
+  invitadosExternos: string[]
 }
+
+/**
+ * Opción del selector para las reuniones internas de Websy: van sin proyecto,
+ * pero con el tipo de reunión en el título («Websy — Brief»).
+ */
+const PROYECTO_WEBSY = 'websy'
 
 const emptyForm: ReunionForm = {
   tipo: 'Brief',
   titulo: '',
   descripcion: '',
   fecha: '',
-  linkMeet: '',
   proyectoId: '',
   participantesIds: [],
+  invitadosExternos: [],
   // Encendida por defecto: casi todas las reuniones con clientes se graban.
   grabarReunion: true,
 }
@@ -102,7 +111,12 @@ const AVISO_DE_GRABACION: Record<EstadoDeGrabacion, Aviso> = {
   activada: {
     tipo: 'ok',
     texto:
-      'Enviada a Google Calendar: Google mandó las invitaciones y el Meet va a grabar y transcribir.',
+      'Enviada a Google Calendar: Google mandó las invitaciones y el Meet va a grabar, transcribir y tomar notas con Gemini.',
+  },
+  activada_sin_notas: {
+    tipo: 'warn',
+    texto:
+      'Enviada a Google Calendar: el Meet va a grabar y transcribir, pero Google no aceptó las notas de Gemini (puede que la licencia no las incluya). Puedes activarlas dentro del Meet.',
   },
   desactivada: {
     tipo: 'ok',
@@ -116,7 +130,7 @@ const AVISO_DE_GRABACION: Record<EstadoDeGrabacion, Aviso> = {
   sin_meet: {
     tipo: 'warn',
     texto:
-      'Enviada a Google Calendar, pero Google no generó el Meet. Añádelo desde el evento y pega el link acá con el lápiz.',
+      'Enviada a Google Calendar, pero Google no generó el Meet. Añádelo desde el evento en Calendar.',
   },
 }
 
@@ -131,11 +145,6 @@ const AVISO_DE_EDICION: Partial<Record<SincronizacionGoogle, Aviso>> = {
       'Los cambios se guardaron acá, pero no se pudo actualizar Google Calendar. Corrige el evento allá.',
   },
 }
-
-const MEET_REGEX = /^https:\/\/meet\.google\.com\//
-
-/** Crea una sala de Meet nueva y devuelve su link, para pegarlo acá. */
-const MEET_NUEVO_URL = 'https://meet.google.com/new'
 
 /** Una reunión sigue siendo «próxima» hasta una hora después de su inicio. */
 const MARGEN_EN_CURSO_MS = 60 * 60 * 1000
@@ -177,9 +186,16 @@ function ReunionCard({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-base font-semibold text-slate-100">{reunion.titulo}</h3>
-          {reunion.proyecto && (
+          {reunion.proyecto ? (
             <span className="rounded-full bg-surface-overlay px-2 py-0.5 text-xs text-slate-300">
               {reunion.proyecto.name}
+            </span>
+          ) : (
+            <span
+              title="Reunión interna, sin proyecto"
+              className="rounded-full bg-accent/15 px-2 py-0.5 text-xs text-accent-hover"
+            >
+              Websy
             </span>
           )}
           {enGoogle && (
@@ -225,6 +241,14 @@ function ReunionCard({
             ))
           )}
         </div>
+        {reunion.invitadosExternos.length > 0 && (
+          <p className="mt-2 flex items-start gap-2 text-xs text-slate-400">
+            <IoPersonAddOutline size={15} className="mt-px shrink-0 text-slate-500" />
+            <span className="min-w-0 break-words">
+              Clientes: {reunion.invitadosExternos.join(', ')}
+            </span>
+          </p>
+        )}
         {reunion.creador && (
           <p className="mt-2 text-xs text-slate-500">
             Agendada por <span className="text-slate-400">{reunion.creador.name}</span>
@@ -347,6 +371,7 @@ export function ReunionesPage() {
   const [showPasadas, setShowPasadas] = useState(false)
   const [eliminando, setEliminando] = useState(false)
   const [errorAlEliminar, setErrorAlEliminar] = useState<string | null>(null)
+  const [invitandoClientes, setInvitandoClientes] = useState(false)
 
   // Al volver de conectar Google, el resultado llega en `?google=`. Se lee una
   // vez para el aviso inicial y se limpia de la URL, para que recargar la
@@ -377,6 +402,7 @@ export function ReunionesPage() {
   // con la reunión de equipo lo escribe quien agenda.
   const tipo = useWatch({ control, name: 'tipo' })
   const proyectoIdForm = useWatch({ control, name: 'proyectoId' })
+  const invitadosExternos = useWatch({ control, name: 'invitadosExternos' })
   const esDeEquipo = esReunionDeEquipo(tipo)
   const tituloLibre = tituloEsLibre(tipo)
 
@@ -384,7 +410,10 @@ export function ReunionesPage() {
   // cuando la persona toca el tipo o el proyecto, nunca por detrás.
   const actualizarTitulo = (nuevoTipo: string, nuevoProyectoId: string) => {
     if (nuevoTipo === 'Otros') return
-    const nombre = projects.find((p) => String(p.id) === nuevoProyectoId)?.name
+    const nombre =
+      nuevoProyectoId === PROYECTO_WEBSY
+        ? 'Websy'
+        : projects.find((p) => String(p.id) === nuevoProyectoId)?.name
     setValue('titulo', componerTitulo(nuevoTipo, nombre))
   }
 
@@ -476,13 +505,16 @@ export function ReunionesPage() {
 
   // Solo los proyectos sobre los que esta persona puede convocar: el
   // diseñador los suyos en diseño, el desarrollador los suyos, y
-  // administración todos.
+  // administración todos. Arriba de todo, «Websy» para las internas, que
+  // cualquiera puede agendar porque no tocan el proyecto de nadie.
   const projectOptions = useMemo(
-    () =>
-      proyectosAgendables(projects, user?.roleName, user?.id)
+    () => [
+      { value: PROYECTO_WEBSY, label: 'Websy (interna, sin proyecto)' },
+      ...proyectosAgendables(projects, user?.roleName, user?.id)
         .slice()
         .sort((a, b) => a.name.localeCompare(b.name, 'es'))
         .map((p) => ({ value: String(p.id), label: p.name })),
+    ],
     [projects, user],
   )
 
@@ -494,16 +526,19 @@ export function ReunionesPage() {
 
   const openEdit = (reunion: Reunion) => {
     setEditing(reunion)
+    const esTituloDeEquipo = reunion.titulo === componerTitulo('Equipo', undefined)
     reset({
       // Al editar el título queda libre, para no pisar lo que ya se escribió.
-      tipo: reunion.proyectoId ? 'Otros' : 'Equipo',
+      // Sin proyecto puede ser la «Reunión de equipo» o una interna de Websy;
+      // se distinguen por el título fijo de la primera.
+      tipo: reunion.proyectoId || !esTituloDeEquipo ? 'Otros' : 'Equipo',
       titulo: reunion.titulo,
       descripcion: reunion.descripcion ?? '',
       fecha: toDateTimeInputValue(reunion.fecha),
-      linkMeet: reunion.linkMeet,
-      proyectoId: reunion.proyectoId ? String(reunion.proyectoId) : '',
+      proyectoId: reunion.proyectoId ? String(reunion.proyectoId) : PROYECTO_WEBSY,
       participantesIds: reunion.participantes.map((p) => String(p.id)),
       grabarReunion: reunion.grabarReunion,
+      invitadosExternos: reunion.invitadosExternos,
     })
     setModalOpen(true)
   }
@@ -525,12 +560,14 @@ export function ReunionesPage() {
       titulo: data.titulo.trim(),
       descripcion: data.descripcion.trim() || null,
       fecha: fecha.toISOString(),
-      linkMeet: data.linkMeet.trim(),
-      // La reunión de equipo no lleva proyecto: es general.
+      // La reunión de equipo y las internas de Websy no llevan proyecto.
       proyectoId:
-        esReunionDeEquipo(data.tipo) || !data.proyectoId ? null : Number(data.proyectoId),
+        esReunionDeEquipo(data.tipo) || !data.proyectoId || data.proyectoId === PROYECTO_WEBSY
+          ? null
+          : Number(data.proyectoId),
       participantesIds: data.participantesIds.map(Number),
       grabarReunion: data.grabarReunion,
+      invitadosExternos: data.invitadosExternos,
     }
 
     const result: { success: boolean; error?: string; google?: SincronizacionGoogle } =
@@ -620,10 +657,8 @@ export function ReunionesPage() {
               </>
             ) : (
               <>
-                créales el evento con «Crear en Calendar», añade ahí Google Meet y pega el
-                link acá con el lápiz. En el mismo evento, «Opciones de videollamada →
-                Registros de la reunión» permite dejar activadas la grabación y la
-                transcripción.
+                conecta Google arriba para enviarlas desde acá con su Meet. Mientras tanto,
+                «Crear en Calendar» abre el evento prellenado.
               </>
             )}
           </span>
@@ -698,8 +733,8 @@ export function ReunionesPage() {
               <IoInformationCircleOutline size={16} className="mt-px shrink-0" />
               <span>
                 Esta reunión está en Google Calendar. Si cambias el horario, el título, la
-                descripción o los convocados, el evento se actualiza allá y Google avisa a los
-                invitados.
+                descripción, los convocados o los clientes, el evento se actualiza allá y Google
+                avisa a los invitados.
               </span>
             </div>
           ) : editing && (
@@ -756,54 +791,8 @@ export function ReunionesPage() {
             error={errors.fecha?.message}
             {...register('fecha', { required: 'La fecha es obligatoria' })}
           />
-          <div>
-            <Input
-              label="Link de Google Meet (opcional)"
-              type="url"
-              placeholder="https://meet.google.com/abc-defg-hij"
-              error={errors.linkMeet?.message}
-              {...register('linkMeet', {
-                validate: (value) =>
-                  value.trim() === '' ||
-                  MEET_REGEX.test(value.trim()) ||
-                  'Tiene que ser un enlace de Google Meet (https://meet.google.com/...)',
-              })}
-            />
-            {/* La URL de Calendar prellena el evento pero no puede crear la
-                videollamada. Quien tiene Workspace la genera al guardar en
-                Calendar; el resto deja el campo vacío. */}
-            <p className="mt-1.5 text-xs text-slate-500">
-              {editing?.googleEventId ? (
-                <>Lo generó Google al enviarla al Calendar.</>
-              ) : googleConectada ? (
-                <>
-                  Déjalo vacío: al tocar «Enviar al Calendar» en la tarjeta, Google genera el
-                  link y manda las invitaciones.
-                </>
-              ) : esAdmin ? (
-                <>
-                  Puedes dejarlo vacío y crear el evento en Google Calendar desde la
-                  tarjeta: ahí «Añadir Google Meet» genera el link, y después lo pegas
-                  acá. O{' '}
-                  <a
-                    href={MEET_NUEVO_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-medium text-accent underline"
-                  >
-                    genera uno ahora
-                  </a>
-                  .
-                </>
-              ) : (
-                <>
-                  Déjalo vacío si no tienes uno: administración recibe el aviso, crea el
-                  evento en Calendar y manda las invitaciones. Si ya tienes un link,
-                  pégalo y se ahorra ese paso.
-                </>
-              )}
-            </p>
-          </div>
+          {/* El link de Meet ya no se pide: lo genera Google cuando
+              administración envía la reunión al Calendar. */}
           <Controller
             control={control}
             name="participantesIds"
@@ -825,6 +814,29 @@ export function ReunionesPage() {
             rows={3}
             {...register('descripcion')}
           />
+          <div className="rounded-lg border border-border bg-surface px-3 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-slate-300">Clientes invitados (opcional)</p>
+                <p className="text-xs text-slate-500">
+                  {invitadosExternos.length === 0
+                    ? 'Reciben la invitación de Google Calendar con el link de Meet.'
+                    : invitadosExternos.length === 1
+                      ? '1 correo'
+                      : `${invitadosExternos.length} correos`}
+                </p>
+              </div>
+              <Button type="button" variant="secondary" onClick={() => setInvitandoClientes(true)}>
+                <IoPersonAddOutline size={16} />
+                {invitadosExternos.length === 0 ? 'Invitar clientes' : 'Editar'}
+              </Button>
+            </div>
+            {invitadosExternos.length > 0 && (
+              <p className="mt-2 break-words text-xs text-slate-400">
+                {invitadosExternos.join(', ')}
+              </p>
+            )}
+          </div>
           <div>
             <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
               <input
@@ -832,11 +844,11 @@ export function ReunionesPage() {
                 className="rounded border-border bg-surface-raised accent-accent"
                 {...register('grabarReunion')}
               />
-              Grabar y transcribir la reunión
+              Grabar, transcribir y tomar notas
             </label>
             <p className="mt-1 pl-6 text-xs text-slate-500">
-              El Meet arranca grabando y con transcripción; los archivos quedan en el Drive de
-              la cuenta de Websy.{' '}
+              El Meet arranca grabando, con transcripción y notas de Gemini; los archivos quedan
+              en el Drive de la cuenta de Websy.{' '}
               {editing?.googleEventId
                 ? 'Si la cambias, se actualiza en el Meet al guardar.'
                 : 'Se aplica cuando la reunión se envía a Google Calendar.'}
@@ -852,6 +864,13 @@ export function ReunionesPage() {
           </div>
         </form>
       </Modal>
+
+      <InvitadosExternosModal
+        open={invitandoClientes}
+        correos={invitadosExternos}
+        onClose={() => setInvitandoClientes(false)}
+        onGuardar={(correos) => setValue('invitadosExternos', correos, { shouldDirty: true })}
+      />
 
       <ConfirmDialog
         open={toDelete !== null}

@@ -189,6 +189,8 @@ export interface Reunion {
   linkMeet: string
   /** Si el Meet arranca grabando y transcribiendo. */
   grabarReunion: boolean
+  /** Correos de clientes que se suman a la invitación de Google. */
+  invitadosExternos: string[]
   /** Id del evento en Google Calendar; `null` mientras no se envió. */
   googleEventId: string | null
   enviadaAt: string | null
@@ -205,7 +207,12 @@ export interface Reunion {
 export type SincronizacionGoogle = 'actualizada' | 'sin_cambios' | 'error'
 
 /** Qué pasó con la grabación al enviar una reunión al Calendar. */
-export type EstadoDeGrabacion = 'activada' | 'desactivada' | 'no_disponible' | 'sin_meet'
+export type EstadoDeGrabacion =
+  | 'activada'
+  | 'activada_sin_notas'
+  | 'desactivada'
+  | 'no_disponible'
+  | 'sin_meet'
 
 /** La cuenta de Google de Websy, conectada por administración. */
 export interface EstadoGoogle {

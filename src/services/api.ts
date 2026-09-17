@@ -228,9 +228,12 @@ export interface ReunionRequest {
   titulo: string
   descripcion?: string | null
   fecha: string
-  linkMeet: string
+  /** Lo genera Google al enviarla al Calendar; el formulario ya no lo pide. */
+  linkMeet?: string
   proyectoId?: number | null
   participantesIds: number[]
+  /** Correos de clientes para la invitación de Google. */
+  invitadosExternos?: string[]
   /** Grabar y transcribir el Meet; pesa al enviarla al Calendar. */
   grabarReunion?: boolean
 }

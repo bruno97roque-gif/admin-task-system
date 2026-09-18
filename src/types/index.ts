@@ -136,11 +136,17 @@ export interface AnaliticaProyectoMovimiento {
 export interface AnaliticaFlujoMes {
   mes: string
   entraron: number
+  /** Llegaron por primera vez a Diseño Finalizado en el mes. */
+  disenosFinalizados: number
+  /** Llegaron por primera vez a Desarrollo Finalizado en el mes. */
+  desarrollosFinalizados: number
   /** Cerrados bien: son un logro, no una baja. */
   finalizados: number
   /** Archivados sin terminar: acá sí se perdió al cliente. */
   archivados: number
   entrantes: AnaliticaProyectoMovimiento[]
+  disenos: AnaliticaProyectoMovimiento[]
+  desarrollos: AnaliticaProyectoMovimiento[]
   salientes: AnaliticaProyectoMovimiento[]
 }
 

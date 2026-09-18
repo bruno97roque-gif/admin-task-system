@@ -133,9 +133,9 @@ export function AnaliticaPage() {
           <div className="rounded-xl border border-border bg-surface-raised p-4">
             <h2 className="text-sm font-semibold text-slate-200">Movimiento de proyectos por mes</h2>
             <p className="mb-4 text-xs text-slate-500">
-              Nuevos, entregados y archivados. Entregar es un logro y no resta; lo único
-              que cuenta como pérdida es archivar. Haz clic en un mes para ver cuáles
-              fueron.
+              Nuevos, los que llegaron a Diseño Finalizado y a Desarrollo Finalizado,
+              entregados y archivados. Entregar es un logro y no resta; lo único que cuenta
+              como pérdida es archivar. Haz clic en un mes para ver cuáles fueron.
             </p>
             <FlujoMensual data={data.flujoMensual} />
           </div>

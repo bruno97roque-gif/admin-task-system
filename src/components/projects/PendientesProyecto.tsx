@@ -1,5 +1,11 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
-import { IoAddOutline, IoCheckboxOutline, IoTrashOutline } from 'react-icons/io5'
+import {
+  IoAddOutline,
+  IoCheckboxOutline,
+  IoChevronForwardOutline,
+  IoClose,
+  IoTrashOutline,
+} from 'react-icons/io5'
 import type { Pendiente } from '../../types'
 import { clavePendientes, usePendientesStore } from '../../stores/pendientesStore'
 
@@ -84,21 +90,74 @@ function Fila({ pendiente, editable }: { pendiente: Pendiente; editable: boolean
 }
 
 /**
- * **PENDIENTES** de una persona en un proyecto. Si es la propia, se edita
- * (agregar con Enter, marcar, editar con un clic, borrar); si administración
- * mira la de otra persona, es solo lectura.
+ * El botón del modal del proyecto que abre el panel de pendientes, con el
+ * avance de la lista a la vista.
+ */
+export function BotonPendientes({
+  proyectoId,
+  usuarioId,
+  editable,
+  abierto,
+  onClick,
+}: {
+  proyectoId: number
+  usuarioId: number
+  editable: boolean
+  abierto: boolean
+  onClick: () => void
+}) {
+  const resumen = usePendientesStore((s) => s.resumen[clavePendientes(proyectoId, usuarioId)])
+  const total = resumen?.total ?? 0
+  const hechos = resumen?.hechos ?? 0
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={abierto}
+      className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+        abierto
+          ? 'border-accent bg-accent/15 text-accent-hover'
+          : 'border-border bg-surface text-slate-200 hover:border-accent/50'
+      }`}
+    >
+      <IoCheckboxOutline size={17} className="text-accent-hover" />
+      <span className="flex-1 text-left">{editable ? 'Mis pendientes' : 'Pendientes'}</span>
+      {total > 0 && (
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs ${
+            hechos === total ? 'bg-emerald-500/10 text-emerald-300' : 'bg-amber-500/10 text-amber-200'
+          }`}
+        >
+          {hechos}/{total}
+        </span>
+      )}
+      <IoChevronForwardOutline
+        size={16}
+        className={`text-slate-500 transition-transform ${abierto ? 'rotate-180' : ''}`}
+      />
+    </button>
+  )
+}
+
+/**
+ * **PENDIENTES** de una persona en un proyecto, en un panel al costado del
+ * modal (en celular, una hoja que sube encima). Si es la propia, se edita (agregar con Enter, marcar, editar con un
+ * clic, borrar); si administración mira la de otra persona, es solo lectura.
  */
 export function PendientesProyecto({
   proyectoId,
   usuarioId,
   nombreDuenio,
   editable,
+  onClose,
 }: {
   proyectoId: number
   usuarioId: number
   /** Para el título cuando se mira la lista de otra persona. */
   nombreDuenio?: string
   editable: boolean
+  onClose: () => void
 }) {
   const clave = clavePendientes(proyectoId, usuarioId)
   const lista = usePendientesStore((s) => s.listas[clave])
@@ -134,39 +193,57 @@ export function PendientesProyecto({
   const total = lista?.length ?? 0
 
   return (
-    <section className="rounded-lg border border-border bg-surface p-3">
-      <header className="mb-2 flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-200">
-          <IoCheckboxOutline size={16} className="text-accent-hover" />
-          {editable ? 'Mis pendientes' : `Pendientes de ${nombreDuenio ?? 'esta persona'}`}
-        </h3>
-        {total > 0 && (
-          <span className="text-xs text-slate-500">
-            {hechos}/{total} hechos
-          </span>
-        )}
+    <section
+      aria-label="Pendientes"
+      className="fixed inset-x-0 bottom-0 z-10 flex max-h-[80dvh] flex-col rounded-t-xl border border-border bg-surface-raised shadow-2xl sm:static sm:max-h-[calc(100dvh-2rem)] sm:w-80 sm:shrink-0 sm:rounded-xl"
+    >
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
+        <div className="min-w-0">
+          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-100">
+            <IoCheckboxOutline size={16} className="text-accent-hover" />
+            <span className="truncate">
+              {editable ? 'Mis pendientes' : `Pendientes de ${nombreDuenio ?? 'esta persona'}`}
+            </span>
+          </h3>
+          {total > 0 && (
+            <p className="mt-0.5 text-xs text-slate-500">
+              {hechos}/{total} hechos
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar pendientes"
+          className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-surface-overlay hover:text-slate-100"
+        >
+          <IoClose size={18} />
+        </button>
       </header>
 
-      {error && <p className="mb-2 text-xs text-red-300">{error}</p>}
+      <div className="flex-1 overflow-y-auto p-3">
+        {error && <p className="mb-2 text-xs text-red-300">{error}</p>}
 
-      {lista === undefined && cargando ? (
-        <p className="py-2 text-xs text-slate-500">Cargando...</p>
-      ) : total === 0 ? (
-        <p className="py-1 text-xs text-slate-500">
-          {editable ? 'Todavía no anotaste pendientes en este proyecto.' : 'No anotó pendientes.'}
-        </p>
-      ) : (
-        <ul className="space-y-0.5">
-          {lista?.map((p) => <Fila key={p.id} pendiente={p} editable={editable} />)}
-        </ul>
-      )}
+        {lista === undefined && cargando ? (
+          <p className="py-2 text-xs text-slate-500">Cargando...</p>
+        ) : total === 0 ? (
+          <p className="py-1 text-xs text-slate-500">
+            {editable ? 'Todavía no anotaste pendientes en este proyecto.' : 'No anotó pendientes.'}
+          </p>
+        ) : (
+          <ul className="space-y-0.5">
+            {lista?.map((p) => <Fila key={p.id} pendiente={p} editable={editable} />)}
+          </ul>
+        )}
+      </div>
 
       {editable && (
-        <div className="mt-2 flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2 border-t border-border p-3">
           <input
             type="text"
             value={nuevo}
             maxLength={MAXIMO_TEXTO}
+            autoFocus
             placeholder="Agregar pendiente y Enter"
             onChange={(e) => setNuevo(e.target.value)}
             onKeyDown={(e) => {

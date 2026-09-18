@@ -8,6 +8,8 @@ interface ModalProps {
   title: string
   children: ReactNode
   size?: 'sm' | 'md' | 'lg'
+  /** Panel que se abre al costado del modal. */
+  aside?: ReactNode
 }
 
 const sizeClasses = {
@@ -16,7 +18,7 @@ const sizeClasses = {
   lg: 'max-w-2xl',
 }
 
-export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
+export function Modal({ open, onClose, title, children, size = 'md', aside }: ModalProps) {
   if (!open) return null
 
   return (
@@ -26,21 +28,30 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
         onClick={onClose}
         aria-hidden
       />
+      {/* El hueco alrededor del modal y su panel también cierra, como el fondo. */}
       <div
-        role="dialog"
-        aria-modal
-        aria-labelledby="modal-title"
-        className={`relative flex max-h-[min(100dvh,100%)] w-full flex-col ${sizeClasses[size]} rounded-t-xl border border-border bg-surface-raised shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-xl`}
+        className="relative flex max-h-[100dvh] w-full flex-col items-center gap-3 overflow-y-auto sm:max-h-none sm:flex-row sm:items-start sm:justify-center sm:overflow-visible"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose()
+        }}
       >
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
-          <h2 id="modal-title" className="min-w-0 text-base font-semibold text-slate-100 sm:text-lg">
-            {title}
-          </h2>
-          <Button variant="ghost" onClick={onClose} aria-label="Cerrar" className="shrink-0">
-            <IoClose size={20} />
-          </Button>
+        <div
+          role="dialog"
+          aria-modal
+          aria-labelledby="modal-title"
+          className={`relative flex max-h-[min(100dvh,100%)] w-full flex-col ${sizeClasses[size]} rounded-t-xl border border-border bg-surface-raised shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-xl`}
+        >
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
+            <h2 id="modal-title" className="min-w-0 text-base font-semibold text-slate-100 sm:text-lg">
+              {title}
+            </h2>
+            <Button variant="ghost" onClick={onClose} aria-label="Cerrar" className="shrink-0">
+              <IoClose size={20} />
+            </Button>
+          </div>
+          <div className="overflow-y-auto p-4 sm:p-5">{children}</div>
         </div>
-        <div className="overflow-y-auto p-4 sm:p-5">{children}</div>
+        {aside}
       </div>
     </div>
   )

@@ -31,7 +31,7 @@ import { ProjectDetails } from '../components/projects/ProjectDetails'
 import { ProjectFilters } from '../components/projects/ProjectFilters'
 import { AbrirTicketRapido } from '../components/notas/AbrirTicketRapido'
 import { AbrirMateriales } from '../components/projects/AbrirMateriales'
-import { PendientesProyecto } from '../components/projects/PendientesProyecto'
+import { BotonPendientes, PendientesProyecto } from '../components/projects/PendientesProyecto'
 import { LoaderBlock } from '../components/ui/Loader'
 import { CornerRestGif } from '../components/ui/CornerRestGif'
 import { PersonColorLegend } from '../components/projects/PersonColorLegend'
@@ -73,6 +73,7 @@ export function ProjectsByProgramadorPage() {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   // La persona de la columna donde se hizo clic: sus pendientes son los que se muestran.
   const [columnaUsuario, setColumnaUsuario] = useState<AppUser | null>(null)
+  const [verPendientes, setVerPendientes] = useState(false)
   const fetchResumenPendientes = usePendientesStore((s) => s.fetchResumen)
   const [estadoFiltro, setEstadoFiltro] = useState('')
   const [ordenFiltro, setOrdenFiltro] = useState<OrderMode>('personalizado')
@@ -166,6 +167,7 @@ export function ProjectsByProgramadorPage() {
   const closeEditComentario = () => {
     setEditingProject(null)
     setColumnaUsuario(null)
+    setVerPendientes(false)
     reset({ comentario: '', fechaEntrega: '', estadoProyecto: '' })
   }
 
@@ -278,15 +280,27 @@ export function ProjectsByProgramadorPage() {
         open={editingProject !== null}
         onClose={closeEditComentario}
         title={editingProject ? `Editar — ${editingProject.name}` : 'Editar proyecto'}
-      >
-        <form onSubmit={handleSubmit(onSubmitComentario)} className="space-y-4">
-          {editingProject && <ProjectDetails project={editingProject} />}
-          {editingProject && columnaUsuario && (
+        aside={
+          verPendientes && editingProject && columnaUsuario ? (
             <PendientesProyecto
               proyectoId={editingProject.id}
               usuarioId={columnaUsuario.id}
               nombreDuenio={columnaUsuario.name}
               editable={columnaUsuario.id === authUser?.id}
+              onClose={() => setVerPendientes(false)}
+            />
+          ) : undefined
+        }
+      >
+        <form onSubmit={handleSubmit(onSubmitComentario)} className="space-y-4">
+          {editingProject && <ProjectDetails project={editingProject} />}
+          {editingProject && columnaUsuario && (
+            <BotonPendientes
+              proyectoId={editingProject.id}
+              usuarioId={columnaUsuario.id}
+              editable={columnaUsuario.id === authUser?.id}
+              abierto={verPendientes}
+              onClick={() => setVerPendientes((v) => !v)}
             />
           )}
           {editingProject && <AbrirMateriales enlace={editingProject.enlaceMateriales} />}

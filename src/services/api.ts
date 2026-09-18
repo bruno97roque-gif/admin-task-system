@@ -478,3 +478,34 @@ export function deleteNotaRequest(id: number) {
     method: 'DELETE',
   })
 }
+
+export function getResumenPendientesRequest() {
+  return apiFetch<import('../types').ResumenPendientes[]>('/pendientes/resumen')
+}
+
+/** Sin `usuarioId`, la lista propia; con él, la de otra persona (solo administración). */
+export function getPendientesRequest(proyectoId: number, usuarioId?: number) {
+  const query = usuarioId === undefined ? '' : `?usuarioId=${usuarioId}`
+  return apiFetch<import('../types').Pendiente[]>(`/projects/${proyectoId}/pendientes${query}`)
+}
+
+export function crearPendienteRequest(proyectoId: number, texto: string) {
+  return apiFetch<import('../types').Pendiente>(`/projects/${proyectoId}/pendientes`, {
+    method: 'POST',
+    body: JSON.stringify({ texto }),
+  })
+}
+
+export function actualizarPendienteRequest(
+  id: number,
+  cambios: { texto?: string; hecho?: boolean },
+) {
+  return apiFetch<import('../types').Pendiente>(`/pendientes/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(cambios),
+  })
+}
+
+export function borrarPendienteRequest(id: number) {
+  return apiFetch<void>(`/pendientes/${id}`, { method: 'DELETE' })
+}

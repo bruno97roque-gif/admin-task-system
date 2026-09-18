@@ -1,5 +1,6 @@
-import { IoCashOutline, IoPeopleOutline } from 'react-icons/io5'
+import { IoCashOutline, IoCheckboxOutline, IoPeopleOutline } from 'react-icons/io5'
 import type { AppUser, Project } from '../../types'
+import { clavePendientes, usePendientesStore } from '../../stores/pendientesStore'
 import { extractUser } from '../../utils/projectUsers'
 import { estadoProyectoClass, getEstadoProyectoLabel } from '../../utils/projectStatus'
 import { getTipoProyectoLabel } from '../../utils/projectType'
@@ -17,6 +18,7 @@ export function ProjectCard({
   columnUserId: number
   onSelect?: (project: Project) => void
 }) {
+  const pendientes = usePendientesStore((s) => s.resumen[clavePendientes(project.id, columnUserId)])
   const otrosUsuarios = project.usuarios
     .map(extractUser)
     .filter((u): u is AppUser => u !== null && u.id !== columnUserId)
@@ -69,6 +71,19 @@ export function ProjectCard({
           <IoCashOutline size={12} />
           {project.estadoPago || '—'}
         </span>
+        {pendientes && pendientes.total > 0 && (
+          <span
+            title="Pendientes hechos"
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+              pendientes.hechos === pendientes.total
+                ? 'bg-emerald-500/10 text-emerald-300'
+                : 'bg-amber-500/10 text-amber-200'
+            }`}
+          >
+            <IoCheckboxOutline size={12} />
+            {pendientes.hechos}/{pendientes.total}
+          </span>
+        )}
       </div>
 
       {otrosUsuarios.length > 0 && (

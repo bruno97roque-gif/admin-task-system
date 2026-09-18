@@ -318,3 +318,24 @@ export interface NotaAdmin {
   leidaAt: string | null
   createdAt: string
 }
+
+/** Un pendiente de la lista de una persona en un proyecto. */
+export interface Pendiente {
+  id: number
+  proyectoId: number
+  usuarioId: number
+  texto: string
+  hecho: boolean
+  hechoAt: string | null
+  orden: number
+  createdAt: string
+  updatedAt: string
+}
+
+/** Contador de una lista de pendientes, para las tarjetas. */
+export interface ResumenPendientes {
+  proyectoId: number
+  usuarioId: number
+  total: number
+  hechos: number
+}

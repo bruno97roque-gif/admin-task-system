@@ -6,8 +6,9 @@ import {
   IoSnowOutline,
   IoRefreshOutline,
 } from 'react-icons/io5'
-import type { Project } from '../types'
+import type { AppUser, Project } from '../types'
 import { useAuthStore } from '../stores/authStore'
+import { usePendientesStore } from '../stores/pendientesStore'
 import { useVistaPropia } from '../hooks/useVistaPropia'
 import { esSupervisor } from '../utils/roleAccess'
 import { InterruptorVista } from '../components/ui/InterruptorVista'
@@ -30,6 +31,7 @@ import { ProjectDetails } from '../components/projects/ProjectDetails'
 import { ProjectFilters } from '../components/projects/ProjectFilters'
 import { AbrirTicketRapido } from '../components/notas/AbrirTicketRapido'
 import { AbrirMateriales } from '../components/projects/AbrirMateriales'
+import { PendientesProyecto } from '../components/projects/PendientesProyecto'
 import { LoaderBlock } from '../components/ui/Loader'
 import { CornerRestGif } from '../components/ui/CornerRestGif'
 import { PersonColorLegend } from '../components/projects/PersonColorLegend'
@@ -69,6 +71,9 @@ export function ProjectsByProgramadorPage() {
   const fetchCongelados = useProjectsAdminStore((s) => s.fetchProjects)
 
   const [editingProject, setEditingProject] = useState<Project | null>(null)
+  // La persona de la columna donde se hizo clic: sus pendientes son los que se muestran.
+  const [columnaUsuario, setColumnaUsuario] = useState<AppUser | null>(null)
+  const fetchResumenPendientes = usePendientesStore((s) => s.fetchResumen)
   const [estadoFiltro, setEstadoFiltro] = useState('')
   const [ordenFiltro, setOrdenFiltro] = useState<OrderMode>('personalizado')
   // Los congelados (grupos B y C) se suman al tablero en vez de abrirse
@@ -94,11 +99,12 @@ export function ProjectsByProgramadorPage() {
 
   useEffect(() => {
     fetchProjects(programadorId)
+    fetchResumenPendientes()
     if (!esProgramadorDeRol) {
       fetchUsers()
       fetchRoles()
     }
-  }, [fetchProjects, fetchUsers, fetchRoles, programadorId, esProgramadorDeRol])
+  }, [fetchResumenPendientes, fetchProjects, fetchUsers, fetchRoles, programadorId, esProgramadorDeRol])
 
   // La cola de congelados (grupos B y C) es otro endpoint: se pide recién
   // cuando se prende el interruptor.
@@ -147,8 +153,9 @@ export function ProjectsByProgramadorPage() {
 
   const handleResetOrder = () => setResetKey((k) => k + 1)
 
-  const openEditComentario = (project: Project) => {
+  const openEditComentario = (project: Project, columnUser: AppUser) => {
     setEditingProject(project)
+    setColumnaUsuario(columnUser)
     reset({
       comentario: project.comentario ?? '',
       fechaEntrega: toDateInputValue(project.fechaEntrega),
@@ -158,6 +165,7 @@ export function ProjectsByProgramadorPage() {
 
   const closeEditComentario = () => {
     setEditingProject(null)
+    setColumnaUsuario(null)
     reset({ comentario: '', fechaEntrega: '', estadoProyecto: '' })
   }
 
@@ -273,6 +281,14 @@ export function ProjectsByProgramadorPage() {
       >
         <form onSubmit={handleSubmit(onSubmitComentario)} className="space-y-4">
           {editingProject && <ProjectDetails project={editingProject} />}
+          {editingProject && columnaUsuario && (
+            <PendientesProyecto
+              proyectoId={editingProject.id}
+              usuarioId={columnaUsuario.id}
+              nombreDuenio={columnaUsuario.name}
+              editable={columnaUsuario.id === authUser?.id}
+            />
+          )}
           {editingProject && <AbrirMateriales enlace={editingProject.enlaceMateriales} />}
           {editingProject && (
             <AbrirTicketRapido

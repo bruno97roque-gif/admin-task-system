@@ -42,7 +42,8 @@ export function ProjectColumn({
 }: {
   user: AppUser
   projects: Project[]
-  onSelectProject?: (project: Project) => void
+  /** Recibe también a la persona de la columna: sus pendientes son los que se abren. */
+  onSelectProject?: (project: Project, columnUser: AppUser) => void
   avatarClassName?: string
   orderStorageKey: string
   orderMode?: OrderMode
@@ -52,6 +53,7 @@ export function ProjectColumn({
 }) {
   const [order, setOrder] = useState<number[]>(() => getStoredOrder(orderStorageKey))
   const isCustomOrder = orderMode === 'personalizado'
+  const onSelect = onSelectProject && ((project: Project) => onSelectProject(project, user))
 
   // Posiciones "antes" del reset, para animarlas a mano (FLIP): fuera de un
   // drag real, dnd-kit no anima solo porque el array cambió de orden.
@@ -145,7 +147,7 @@ export function ProjectColumn({
               key={project.id}
               project={project}
               columnUserId={user.id}
-              onSelect={onSelectProject}
+              onSelect={onSelect}
             />
           ))
         ) : (
@@ -170,7 +172,7 @@ export function ProjectColumn({
                   <SortableProjectCard
                     project={project}
                     columnUserId={user.id}
-                    onSelect={onSelectProject}
+                    onSelect={onSelect}
                   />
                 </div>
               ))}

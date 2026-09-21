@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { IoLockClosedOutline, IoPersonOutline } from 'react-icons/io5'
+import {
+  IoEyeOffOutline,
+  IoEyeOutline,
+  IoLockClosedOutline,
+  IoPersonOutline,
+} from 'react-icons/io5'
 import { Navigate, useNavigate } from 'react-router'
 import { useAuthStore } from '../stores/authStore'
 import { getHomePathForRole } from '../utils/roleAccess'
@@ -21,6 +26,7 @@ export function LoginPage() {
   const login = useAuthStore((s) => s.login)
   const navigate = useNavigate()
   const [recuperando, setRecuperando] = useState(false)
+  const [verContrasena, setVerContrasena] = useState(false)
 
   const {
     register,
@@ -101,14 +107,25 @@ export function LoginPage() {
               />
               <Input
                 label="Contraseña"
-                type="password"
+                type={verContrasena ? 'text' : 'password'}
                 placeholder="••••••••"
-                className="pl-9"
+                className="pl-9 pr-10"
+                autoComplete="current-password"
                 error={errors.password?.message}
                 {...register('password', {
                   required: 'La contraseña es obligatoria',
                 })}
               />
+              <button
+                type="button"
+                onClick={() => setVerContrasena((v) => !v)}
+                aria-label={verContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                aria-pressed={verContrasena}
+                title={verContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                className="absolute right-2 top-[31px] rounded-md p-1.5 text-slate-400 transition-colors hover:text-slate-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+              >
+                {verContrasena ? <IoEyeOffOutline size={17} /> : <IoEyeOutline size={17} />}
+              </button>
             </div>
           </div>
 

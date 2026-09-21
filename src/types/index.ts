@@ -150,12 +150,86 @@ export interface AnaliticaFlujoMes {
   salientes: AnaliticaProyectoMovimiento[]
 }
 
+export interface AnaliticaEstancado {
+  proyectoId: number
+  nombre: string
+  etapa: string
+  grupo: string
+  dias: number
+  /** `null` es administración (registro, brief…). */
+  responsableId: number | null
+  responsableNombre: string | null
+}
+
+export interface AnaliticaCargaResponsable {
+  usuarioId: number
+  nombre: string
+  rol: 'disenador' | 'desarrollador'
+  cerrados: number
+  promedioDias: number | null
+  activos: number
+  estancados: number
+}
+
+export interface AnaliticaTendenciaMes {
+  mes: string
+  promedioDiseno: number | null
+  promedioDesarrollo: number | null
+  promedioTotal: number | null
+}
+
+export interface AnaliticaResumenCumplimiento {
+  aTiempo: number
+  tarde: number
+  vencidos: number
+  sinFecha: number
+}
+
+export interface AnaliticaCumplimientoProyecto {
+  proyectoId: number
+  nombre: string
+  tipo: 'diseno' | 'entrega'
+  fechaObjetivo: string
+  fechaReal: string | null
+  /** Positivo = días de atraso; negativo = de adelanto. */
+  diasDiferencia: number
+  resultado: 'aTiempo' | 'tarde' | 'vencido'
+}
+
+export interface AnaliticaRetroceso {
+  proyectoId: number
+  nombre: string
+  desde: string
+  hacia: string
+  fecha: string
+}
+
 export interface Analitica {
   flujoMensual: AnaliticaFlujoMes[]
   porMes: AnaliticaMes[]
   disenadoresPorMes: AnaliticaPersonaMes[]
   desarrolladoresPorMes: AnaliticaPersonaMes[]
   duracionPromedio: AnaliticaDuracion[]
+  estancados: {
+    rangos: { rango: string; desde: number; hasta: number | null; cantidad: number }[]
+    proyectos: AnaliticaEstancado[]
+  }
+  porResponsable: AnaliticaCargaResponsable[]
+  tendencia: AnaliticaTendenciaMes[]
+  cumplimiento: {
+    diseno: AnaliticaResumenCumplimiento
+    entrega: AnaliticaResumenCumplimiento
+    proyectos: AnaliticaCumplimientoProyecto[]
+  }
+  retrocesos: {
+    porMes: { mes: string; cantidad: number }[]
+    proyectos: AnaliticaRetroceso[]
+  }
+  tiempoTotal: {
+    promedioDias: number
+    cantidadProyectos: number
+    proyectos: AnaliticaProyectoDuracion[]
+  }
 }
 
 /** Usuario tal como viene anidado en reuniones, notas y notificaciones. */

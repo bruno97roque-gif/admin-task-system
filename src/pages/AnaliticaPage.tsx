@@ -1,22 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
-import { IoAnalyticsOutline, IoRefreshOutline } from 'react-icons/io5'
+import { useEffect } from 'react'
+import { IoRefreshOutline } from 'react-icons/io5'
 import { useAnaliticaStore } from '../stores/analiticaStore'
+import { AnalisisAvanzado } from '../components/analitica/AnalisisAvanzado'
 import { FlujoMensual } from '../components/analitica/FlujoMensual'
-import { MonthlyBarChart } from '../components/analitica/MonthlyBarChart'
-import { Leaderboard } from '../components/analitica/Leaderboard'
+import { GraficosPrincipales } from '../components/analitica/GraficosPrincipales'
+import { ResumenSuperior } from '../components/analitica/ResumenSuperior'
 import { Button } from '../components/ui/Button'
 import { LoaderBlock } from '../components/ui/Loader'
-import { Select } from '../components/ui/Select'
-
-function formatMesLabel(mes: string): string {
-  const [year, month] = mes.split('-').map(Number)
-  if (!year || !month) return mes
-  const nombre = new Date(year, month - 1, 1).toLocaleDateString('es-PE', {
-    month: 'long',
-    year: 'numeric',
-  })
-  return nombre.charAt(0).toUpperCase() + nombre.slice(1)
-}
 
 export function AnaliticaPage() {
   const data = useAnaliticaStore((s) => s.data)
@@ -24,57 +14,9 @@ export function AnaliticaPage() {
   const error = useAnaliticaStore((s) => s.error)
   const fetchAnalitica = useAnaliticaStore((s) => s.fetchAnalitica)
 
-  const [mesFiltro, setMesFiltro] = useState('todos')
-
   useEffect(() => {
     fetchAnalitica()
   }, [fetchAnalitica])
-
-  const meses = useMemo(() => data?.porMes.map((m) => m.mes) ?? [], [data])
-  const mesSeleccionado = mesFiltro !== 'todos' && meses.includes(mesFiltro) ? mesFiltro : 'todos'
-
-  const disenadores = useMemo(() => {
-    if (!data) return []
-    const filas =
-      mesSeleccionado === 'todos'
-        ? data.disenadoresPorMes
-        : data.disenadoresPorMes.filter((f) => f.mes === mesSeleccionado)
-
-    const totales = new Map<number, { usuarioId: number; nombre: string; cantidad: number }>()
-    for (const fila of filas) {
-      const actual = totales.get(fila.usuarioId) ?? {
-        usuarioId: fila.usuarioId,
-        nombre: fila.nombre,
-        cantidad: 0,
-      }
-      actual.cantidad += fila.cantidad
-      totales.set(fila.usuarioId, actual)
-    }
-    return [...totales.values()]
-  }, [data, mesSeleccionado])
-
-  const desarrolladores = useMemo(() => {
-    if (!data) return []
-    const filas =
-      mesSeleccionado === 'todos'
-        ? data.desarrolladoresPorMes
-        : data.desarrolladoresPorMes.filter((f) => f.mes === mesSeleccionado)
-
-    const totales = new Map<number, { usuarioId: number; nombre: string; cantidad: number }>()
-    for (const fila of filas) {
-      const actual = totales.get(fila.usuarioId) ?? {
-        usuarioId: fila.usuarioId,
-        nombre: fila.nombre,
-        cantidad: 0,
-      }
-      actual.cantidad += fila.cantidad
-      totales.set(fila.usuarioId, actual)
-    }
-    return [...totales.values()]
-  }, [data, mesSeleccionado])
-
-  const duracionDiseno = data?.duracionPromedio.find((d) => d.etapa === 'Diseno')
-  const duracionDesarrollo = data?.duracionPromedio.find((d) => d.etapa === 'Desarrollo')
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -101,85 +43,20 @@ export function AnaliticaPage() {
         <LoaderBlock label="Cargando analítica..." />
       ) : !data ? null : (
         <div className="flex-1 space-y-6 overflow-y-auto pb-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-border bg-surface-raised p-4">
-              <p className="text-xs text-slate-400">Duración promedio en Diseño</p>
-              <p className="mt-1 text-3xl font-bold text-slate-100">
-                {duracionDiseno && duracionDiseno.cantidadProyectos > 0
-                  ? `${duracionDiseno.promedioDias} días`
-                  : '—'}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {duracionDiseno && duracionDiseno.cantidadProyectos > 0
-                  ? `Sobre ${duracionDiseno.cantidadProyectos} proyecto${duracionDiseno.cantidadProyectos !== 1 ? 's' : ''} medido${duracionDiseno.cantidadProyectos !== 1 ? 's' : ''}`
-                  : 'Todavía no hay proyectos con ambas marcas de tiempo'}
-              </p>
-            </div>
-            <div className="rounded-xl border border-border bg-surface-raised p-4">
-              <p className="text-xs text-slate-400">Duración promedio en Desarrollo</p>
-              <p className="mt-1 text-3xl font-bold text-slate-100">
-                {duracionDesarrollo && duracionDesarrollo.cantidadProyectos > 0
-                  ? `${duracionDesarrollo.promedioDias} días`
-                  : '—'}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {duracionDesarrollo && duracionDesarrollo.cantidadProyectos > 0
-                  ? `Sobre ${duracionDesarrollo.cantidadProyectos} proyecto${duracionDesarrollo.cantidadProyectos !== 1 ? 's' : ''} medido${duracionDesarrollo.cantidadProyectos !== 1 ? 's' : ''}`
-                  : 'Todavía no hay proyectos con ambas marcas de tiempo'}
-              </p>
-            </div>
-          </div>
+          <ResumenSuperior data={data} />
 
-          <div className="rounded-xl border border-border bg-surface-raised p-4">
-            <h2 className="text-sm font-semibold text-slate-200">Movimiento de proyectos por mes</h2>
-            <p className="mb-4 text-xs text-slate-500">
-              Nuevos, los que llegaron a Diseño Finalizado y a Desarrollo Finalizado,
-              entregados y archivados. Entregar es un logro y no resta; lo único que cuenta
-              como pérdida es archivar. Haz clic en un mes para ver cuáles fueron.
+          <GraficosPrincipales data={data} />
+
+          <section className="rounded-xl border border-border bg-surface-raised p-4">
+            <h2 className="text-base font-semibold text-slate-100">Movimiento de proyectos por mes</h2>
+            <p className="mb-4 text-xs text-slate-400">
+              Altas, cierres, entregas y archivos por mes. Entregar es un logro y no resta; lo único
+              que cuenta como pérdida es archivar. Haz clic en un mes para ver cuáles fueron.
             </p>
             <FlujoMensual data={data.flujoMensual} />
-          </div>
+          </section>
 
-          <div className="rounded-xl border border-border bg-surface-raised p-4">
-            <h2 className="mb-4 text-sm font-semibold text-slate-200">Proyectos finalizados por mes</h2>
-            <MonthlyBarChart data={data.porMes} />
-          </div>
-
-          <div>
-            <div className="mb-3 w-56">
-              <Select
-                label="Ranking del mes"
-                value={mesSeleccionado}
-                onChange={(e) => setMesFiltro(e.target.value)}
-                options={[
-                  { value: 'todos', label: 'Todos los meses' },
-                  ...meses.map((mes) => ({ value: mes, label: formatMesLabel(mes) })),
-                ]}
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <Leaderboard
-                title="Diseñadores — diseños finalizados"
-                items={disenadores}
-                emptyMessage="Sin diseños finalizados en este período."
-              />
-              <Leaderboard
-                title="Desarrolladores — desarrollos finalizados"
-                items={desarrolladores}
-                emptyMessage="Sin desarrollos finalizados en este período."
-              />
-            </div>
-          </div>
-
-          {data.porMes.length === 0 && (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <IoAnalyticsOutline size={28} className="text-slate-600" />
-              <p className="text-sm text-slate-500">
-                Todavía no hay proyectos que hayan llegado a Diseño Finalizado o Desarrollo
-                Finalizado.
-              </p>
-            </div>
-          )}
+          <AnalisisAvanzado data={data} />
         </div>
       )}
     </div>

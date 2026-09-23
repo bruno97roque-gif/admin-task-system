@@ -28,8 +28,21 @@ export function GraficosPrincipales({ data }: { data: Analitica }) {
   const diseno = data.duracionPromedio.find((d) => d.etapa === 'Diseno')
   const desarrollo = data.duracionPromedio.find((d) => d.etapa === 'Desarrollo')
 
+  // Entregar es tener el desarrollo terminado, así que la barra de desarrollo
+  // suma los entregados del mes aunque no hayan pasado por «Desarrollo
+  // Finalizado». Se unen por id: un proyecto que en el mismo mes cerró el
+  // desarrollo y se entregó cuenta una sola vez.
+  const desarrolloConEntregas = meses.map((mes) => {
+    const flujo = delMes(mes)
+    const ids = new Set((flujo?.desarrollos ?? []).map((p) => p.proyectoId))
+    for (const p of flujo?.salientes ?? []) {
+      if (p.motivo !== 'Archivado') ids.add(p.proyectoId)
+    }
+    return ids.size
+  })
+
   const entraron = valores.nuevos.reduce((a, b) => a + b, 0)
-  const desarrollados = valores.desarrollo.reduce((a, b) => a + b, 0)
+  const desarrollados = desarrolloConEntregas.reduce((a, b) => a + b, 0)
   const entregados = valores.entregados.reduce((a, b) => a + b, 0)
   const saldo = entraron - entregados
 
@@ -82,7 +95,7 @@ export function GraficosPrincipales({ data }: { data: Analitica }) {
 
       <TarjetaGrafico
         titulo="Entradas vs. entregas"
-        bajada="Si entran más de los que se entregan, el trabajo pendiente crece."
+        bajada="Si entran más de los que se entregan, el trabajo pendiente crece. Lo entregado cuenta también como desarrollo finalizado."
       >
         <div className="mb-2">
           <Leyenda
@@ -105,7 +118,7 @@ export function GraficosPrincipales({ data }: { data: Analitica }) {
               clave: 'desarrollo',
               nombre: 'Desarrollo finalizado',
               color: SERIES.desarrollo.color,
-              valores: valores.desarrollo,
+              valores: desarrolloConEntregas,
             },
             {
               clave: 'entregados',

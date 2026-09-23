@@ -153,15 +153,18 @@ export function ProjectColumn({
           {projects.length}
         </span>
 
+        {/* Solo el color de cada etapa y su número: el nombre sale al pasar
+            el mouse, y el color es el mismo que llevan las tarjetas. */}
         {porEtapa.length > 0 && (
           <ul className="flex w-full flex-wrap gap-1">
             {porEtapa.map(({ estado, cantidad }) => (
               <li
                 key={estado}
-                className={`rounded-md px-1.5 py-0.5 text-[11px] font-medium ${estadoProyectoClass(estado)}`}
+                className={`min-w-6 rounded-md px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums ${estadoProyectoClass(estado)}`}
                 title={`${cantidad} en ${getEstadoProyectoLabel(estado)}`}
+                aria-label={`${cantidad} en ${getEstadoProyectoLabel(estado)}`}
               >
-                {getEstadoProyectoLabel(estado)} <span className="tabular-nums">{cantidad}</span>
+                {cantidad}
               </li>
             ))}
           </ul>

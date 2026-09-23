@@ -20,7 +20,12 @@ import {
   sortProjectsByMode,
   type OrderMode,
 } from '../../utils/projectOrder'
-import { sortPorJerarquia } from '../../utils/projectStatus'
+import {
+  ESTADO_PROYECTO_JERARQUIA,
+  estadoProyectoClass,
+  getEstadoProyectoLabel,
+  sortPorJerarquia,
+} from '../../utils/projectStatus'
 import { Avatar } from '../ui/Avatar'
 import { ProjectCard } from './ProjectCard'
 import { SortableProjectCard } from './SortableProjectCard'
@@ -105,6 +110,19 @@ export function ProjectColumn({
     })
   }, [orderedProjects])
 
+  // Cuántos proyectos tiene en cada etapa, en el orden del tablero.
+  const porEtapa = useMemo(() => {
+    const cuenta = new Map<string, number>()
+    for (const p of projects) cuenta.set(p.estadoProyecto, (cuenta.get(p.estadoProyecto) ?? 0) + 1)
+    return [...cuenta.entries()]
+      .map(([estado, cantidad]) => ({ estado, cantidad }))
+      .sort(
+        (a, b) =>
+          ESTADO_PROYECTO_JERARQUIA.indexOf(a.estado as never) -
+          ESTADO_PROYECTO_JERARQUIA.indexOf(b.estado as never),
+      )
+  }, [projects])
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -125,7 +143,7 @@ export function ProjectColumn({
 
   return (
     <section className="flex w-[min(100%,20rem)] shrink-0 flex-col rounded-xl border border-border bg-surface-raised sm:w-80">
-      <header className="flex items-center gap-3 border-b border-border p-4">
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border p-4">
         <Avatar userId={user.id} name={user.name} size={40} fallbackClassName={avatarClassName} />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-slate-100">{user.name}</p>
@@ -134,6 +152,20 @@ export function ProjectColumn({
         <span className="rounded-full bg-surface-overlay px-2 py-0.5 text-xs font-medium text-slate-300">
           {projects.length}
         </span>
+
+        {porEtapa.length > 0 && (
+          <ul className="flex w-full flex-wrap gap-1">
+            {porEtapa.map(({ estado, cantidad }) => (
+              <li
+                key={estado}
+                className={`rounded-md px-1.5 py-0.5 text-[11px] font-medium ${estadoProyectoClass(estado)}`}
+                title={`${cantidad} en ${getEstadoProyectoLabel(estado)}`}
+              >
+                {getEstadoProyectoLabel(estado)} <span className="tabular-nums">{cantidad}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </header>
 
       <div className="flex-1 space-y-2 overflow-y-auto p-3">

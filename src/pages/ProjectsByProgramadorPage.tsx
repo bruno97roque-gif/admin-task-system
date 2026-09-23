@@ -31,6 +31,7 @@ import { ProjectDetails } from '../components/projects/ProjectDetails'
 import { ProjectFilters } from '../components/projects/ProjectFilters'
 import { AbrirTicketRapido } from '../components/notas/AbrirTicketRapido'
 import { AbrirMateriales } from '../components/projects/AbrirMateriales'
+import { DisenosEnCamino } from '../components/projects/DisenosEnCamino'
 import { BotonPendientes, PendientesProyecto } from '../components/projects/PendientesProyecto'
 import { LoaderBlock } from '../components/ui/Loader'
 import { CornerRestGif } from '../components/ui/CornerRestGif'
@@ -237,6 +238,8 @@ export function ProjectsByProgramadorPage() {
           <IoArrowUndoOutline size={16} />
           Restablecer orden
         </Button>
+        {/* Lo que todavía está en diseño y va a caer en este tablero. */}
+        <DisenosEnCamino projects={proyectosVisibles} mostrarDesarrollador={!isProgramador} />
       </div>
 
       <PersonColorLegend />

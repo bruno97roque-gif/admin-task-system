@@ -37,6 +37,40 @@ textarea {
   @apply outline-none;
 }
 
+/* Barras de scroll al tono del sistema: finas, sin flechas y sobre el fondo
+   de la tarjeta, en vez de las grises del navegador. Firefox solo admite
+   `scrollbar-width`/`scrollbar-color`; el resto se estiliza con las reglas
+   de WebKit de abajo. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-overlay) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-surface-overlay);
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  /* El borde transparente deja aire a los costados sin tapar el fondo. */
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklab, var(--color-accent) 45%, var(--color-surface-overlay));
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Panel lateral (NotificacionesPanel): entra deslizándose desde la derecha y
    sale igual. La clave es `transition-behavior: allow-discrete`, que permite
    animar también la salida pese a terminar en `display: none`; sin eso el

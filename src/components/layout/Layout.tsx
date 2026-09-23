@@ -95,6 +95,9 @@ export function Layout() {
     '/projects/admin',
     '/archivados',
   ].includes(location.pathname)
+  // El dashboard entra completo en la pantalla: se fija el alto y cada
+  // bloque hace su propio scroll. En celular fluye normal.
+  const isPantallaFija = location.pathname === '/'
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Las fotos de perfil de todos salen de la lista de usuarios: se carga una
@@ -157,7 +160,7 @@ export function Layout() {
   const closeSidebar = () => setSidebarOpen(false)
 
   return (
-    <div className="flex min-h-dvh">
+    <div className={`flex min-h-dvh ${isPantallaFija ? 'lg:h-dvh lg:overflow-hidden' : ''}`}>
       {sidebarOpen && (
         <button
           type="button"

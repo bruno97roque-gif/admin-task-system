@@ -331,14 +331,13 @@ export function DashboardPage() {
   ]
 
   return (
-    // En escritorio con altura suficiente (1080p y más) el dashboard entra
-    // completo en la pantalla: altura fija (100dvh menos el padding del
-    // layout) y la fila de abajo absorbe lo que sobra, con scroll interno en
-    // sus listas si hiciera falta. En pantallas más bajas fluye normal.
-    <div className="flex flex-col lg:[@media(min-height:900px)]:h-[calc(100dvh-4rem)]">
+    // En escritorio entra completo en la pantalla (el layout fija el alto en
+    // esta ruta): las dos filas de abajo se reparten lo que sobra y hacen
+    // scroll adentro si hiciera falta. En celular fluye normal.
+    <div className="flex min-h-0 flex-1 flex-col">
       <header className="mb-4 sm:mb-6">
         <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">Dashboard</h1>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-slate-400 lg:[@media(max-height:800px)]:hidden">
           Resumen general del sistema de proyectos
         </p>
       </header>
@@ -348,7 +347,7 @@ export function DashboardPage() {
           <Link
             key={label}
             to={to}
-            className={`flex h-24 min-w-0 flex-col justify-between rounded-xl border p-4 transition-colors sm:h-28 sm:p-5 ${
+            className={`flex h-24 min-w-0 flex-col justify-between rounded-xl border p-4 transition-colors sm:h-28 sm:p-5 lg:[@media(max-height:800px)]:h-20 lg:[@media(max-height:800px)]:p-3 ${
               destacado
                 ? 'border-violet-400/50 bg-violet-500/15 hover:border-violet-300/70'
                 : 'border-border bg-surface-raised hover:border-accent/50'
@@ -365,13 +364,13 @@ export function DashboardPage() {
         ))}
       </div>
 
-      <section className="mb-6 shrink-0 rounded-xl border border-border bg-surface-raised p-5">
+      <section className="mb-6 flex min-h-0 flex-col rounded-xl border border-border bg-surface-raised p-5 lg:flex-[2] lg:[@media(max-height:800px)]:mb-4 lg:[@media(max-height:800px)]:p-4">
         <h2 className="mb-5 flex items-center gap-3 text-lg font-semibold text-slate-100">
           <IoPeopleOutline className="text-accent" size={24} />
           Proyectos activos por miembro
         </h2>
 
-        <div className="grid gap-8 lg:grid-cols-2 lg:gap-0 lg:divide-x lg:divide-border">
+        <div className="grid min-h-0 gap-8 overflow-y-auto lg:flex-1 lg:grid-cols-2 lg:gap-0 lg:divide-x lg:divide-border">
           <div className="lg:pr-8">
             <TeamColumn
               title="Programadores"
@@ -408,14 +407,13 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {/* Mínimo de alto: con muchos miembros arriba, esta fila no se aplasta; la página hace scroll. */}
-      <div className="grid min-h-0 flex-1 gap-6 lg:min-h-[22rem] lg:grid-cols-2">
+      <div className="grid min-h-0 gap-6 lg:flex-[3] lg:grid-cols-2">
         <section className="flex min-h-0 flex-col rounded-xl border border-border bg-surface-raised p-5">
           <h2 className="flex items-center gap-3 text-lg font-semibold text-slate-100">
             <IoFolderOpenOutline className="text-accent" size={24} />
             Proyectos recientes
           </h2>
-          <p className="mb-4 text-xs text-slate-500">
+          <p className="mb-4 text-xs text-slate-500 lg:[@media(max-height:800px)]:hidden">
             Los últimos que se agregaron o modificaron (nuevo proyecto, cambio de etapa, edición...)
           </p>
           {projects.length === 0 ? (
@@ -455,7 +453,9 @@ export function DashboardPage() {
             <IoVideocamOutline className="text-teal-300" size={24} />
             Próximas reuniones
           </h2>
-          <p className="mb-4 text-xs text-slate-500">Las cinco más cercanas, con su link de Meet</p>
+          <p className="mb-4 text-xs text-slate-500 lg:[@media(max-height:800px)]:hidden">
+            Las cinco más cercanas, con su link de Meet
+          </p>
           {proximasReuniones.length === 0 ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 text-center">
               <img

@@ -14,10 +14,9 @@ import { useProjectsStore } from '../stores/projectsStore'
 import { useReunionesStore } from '../stores/reunionesStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
-import {
-  getActiveProjectCountsByRole,
-  type UserProjectCount,
-} from '../utils/assignableUsers'
+import { getUsersByRoleName, type AssignableRoleName } from '../utils/assignableUsers'
+import { cargaDeMiembro, type CargaMiembro } from '../utils/cargaMiembro'
+import type { AppUser, Project, Role } from '../types'
 import descansoGif from '../assets/descanso.gif'
 import { estadoProyectoClass, getEstadoProyectoLabel } from '../utils/projectStatus'
 import { Avatar } from '../components/ui/Avatar'
@@ -51,16 +50,42 @@ function VerTodos({ to, children = 'Ver todos' }: { to: string; children?: strin
   )
 }
 
+/** Una persona de la columna, con sus proyectos ya repartidos por estado. */
+interface MiembroConCarga {
+  user: AppUser
+  carga: CargaMiembro
+}
+
+/**
+ * La gente de un puesto con sus proyectos repartidos entre lo que trabaja
+ * hoy, lo que espera al cliente y lo que está en otra etapa. Más cargados
+ * primero.
+ */
+function miembrosConCarga(
+  activeProjects: Project[],
+  users: AppUser[],
+  roles: Role[],
+  roleName: AssignableRoleName,
+): MiembroConCarga[] {
+  return getUsersByRoleName(users, roles, roleName)
+    .map((user) => ({ user, carga: cargaDeMiembro(activeProjects, roleName, user.id) }))
+    .sort((a, b) => b.carga.total - a.carga.total || a.user.name.localeCompare(b.user.name, 'es'))
+}
+
 interface TeamColumnProps {
   title: string
   icon: typeof IoStatsChartOutline
   iconColor: string
   avatarBg: string
   avatarText: string
-  /** Color de la barra de avance (clase de fondo). */
+  /** Color del tramo «en su etapa» de la barra (clase de fondo). */
   barColor: string
+  /** Cómo se llama su etapa de trabajo: «en desarrollo», «en diseño». */
+  etapaLabel: string
+  /** Y cómo se llama cuando ya la cerró: «desarrollo terminado». */
+  terminadoLabel: string
   roleLabel: string
-  items: UserProjectCount[]
+  items: MiembroConCarga[]
   emptyMessage: string
   to: string
 }
@@ -72,13 +97,14 @@ function TeamColumn({
   avatarBg,
   avatarText,
   barColor,
+  etapaLabel,
+  terminadoLabel,
   roleLabel,
   items,
   emptyMessage,
   to,
 }: TeamColumnProps) {
-  // La barra es la parte de la carga de la columna que tiene cada persona.
-  const total = items.reduce((suma, { count }) => suma + count, 0)
+  const total = items.reduce((suma, { carga }) => suma + carga.total, 0)
 
   return (
     <div className="min-w-0">
@@ -101,12 +127,25 @@ function TeamColumn({
         </p>
       ) : (
         <ul className="space-y-2">
-          {items.map(({ user, count }) => {
-            const porcentaje = total > 0 ? Math.round((count / total) * 100) : 0
+          {items.map(({ user, carga }) => {
+            // Los tres tramos de la barra son los proyectos de esa persona:
+            // el 100% es su carga, no la de la columna.
+            const tramos = [
+              { clave: 'enCurso', n: carga.enCurso, color: barColor, nombre: etapaLabel },
+              {
+                clave: 'esperando',
+                n: carga.esperando,
+                color: 'bg-amber-400',
+                nombre: `con el ${terminadoLabel}, esperando al cliente`,
+              },
+              { clave: 'otras', n: carga.otras, color: 'bg-slate-600', nombre: 'en otra etapa' },
+            ]
+            const parte = (n: number) => (carga.total > 0 ? (n / carga.total) * 100 : 0)
+
             return (
               <li
                 key={user.id}
-                className="flex items-center gap-4 rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:border-accent/30"
+                className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:border-accent/30"
               >
                 <Avatar
                   userId={user.id}
@@ -118,29 +157,54 @@ function TeamColumn({
                   <p className="truncate text-sm font-semibold text-slate-100">{user.name}</p>
                   <p className="text-xs text-slate-500">{roleLabel}</p>
                 </div>
-                <div className="w-[42%] shrink-0">
+                <div className="w-full shrink-0 sm:w-[46%]">
                   <p className="text-xs text-slate-400">
-                    <span className="mr-1 text-lg font-bold tabular-nums text-slate-100">{count}</span>
-                    {count === 1 ? 'proyecto' : 'proyectos'}
-                  </p>
-                  <div className="mt-1 flex items-center gap-3">
-                    <div
-                      className="h-2 flex-1 overflow-hidden rounded-full bg-surface-overlay"
-                      role="progressbar"
-                      aria-valuenow={porcentaje}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label={`${user.name}: ${porcentaje}% de los proyectos`}
-                    >
-                      <div
-                        className={`h-full rounded-full ${barColor}`}
-                        style={{ width: `${porcentaje}%` }}
-                      />
-                    </div>
-                    <span className="w-9 text-right text-xs tabular-nums text-slate-400">
-                      {porcentaje}%
+                    <span className="mr-1 text-lg font-bold tabular-nums text-slate-100">
+                      {carga.total}
                     </span>
+                    {carga.total === 1 ? 'proyecto' : 'proyectos'}
+                  </p>
+                  <div
+                    className="mt-1.5 flex h-2 gap-0.5 overflow-hidden rounded-full bg-surface-overlay"
+                    title={tramos.map((t) => `${t.n} ${t.nombre}`).join(' · ')}
+                    aria-label={`${user.name}: ${tramos.map((t) => `${t.n} ${t.nombre}`).join(', ')}`}
+                  >
+                    {tramos
+                      .filter((t) => t.n > 0)
+                      .map((t) => (
+                        <span
+                          key={t.clave}
+                          className={`h-full ${t.color}`}
+                          style={{ width: `${parte(t.n)}%` }}
+                        />
+                      ))}
                   </div>
+                  <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs whitespace-nowrap text-slate-400">
+                    <span
+                      className="flex items-center gap-1"
+                      title={
+                        carga.trabados > 0
+                          ? `${carga.trabados} de esos están trabados por el cliente (Grupo B o C)`
+                          : undefined
+                      }
+                    >
+                      <span className={`h-2 w-2 rounded-sm ${barColor}`} aria-hidden />
+                      <span className="font-semibold tabular-nums text-slate-200">
+                        {carga.enCurso}
+                      </span>{' '}
+                      {etapaLabel}
+                      {carga.trabados > 0 && (
+                        <span className="text-amber-300">({carga.trabados} trabados)</span>
+                      )}
+                    </span>
+                    <span className="flex items-center gap-1" title={`Ya ${terminadoLabel}`}>
+                      <span className="h-2 w-2 rounded-sm bg-amber-400" aria-hidden />
+                      <span className="font-semibold tabular-nums text-slate-200">
+                        {carga.esperando}
+                      </span>{' '}
+                      esperando al cliente
+                    </span>
+                  </p>
                 </div>
               </li>
             )
@@ -177,12 +241,12 @@ export function DashboardPage() {
   )
 
   const programadorCounts = useMemo(
-    () => getActiveProjectCountsByRole(activeProjects, users, roles, 'Programador'),
+    () => miembrosConCarga(activeProjects, users, roles, 'Programador'),
     [activeProjects, users, roles],
   )
 
   const disenadorCounts = useMemo(
-    () => getActiveProjectCountsByRole(activeProjects, users, roles, 'Diseñador'),
+    () => miembrosConCarga(activeProjects, users, roles, 'Diseñador'),
     [activeProjects, users, roles],
   )
 
@@ -303,6 +367,8 @@ export function DashboardPage() {
               avatarBg="bg-purple-500/20"
               avatarText="text-purple-300"
               barColor="bg-violet-400"
+              etapaLabel="en desarrollo"
+              terminadoLabel="desarrollo terminado"
               roleLabel="Programador"
               items={programadorCounts}
               emptyMessage="No hay programadores registrados"
@@ -317,6 +383,8 @@ export function DashboardPage() {
               avatarBg="bg-pink-500/20"
               avatarText="text-pink-300"
               barColor="bg-pink-400"
+              etapaLabel="en diseño"
+              terminadoLabel="diseño terminado"
               roleLabel="Diseñador"
               items={disenadorCounts}
               emptyMessage="No hay diseñadores registrados"

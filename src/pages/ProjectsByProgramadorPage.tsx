@@ -215,16 +215,14 @@ export function ProjectsByProgramadorPage() {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           {isSupervisor && <InterruptorVista soloMios={soloMios} onChange={setSoloMios} />}
-          {isProgramador && (
-            <Button
-              variant={mostrarByC ? 'primary' : 'secondary'}
-              className="w-full sm:w-auto"
-              onClick={() => setMostrarByC((v) => !v)}
-            >
-              <IoSnowOutline size={18} />
-              {mostrarByC ? 'Ocultar congelados' : 'Mostrar congelados'}
-            </Button>
-          )}
+          <Button
+            variant={mostrarByC ? 'primary' : 'secondary'}
+            className="w-full sm:w-auto"
+            onClick={() => setMostrarByC((v) => !v)}
+          >
+            <IoSnowOutline size={18} />
+            {mostrarByC ? 'Ocultar congelados' : 'Mostrar congelados'}
+          </Button>
           <Button
             variant="secondary"
             className="w-full sm:w-auto"

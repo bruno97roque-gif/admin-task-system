@@ -3,6 +3,7 @@ import { useForm, Controller } from 'react-hook-form'
 import {
   IoArrowUndoOutline,
   IoBriefcaseOutline,
+  IoColorPaletteOutline,
   IoSnowOutline,
   IoRefreshOutline,
 } from 'react-icons/io5'
@@ -18,7 +19,11 @@ import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
 import { getUsersByRoleName } from '../utils/assignableUsers'
 import { isProjectAssignee } from '../utils/projectUsers'
-import { ESTADO_PROYECTO_OPTIONS, getEstadoProyectoOptions } from '../utils/projectStatus'
+import {
+  ESTADO_PROYECTO_OPTIONS,
+  ETAPAS_DISENO,
+  getEstadoProyectoOptions,
+} from '../utils/projectStatus'
 import { type OrderMode } from '../utils/projectOrder'
 import { authUserToAppUser } from '../utils/user'
 import { Button } from '../components/ui/Button'
@@ -31,7 +36,7 @@ import { ProjectDetails } from '../components/projects/ProjectDetails'
 import { ProjectFilters } from '../components/projects/ProjectFilters'
 import { AbrirTicketRapido } from '../components/notas/AbrirTicketRapido'
 import { AbrirMateriales } from '../components/projects/AbrirMateriales'
-import { DisenosEnCamino } from '../components/projects/DisenosEnCamino'
+import { proyectosEnDiseno } from '../utils/proyectosEnDiseno'
 import { BotonPendientes, PendientesProyecto } from '../components/projects/PendientesProyecto'
 import { LoaderBlock } from '../components/ui/Loader'
 import { CornerRestGif } from '../components/ui/CornerRestGif'
@@ -39,12 +44,12 @@ import { PersonColorLegend } from '../components/projects/PersonColorLegend'
 import { MisReunionesPanel } from '../components/reuniones/MisReunionesPanel'
 import { toDateInputValue } from '../utils/date'
 
-// Este tablero es solo del desarrollo: nada de las etapas de diseño ni de
-// Proyecto Finalizado (que tiene su propia ventana, "Finalizados").
+// Este tablero es solo del desarrollo: nada de Proyecto Finalizado (que
+// tiene su propia ventana, "Finalizados"). Las etapas de diseño se suman con
+// el interruptor «Diseños en camino».
 const ETAPAS_DEVELOPERS = ['Desarrollo', 'Brief', 'Taxonomia', 'DesarrolloFinalizado']
-const ESTADO_OPTIONS_DEVELOPERS = ESTADO_PROYECTO_OPTIONS.filter((opt) =>
-  ETAPAS_DEVELOPERS.includes(opt.value),
-)
+const etapasDelTablero = (conDisenos: boolean) =>
+  conDisenos ? [...ETAPAS_DEVELOPERS, ...ETAPAS_DISENO] : ETAPAS_DEVELOPERS
 
 interface ProjectEditForm {
   comentario: string
@@ -81,6 +86,8 @@ export function ProjectsByProgramadorPage() {
   // Los congelados (grupos B y C) se suman al tablero en vez de abrirse
   // en una ventana aparte, igual que en Vista Global.
   const [mostrarByC, setMostrarByC] = useState(false)
+  // Los que siguen en diseño: se suman a las columnas para ver lo que viene.
+  const [mostrarDisenos, setMostrarDisenos] = useState(false)
   const [resetKey, setResetKey] = useState(0)
 
   const {
@@ -129,13 +136,17 @@ export function ProjectsByProgramadorPage() {
     return [...projects, ...congelados.filter((p) => !yaEstan.has(p.id))]
   }, [projects, congelados, mostrarByC])
 
+  const etapasVisibles = etapasDelTablero(mostrarDisenos)
+
   const filteredProjects = useMemo(
     () =>
       proyectosVisibles
-        .filter((project) => ETAPAS_DEVELOPERS.includes(project.estadoProyecto))
+        .filter((project) => etapasVisibles.includes(project.estadoProyecto))
         .filter((project) => !estadoFiltro || project.estadoProyecto === estadoFiltro),
-    [proyectosVisibles, estadoFiltro],
+    [proyectosVisibles, estadoFiltro, etapasVisibles],
   )
+
+  const enDiseno = useMemo(() => proyectosEnDiseno(proyectosVisibles), [proyectosVisibles])
 
   const columns = useMemo(() => {
     if (programadores.length === 0) return []
@@ -232,14 +243,36 @@ export function ProjectsByProgramadorPage() {
           onEstadoChange={setEstadoFiltro}
           orden={ordenFiltro}
           onOrdenChange={setOrdenFiltro}
-          estadoOptions={ESTADO_OPTIONS_DEVELOPERS}
+          estadoOptions={ESTADO_PROYECTO_OPTIONS.filter((opt) =>
+            etapasVisibles.includes(opt.value),
+          )}
         />
         <Button variant="ghost" onClick={handleResetOrder}>
           <IoArrowUndoOutline size={16} />
           Restablecer orden
         </Button>
         {/* Lo que todavía está en diseño y va a caer en este tablero. */}
-        <DisenosEnCamino projects={proyectosVisibles} mostrarDesarrollador={!isProgramador} />
+        <Button
+          variant={mostrarDisenos ? 'primary' : 'secondary'}
+          onClick={() => {
+            const siguiente = !mostrarDisenos
+            setMostrarDisenos(siguiente)
+            // Al ocultarlos, un filtro por etapa de diseño dejaría el tablero vacío.
+            if (!siguiente && ETAPAS_DISENO.includes(estadoFiltro as never)) setEstadoFiltro('')
+          }}
+          disabled={enDiseno.length === 0 && !mostrarDisenos}
+          title={
+            enDiseno.length === 0
+              ? 'No hay proyectos en diseño por ahora'
+              : 'Suma al tablero los proyectos que siguen en diseño'
+          }
+        >
+          <IoColorPaletteOutline size={18} />
+          {mostrarDisenos ? 'Ocultar diseños' : 'Diseños en camino'}
+          <span className="rounded-full bg-surface-overlay px-1.5 py-0.5 text-xs tabular-nums">
+            {enDiseno.length}
+          </span>
+        </Button>
       </div>
 
       <PersonColorLegend />

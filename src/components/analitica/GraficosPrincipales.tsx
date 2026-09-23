@@ -29,6 +29,7 @@ export function GraficosPrincipales({ data }: { data: Analitica }) {
   const desarrollo = data.duracionPromedio.find((d) => d.etapa === 'Desarrollo')
 
   const entraron = valores.nuevos.reduce((a, b) => a + b, 0)
+  const desarrollados = valores.desarrollo.reduce((a, b) => a + b, 0)
   const entregados = valores.entregados.reduce((a, b) => a + b, 0)
   const saldo = entraron - entregados
 
@@ -84,16 +85,28 @@ export function GraficosPrincipales({ data }: { data: Analitica }) {
         bajada="Si entran más de los que se entregan, el trabajo pendiente crece."
       >
         <div className="mb-2">
-          <Leyenda items={[SERIES.nuevos, SERIES.entregados]} />
+          <Leyenda
+            items={[
+              { nombre: 'Entraron', color: SERIES.nuevos.color },
+              { nombre: 'Desarrollo finalizado', color: SERIES.desarrollo.color },
+              { nombre: 'Entregados', color: SERIES.entregados.color },
+            ]}
+          />
         </div>
         <BarrasVerticales
           etiquetas={etiquetas}
           titulosGlobo={titulos}
           modo="agrupado"
           alto={190}
-          etiquetaEje="Entradas y entregas por mes"
+          etiquetaEje="Entradas, desarrollos finalizados y entregas por mes"
           series={[
             { clave: 'nuevos', nombre: 'Entraron', color: SERIES.nuevos.color, valores: valores.nuevos },
+            {
+              clave: 'desarrollo',
+              nombre: 'Desarrollo finalizado',
+              color: SERIES.desarrollo.color,
+              valores: valores.desarrollo,
+            },
             {
               clave: 'entregados',
               nombre: 'Entregados',
@@ -111,7 +124,8 @@ export function GraficosPrincipales({ data }: { data: Analitica }) {
           }}
         />
         <p className="mt-2 text-xs text-slate-400">
-          En {MESES_A_MOSTRAR} meses entraron <span className="font-semibold text-slate-100">{entraron}</span> y se
+          En {MESES_A_MOSTRAR} meses entraron <span className="font-semibold text-slate-100">{entraron}</span>,
+          terminaron el desarrollo <span className="font-semibold text-slate-100">{desarrollados}</span> y se
           entregaron <span className="font-semibold text-slate-100">{entregados}</span>:{' '}
           {saldo > 0
             ? `el trabajo pendiente creció en ${saldo}.`

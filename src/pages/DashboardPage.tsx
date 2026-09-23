@@ -21,7 +21,8 @@ import descansoGif from '../assets/descanso.gif'
 import { estadoProyectoClass, getEstadoProyectoLabel } from '../utils/projectStatus'
 import { Avatar } from '../components/ui/Avatar'
 
-const FINALIZED_STATUS = 'ProyectoFinalizado'
+/** Un proyecto entregado o archivado ya no está activo. */
+const ESTADOS_CERRADOS = ['ProyectoFinalizado', 'Archivado']
 
 /** `2026-09-21…` → `21/09/26`. */
 function fechaCorta(value: string): string {
@@ -138,7 +139,6 @@ function TeamColumn({
                 color: 'bg-amber-400',
                 nombre: `con el ${terminadoLabel}, esperando al cliente`,
               },
-              { clave: 'otras', n: carga.otras, color: 'bg-slate-600', nombre: 'en otra etapa' },
             ]
             const parte = (n: number) => (carga.total > 0 ? (n / carga.total) * 100 : 0)
 
@@ -233,10 +233,8 @@ export function DashboardPage() {
     fetchReuniones(true)
   }, [fetchUsers, fetchRoles, fetchProjects, fetchReuniones])
 
-  const isFinalized = (estado: string) => estado === FINALIZED_STATUS
-
   const activeProjects = useMemo(
-    () => projects.filter((p) => !isFinalized(p.estadoProyecto)),
+    () => projects.filter((p) => !ESTADOS_CERRADOS.includes(p.estadoProyecto)),
     [projects],
   )
 
@@ -310,7 +308,7 @@ export function DashboardPage() {
     },
     {
       label: 'Finalizados',
-      value: projects.filter((p) => isFinalized(p.estadoProyecto)).length,
+      value: projects.filter((p) => p.estadoProyecto === 'ProyectoFinalizado').length,
       icon: IoCheckmarkCircleOutline,
       color: 'text-teal-300',
       to: '/proyectos-terminados',

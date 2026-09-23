@@ -3,9 +3,9 @@ import type { AssignableRoleName } from './assignableUsers'
 import { isProjectAssignee } from './projectUsers'
 
 /**
- * Cómo están repartidos los proyectos de una persona: los que tiene en su
- * etapa, los que ya cerró y esperan algo del cliente, y los que están en otra
- * etapa. Los tres suman `total`.
+ * Los proyectos que una persona tiene **en su tramo**: los que está
+ * trabajando y los que ya cerró y esperan al cliente. Los dos suman `total`.
+ * Lo que está en otra etapa, archivado o entregado no cuenta acá.
  */
 export interface CargaMiembro {
   total: number
@@ -13,8 +13,6 @@ export interface CargaMiembro {
   enCurso: number
   /** Cerró su parte y el proyecto espera al cliente (pago, materiales, revisión). */
   esperando: number
-  /** Todavía no llega a su etapa, o ya pasó a otra. */
-  otras: number
   /** De los que tiene en su etapa, cuántos están trabados por el cliente (Grupo B o C). */
   trabados: number
 }
@@ -52,11 +50,5 @@ export function cargaDeMiembro(
     }
   }
 
-  return {
-    total: suyos.length,
-    enCurso,
-    esperando,
-    otras: suyos.length - enCurso - esperando,
-    trabados,
-  }
+  return { total: enCurso + esperando, enCurso, esperando, trabados }
 }

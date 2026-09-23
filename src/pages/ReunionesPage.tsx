@@ -43,6 +43,8 @@ import {
   tituloEsLibre,
 } from '../utils/reuniones'
 import { GoogleCalendarBar } from '../components/reuniones/GoogleCalendarBar'
+import { CalendarioReuniones } from '../components/reuniones/CalendarioReuniones'
+import { useVistaReuniones } from '../hooks/useVistaReuniones'
 import { InvitadosExternosModal } from '../components/reuniones/InvitadosExternosModal'
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
@@ -429,6 +431,9 @@ export function ReunionesPage() {
   const [editing, setEditing] = useState<Reunion | null>(null)
   const [toDelete, setToDelete] = useState<Reunion | null>(null)
   const [showPasadas, setShowPasadas] = useState(false)
+  const [vista, setVista] = useVistaReuniones()
+  // La reunión a la que saltó el calendario: se resalta un momento en la lista.
+  const [resaltada, setResaltada] = useState<number | null>(null)
   const [eliminando, setEliminando] = useState(false)
   const [errorAlEliminar, setErrorAlEliminar] = useState<string | null>(null)
   const [invitandoClientes, setInvitandoClientes] = useState(false)
@@ -594,6 +599,23 @@ export function ReunionesPage() {
     [projects, user],
   )
 
+  /**
+   * El calendario es de consulta: al tocar una reunión se vuelve a la lista,
+   * se abre «pasadas» si hace falta y se salta a su tarjeta.
+   */
+  const irALaLista = (reunion: Reunion) => {
+    setVista('lista')
+    if (new Date(reunion.fecha).getTime() < ahora) setShowPasadas(true)
+    setResaltada(reunion.id)
+    // El siguiente pintado ya tiene la lista montada.
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`reunion-${reunion.id}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    window.setTimeout(() => setResaltada(null), 2500)
+  }
+
   const openCreate = () => {
     setEditing(null)
     reset(emptyForm)
@@ -671,6 +693,23 @@ export function ReunionesPage() {
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <div className="flex rounded-lg border border-border bg-surface-raised p-0.5">
+            {(['lista', 'mes', 'semana'] as const).map((opcion) => (
+              <button
+                key={opcion}
+                type="button"
+                onClick={() => setVista(opcion)}
+                aria-pressed={vista === opcion}
+                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-colors sm:flex-none ${
+                  vista === opcion
+                    ? 'bg-accent text-white'
+                    : 'text-slate-400 hover:text-slate-100'
+                }`}
+              >
+                {opcion}
+              </button>
+            ))}
+          </div>
           <Button
             variant="secondary"
             className="w-full sm:w-auto"
@@ -741,6 +780,16 @@ export function ReunionesPage() {
         </div>
       )}
 
+      {vista !== 'lista' && (
+        <CalendarioReuniones
+          reuniones={reuniones}
+          vista={vista}
+          ahora={ahora}
+          onSelect={irALaLista}
+        />
+      )}
+
+      {vista === 'lista' && (
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Próximas</h2>
         {loading && reuniones.length === 0 ? (
@@ -749,8 +798,14 @@ export function ReunionesPage() {
           <p className="py-8 text-center text-slate-500">No hay reuniones próximas</p>
         ) : (
           proximas.map((r) => (
-            <ReunionCard
+            <div
               key={r.id}
+              id={`reunion-${r.id}`}
+              className={`rounded-xl transition-shadow ${
+                resaltada === r.id ? 'ring-2 ring-accent' : ''
+              }`}
+            >
+            <ReunionCard
               reunion={r}
               pasada={false}
               puedeEditar={puedeAdministrar(r)}
@@ -762,11 +817,13 @@ export function ReunionesPage() {
               onEnviar={enviar}
               onRevisar={revisar}
             />
+            </div>
           ))
         )}
       </section>
+      )}
 
-      {pasadas.length > 0 && (
+      {vista === 'lista' && pasadas.length > 0 && (
         <section className="mt-8 space-y-3">
           <button
             type="button"
@@ -777,8 +834,14 @@ export function ReunionesPage() {
           </button>
           {showPasadas &&
             pasadas.map((r) => (
-              <ReunionCard
+              <div
                 key={r.id}
+                id={`reunion-${r.id}`}
+                className={`rounded-xl transition-shadow ${
+                  resaltada === r.id ? 'ring-2 ring-accent' : ''
+                }`}
+              >
+              <ReunionCard
                 reunion={r}
                 pasada
                 puedeEditar={puedeAdministrar(r)}
@@ -790,6 +853,7 @@ export function ReunionesPage() {
                 onEnviar={enviar}
                 onRevisar={revisar}
               />
+              </div>
             ))}
         </section>
       )}

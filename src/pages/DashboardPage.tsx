@@ -83,6 +83,8 @@ interface TeamColumnProps {
   barColor: string
   /** Cómo se llama su etapa de trabajo: «en desarrollo», «en diseño». */
   etapaLabel: string
+  /** Las etapas suyas anteriores a su trabajo; sin esto, el puesto no tiene. */
+  previasLabel?: string
   /** Y cómo se llama cuando ya la cerró: «desarrollo terminado». */
   terminadoLabel: string
   roleLabel: string
@@ -99,6 +101,7 @@ function TeamColumn({
   avatarText,
   barColor,
   etapaLabel,
+  previasLabel,
   terminadoLabel,
   roleLabel,
   items,
@@ -132,6 +135,9 @@ function TeamColumn({
             // Los tres tramos de la barra son los proyectos de esa persona:
             // el 100% es su carga, no la de la columna.
             const tramos = [
+              ...(previasLabel
+                ? [{ clave: 'previas', n: carga.previas, color: 'bg-teal-400', nombre: previasLabel }]
+                : []),
               { clave: 'enCurso', n: carga.enCurso, color: barColor, nombre: etapaLabel },
               {
                 clave: 'esperando',
@@ -180,6 +186,15 @@ function TeamColumn({
                       ))}
                   </div>
                   <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs whitespace-nowrap text-slate-400">
+                    {previasLabel && (
+                      <span className="flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-sm bg-teal-400" aria-hidden />
+                        <span className="font-semibold tabular-nums text-slate-200">
+                          {carga.previas}
+                        </span>{' '}
+                        {previasLabel}
+                      </span>
+                    )}
                     <span
                       className="flex items-center gap-1"
                       title={
@@ -366,6 +381,7 @@ export function DashboardPage() {
               avatarText="text-purple-300"
               barColor="bg-violet-400"
               etapaLabel="en desarrollo"
+              previasLabel="en brief o taxonomía"
               terminadoLabel="desarrollo terminado"
               roleLabel="Programador"
               items={programadorCounts}

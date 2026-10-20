@@ -6,7 +6,7 @@ export function RoleGuard() {
   const user = useAuthStore((s) => s.user)
   const location = useLocation()
 
-  if (!canAccessPath(user?.roleName, location.pathname)) {
+  if (!canAccessPath(user?.roleName, location.pathname, user?.puestos)) {
     return <Navigate to={getHomePathForRole(user?.roleName)} replace />
   }
 

@@ -46,6 +46,16 @@ export interface Role {
   name: string
 }
 
+/** En qué trabaja una persona. El rol decide permisos; el puesto, dónde aparece. */
+export type Puesto = 'Diseno' | 'Desarrollo'
+
+/** Lo que devuelve un traspaso de proyectos. */
+export interface ResumenTraspaso {
+  diseno: number
+  desarrollo: number
+  proyectos: { id: number; name: string }[]
+}
+
 export interface AuthUser {
   id: number
   name: string
@@ -58,6 +68,8 @@ export interface AuthUser {
   fotoVersion?: number | null
   /** Entró con una contraseña temporal: tiene que cambiarla antes de seguir. */
   debeCambiarContrasena?: boolean
+  /** Sus puestos: deciden qué tableros ve. Falta en sesiones viejas. */
+  puestos?: Puesto[]
 }
 
 /** Mi perfil, tal como lo devuelve `GET /perfil`. */
@@ -83,6 +95,8 @@ export interface AppUser {
   fotoVersion?: number | null
   /** Tiene una contraseña temporal que todavía no cambió. */
   debeCambiarContrasena?: boolean
+  /** En qué trabaja. Si viene vacío, se usan los puestos que implica su rol. */
+  puestos?: Puesto[]
 }
 
 export interface HistorialEtapa {

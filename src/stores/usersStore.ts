@@ -6,6 +6,8 @@ import {
   getUsersRequest,
   updatePasswordRequest,
   updateUserEmailRequest,
+  updateUserActiveRequest,
+  updateUserPuestosRequest,
   updateUserRoleRequest,
 } from '../services/api'
 
@@ -23,6 +25,11 @@ interface UsersState {
     email: string | null,
   ) => Promise<{ success: boolean; error?: string }>
   updateRol: (id: number, roleId: number) => Promise<{ success: boolean; error?: string }>
+  updatePuestos: (
+    id: number,
+    puestos: import('../types').Puesto[],
+  ) => Promise<{ success: boolean; error?: string }>
+  updateActive: (id: number, active: boolean) => Promise<{ success: boolean; error?: string }>
   /** Refleja en la lista un cambio hecho en otra parte (p. ej. mi perfil). */
   actualizarLocal: (id: number, cambios: Partial<AppUser>) => void
 }
@@ -46,6 +53,42 @@ export const useUsersStore = create<UsersState>((set, get) => ({
         success: false,
         error: error instanceof Error ? error.message : 'Error al cambiar el rol',
       }
+    }
+  },
+
+  updatePuestos: async (id, puestos) => {
+    set({ saving: true, error: null })
+    try {
+      const actualizado = await updateUserPuestosRequest(id, puestos)
+      set((state) => ({
+        users: state.users.map((u) =>
+          u.id === id ? { ...u, puestos: actualizado.puestos } : u,
+        ),
+        saving: false,
+      }))
+      return { success: true }
+    } catch (error) {
+      const mensaje =
+        error instanceof Error ? error.message : 'Error al guardar los puestos'
+      set({ saving: false, error: mensaje })
+      return { success: false, error: mensaje }
+    }
+  },
+
+  updateActive: async (id, active) => {
+    set({ saving: true, error: null })
+    try {
+      const actualizado = await updateUserActiveRequest(id, active)
+      set((state) => ({
+        users: state.users.map((u) => (u.id === id ? { ...u, active: actualizado.active } : u)),
+        saving: false,
+      }))
+      return { success: true }
+    } catch (error) {
+      const mensaje =
+        error instanceof Error ? error.message : 'Error al cambiar el estado'
+      set({ saving: false, error: mensaje })
+      return { success: false, error: mensaje }
     }
   },
 

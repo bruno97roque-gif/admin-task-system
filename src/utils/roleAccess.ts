@@ -1,3 +1,5 @@
+import type { Puesto } from '../types'
+
 const PROGRAMADOR_HOME = '/proyectos/programador'
 const DISENADOR_HOME = '/proyectos/diseno'
 const ADMIN_HOME = '/'
@@ -51,22 +53,58 @@ export function esSupervisor(roleName: string | undefined): boolean {
   return roleName === 'Supervisor'
 }
 
-function esPropiaOCompartida(roleName: string | undefined, path: string): boolean {
-  if (RUTAS_COMPARTIDAS.includes(path)) return true
-  if (roleName === 'Programador') return path === PROGRAMADOR_HOME
-  if (roleName === 'Diseñador') return path === DISENADOR_HOME
-  return true
+/** Los puestos que implica cada rol, cuando nadie cargó ninguno a mano. */
+const PUESTO_DEL_ROL: Record<string, Puesto[]> = {
+  Diseñador: ['Diseno'],
+  Programador: ['Desarrollo'],
+  Supervisor: ['Desarrollo'],
 }
 
-export function canAccessPath(roleName: string | undefined, pathname: string): boolean {
+/**
+ * En qué trabaja una persona: lo que administración le cargó o, si no tiene
+ * nada, lo que implica su rol. Es la misma regla que aplica el API.
+ */
+export function puestosDe(
+  roleName: string | undefined,
+  puestos: Puesto[] | undefined,
+): Puesto[] {
+  if (puestos && puestos.length > 0) return puestos
+  return PUESTO_DEL_ROL[roleName ?? ''] ?? []
+}
+
+function esPropiaOCompartida(
+  roleName: string | undefined,
+  path: string,
+  puestos: Puesto[] | undefined,
+): boolean {
+  if (RUTAS_COMPARTIDAS.includes(path)) return true
+
+  // El tablero se abre por puesto, no por rol: un programador que también
+  // diseña entra a los dos.
+  const suyos = puestosDe(roleName, puestos)
+  if (path === PROGRAMADOR_HOME) return suyos.includes('Desarrollo')
+  if (path === DISENADOR_HOME) return suyos.includes('Diseno')
+  return !isRestrictedRole(roleName)
+}
+
+export function canAccessPath(
+  roleName: string | undefined,
+  pathname: string,
+  puestos?: Puesto[],
+): boolean {
   if (!isRestrictedRole(roleName)) return true
 
   const path = pathname.replace(/\/$/, '') || '/'
-  return esPropiaOCompartida(roleName, path)
+  return esPropiaOCompartida(roleName, path, puestos)
 }
 
-export function canAccessNavPath(roleName: string | undefined, navPath: string): boolean {
+export function canAccessNavPath(
+  roleName: string | undefined,
+  navPath: string,
+  puestos?: Puesto[],
+): boolean {
+  // Administración ve todo el menú; el resto, lo suyo y lo compartido.
   if (!isRestrictedRole(roleName)) return true
 
-  return esPropiaOCompartida(roleName, navPath)
+  return esPropiaOCompartida(roleName, navPath, puestos)
 }

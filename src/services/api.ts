@@ -72,6 +72,33 @@ export function updateUserEmailRequest(id: number, email: string | null) {
   })
 }
 
+export function updateUserActiveRequest(id: number, active: boolean) {
+  return apiFetch<import('../types').AppUser>(`/user/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ active }),
+  })
+}
+
+export function updateUserPuestosRequest(id: number, puestos: import('../types').Puesto[]) {
+  return apiFetch<import('../types').AppUser>(`/user/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ puestos }),
+  })
+}
+
+/** Pasa los proyectos activos de una persona a otra, por puesto. */
+export function traspasarProyectosRequest(datos: {
+  deUsuarioId: number
+  disenadorDestinoId?: number
+  desarrolladorDestinoId?: number
+  motivo?: string
+}) {
+  return apiFetch<import('../types').ResumenTraspaso>('/projects/traspasar', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  })
+}
+
 export function updateUserRoleRequest(id: number, roleId: number) {
   return apiFetch<import('../types').AppUser>(`/user/${id}`, {
     method: 'PATCH',

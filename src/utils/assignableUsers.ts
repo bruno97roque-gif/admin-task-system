@@ -1,5 +1,6 @@
-import type { AppUser, Project, Role } from '../types'
+import type { AppUser, Project, Puesto, Role } from '../types'
 import { isProjectAssignee } from './projectUsers'
+import { puestosDe } from './roleAccess'
 
 export const ASSIGNABLE_ROLE_NAMES = ['Programador', 'Diseñador'] as const
 
@@ -9,25 +10,28 @@ export function getRoleIdByName(roles: Role[], roleName: AssignableRoleName): nu
   return roles.find((role) => role.name === roleName)?.id
 }
 
-/**
- * Roles que cuentan como cada puesto. El Supervisor tiene permisos de
- * administración pero sigue trabajando como desarrollador: aparece en el
- * tablero de Developers y se le pueden asignar proyectos.
- */
-const ROLES_DEL_PUESTO: Record<AssignableRoleName, string[]> = {
-  Programador: ['Programador', 'Supervisor'],
-  Diseñador: ['Diseñador'],
+/** El puesto que corresponde a cada columna de los tableros. */
+const PUESTO_DEL_TABLERO: Record<AssignableRoleName, Puesto> = {
+  Programador: 'Desarrollo',
+  Diseñador: 'Diseno',
 }
 
+/**
+ * Quiénes trabajan en ese puesto. No se mira el rol directamente sino los
+ * puestos de cada persona (que, sin nada cargado, salen de su rol): así un
+ * programador que también diseña aparece en los dos tableros, y el Supervisor
+ * sigue contando como desarrollador.
+ */
 export function getUsersByRoleName(
   users: AppUser[],
   roles: Role[],
   roleName: AssignableRoleName,
 ): AppUser[] {
-  const roleIds = new Set(
-    roles.filter((role) => ROLES_DEL_PUESTO[roleName].includes(role.name)).map((role) => role.id),
+  const nombrePorId = new Map(roles.map((role) => [role.id, role.name]))
+  const puesto = PUESTO_DEL_TABLERO[roleName]
+  return users.filter((user) =>
+    puestosDe(nombrePorId.get(user.roleId), user.puestos).includes(puesto),
   )
-  return users.filter((user) => roleIds.has(user.roleId))
 }
 
 export function toSelectOptions(users: AppUser[]) {

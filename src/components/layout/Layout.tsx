@@ -94,6 +94,9 @@ export function Layout() {
     '/proyectos-terminados',
     '/projects/admin',
     '/archivados',
+    // Los tableros por persona: con cuatro columnas o más, 1280 px no alcanzan.
+    '/proyectos/programador',
+    '/proyectos/diseno',
   ].includes(location.pathname)
   // El dashboard entra completo en la pantalla: se fija el alto y cada
   // bloque hace su propio scroll. En celular fluye normal.
@@ -115,8 +118,8 @@ export function Layout() {
   const webmail = usaWorkspace(user?.roleName) ? null : enlaceWebmail(user?.email)
 
   const visibleNavItems = useMemo(
-    () => navItems.filter((item) => canAccessNavPath(user?.roleName, item.to)),
-    [user?.roleName],
+    () => navItems.filter((item) => canAccessNavPath(user?.roleName, item.to, user?.puestos)),
+    [user?.roleName, user?.puestos],
   )
 
   // Un arrastre de tarjeta que queda a medias al cambiar de ventana frena

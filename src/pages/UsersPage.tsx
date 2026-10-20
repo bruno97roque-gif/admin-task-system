@@ -4,8 +4,12 @@ import {
   IoAddOutline,
   IoEyeOffOutline,
   IoEyeOutline,
+  IoBriefcaseOutline,
   IoKeyOutline,
   IoMailOutline,
+  IoPersonRemoveOutline,
+  IoPersonAddOutline,
+  IoSwapHorizontalOutline,
   IoOpenOutline,
   IoPeopleOutline,
   IoRefreshOutline,
@@ -20,8 +24,14 @@ import { Modal } from '../components/ui/Modal'
 import { Select } from '../components/ui/Select'
 import { generatePassword } from '../utils/password'
 import { ejemploDeCorreo } from '../utils/correo'
-import { usaWorkspace } from '../utils/roleAccess'
+import { puestosDe, usaWorkspace } from '../utils/roleAccess'
 import { CambiarRolModal } from '../components/users/CambiarRolModal'
+import { PuestosModal } from '../components/users/PuestosModal'
+import { TraspasarProyectosModal } from '../components/users/TraspasarProyectosModal'
+import { proyectosACargo } from '../utils/proyectosACargo'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { useProjectsStore } from '../stores/projectsStore'
+import type { AppUser } from '../types'
 import { enlaceWebmail } from '../utils/webmail'
 
 interface UserForm {
@@ -72,6 +82,15 @@ export function UsersPage() {
   const [rolDelCorreo, setRolDelCorreo] = useState<string | undefined>(undefined)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [usuarioDelRol, setUsuarioDelRol] = useState<(typeof users)[number] | null>(null)
+  const [usuarioDePuestos, setUsuarioDePuestos] = useState<AppUser | null>(null)
+  const [usuarioATraspasar, setUsuarioATraspasar] = useState<AppUser | null>(null)
+  const [usuarioADesactivar, setUsuarioADesactivar] = useState<AppUser | null>(null)
+  const [avisoTraspaso, setAvisoTraspaso] = useState<string | null>(null)
+
+  const updatePuestos = useUsersStore((s) => s.updatePuestos)
+  const updateActive = useUsersStore((s) => s.updateActive)
+  const projects = useProjectsStore((s) => s.projects)
+  const fetchProjects = useProjectsStore((s) => s.fetchProjects)
 
   const {
     register,
@@ -107,7 +126,24 @@ export function UsersPage() {
   useEffect(() => {
     fetchUsers()
     fetchRoles()
-  }, [fetchUsers, fetchRoles])
+    // Para saber qué tiene cada persona a su cargo antes de traspasar o desactivar.
+    fetchProjects()
+  }, [fetchUsers, fetchRoles, fetchProjects])
+
+  /** Al desactivar conviene recordar lo que la persona deja a su cargo. */
+  const mensajeDeDesactivacion = (usuario: AppUser) => {
+    const aCargo = proyectosACargo(projects, usuario.id)
+    const total = aCargo.diseno.length + aCargo.desarrollo.length
+    const base = 'No va a poder entrar al sistema y se cierran sus sesiones.'
+    if (total === 0) return `${base} No tiene proyectos activos a su cargo.`
+    const partes = [
+      aCargo.diseno.length > 0 ? `${aCargo.diseno.length} como diseñador` : null,
+      aCargo.desarrollo.length > 0
+        ? `${aCargo.desarrollo.length} como desarrollador`
+        : null,
+    ].filter(Boolean)
+    return `${base} Ojo: todavía tiene ${partes.join(' y ')}. Convendría traspasarlos primero.`
+  }
 
   const roleMap = useMemo(
     () => new Map(roles.map((role) => [role.id, role.name])),
@@ -236,6 +272,23 @@ export function UsersPage() {
         </div>
       </header>
 
+      {avisoTraspaso && (
+        <div
+          role="status"
+          className="mb-4 flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200"
+        >
+          <span className="min-w-0 flex-1">{avisoTraspaso}</span>
+          <button
+            type="button"
+            onClick={() => setAvisoTraspaso(null)}
+            aria-label="Cerrar aviso"
+            className="shrink-0 opacity-70 hover:opacity-100"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {error && !modalOpen && !passwordModalOpen && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {error}
@@ -301,6 +354,11 @@ export function UsersPage() {
                   </td>
                   <td className="px-4 py-3 text-slate-400">
                     {roleMap.get(user.roleId) ?? `Rol #${user.roleId}`}
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      {puestosDe(roleMap.get(user.roleId), user.puestos)
+                        .map((p) => (p === 'Diseno' ? 'Diseño' : 'Desarrollo'))
+                        .join(' · ') || 'Sin puesto'}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -343,11 +401,45 @@ export function UsersPage() {
                       </Button>
                       <Button
                         variant="ghost"
+                        onClick={() => setUsuarioDePuestos(user)}
+                        aria-label="Puestos"
+                        title="Puestos: en qué trabaja"
+                      >
+                        <IoBriefcaseOutline size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setUsuarioATraspasar(user)}
+                        aria-label="Traspasar proyectos"
+                        title="Traspasar sus proyectos a otra persona"
+                      >
+                        <IoSwapHorizontalOutline size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
                         onClick={() => openPasswordModal(user.id)}
                         aria-label="Cambiar contraseña"
                         title="Cambiar contraseña"
                       >
                         <IoKeyOutline size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() =>
+                          user.active ? setUsuarioADesactivar(user) : void updateActive(user.id, true)
+                        }
+                        aria-label={user.active ? 'Desactivar' : 'Activar'}
+                        title={
+                          user.active
+                            ? 'Desactivar: no podrá entrar al sistema'
+                            : 'Activar: vuelve a tener acceso'
+                        }
+                      >
+                        {user.active ? (
+                          <IoPersonRemoveOutline size={16} />
+                        ) : (
+                          <IoPersonAddOutline size={16} />
+                        )}
                       </Button>
                     </div>
                   </td>
@@ -573,6 +665,49 @@ export function UsersPage() {
         roles={roles}
         onClose={() => setUsuarioDelRol(null)}
       />
+
+      {usuarioDePuestos && (
+        <PuestosModal
+          usuario={usuarioDePuestos}
+          rolNombre={roleMap.get(usuarioDePuestos.roleId)}
+          guardando={saving}
+          onGuardar={(puestos) => updatePuestos(usuarioDePuestos.id, puestos)}
+          onClose={() => setUsuarioDePuestos(null)}
+        />
+      )}
+
+      {usuarioATraspasar && (
+        <TraspasarProyectosModal
+          usuario={usuarioATraspasar}
+          projects={projects}
+          users={users}
+          roles={roles}
+          onListo={(resumen) => {
+            const total = resumen.proyectos.length
+            setAvisoTraspaso(
+              total === 1
+                ? 'Se traspasó 1 proyecto.'
+                : `Se traspasaron ${total} proyectos.`,
+            )
+            fetchProjects()
+          }}
+          onClose={() => setUsuarioATraspasar(null)}
+        />
+      )}
+
+      {usuarioADesactivar && (
+        <ConfirmDialog
+          open
+          title={`Desactivar a ${usuarioADesactivar.name}`}
+          message={mensajeDeDesactivacion(usuarioADesactivar)}
+          confirmLabel="Desactivar"
+          onConfirm={async () => {
+            await updateActive(usuarioADesactivar.id, false)
+            setUsuarioADesactivar(null)
+          }}
+          onCancel={() => setUsuarioADesactivar(null)}
+        />
+      )}
     </div>
   )
 }

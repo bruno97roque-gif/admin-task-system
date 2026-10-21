@@ -34,6 +34,23 @@ export function getUsersByRoleName(
   )
 }
 
+/**
+ * Deja fuera a quien ya no trabaja acá. Si todavía le quedaron proyectos
+ * encima se le mantiene la columna, para que ese trabajo no desaparezca de
+ * la vista hasta que alguien lo traspase.
+ */
+export function enElEquipo(
+  users: AppUser[],
+  projects: Project[],
+  roleName: AssignableRoleName,
+): AppUser[] {
+  return users.filter(
+    (user) =>
+      user.active ||
+      projects.some((project) => isProjectAssignee(project, roleName, user.id)),
+  )
+}
+
 export function toSelectOptions(users: AppUser[]) {
   return users.map((user) => ({
     value: String(user.id),

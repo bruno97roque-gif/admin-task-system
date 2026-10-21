@@ -6,6 +6,8 @@ import { useVistaPropia } from '../hooks/useVistaPropia'
 import { esSupervisor } from '../utils/roleAccess'
 import { InterruptorVista } from '../components/ui/InterruptorVista'
 import { useProjectsStore } from '../stores/projectsStore'
+import { useRolesStore } from '../stores/rolesStore'
+import { useUsersStore } from '../stores/usersStore'
 import { isProjectAssignee } from '../utils/projectUsers'
 import {
   ESTADO_PROYECTO_ORDER,
@@ -16,7 +18,7 @@ import { Button } from '../components/ui/Button'
 import { LoaderBlock } from '../components/ui/Loader'
 import { ProjectEditModal } from '../components/projects/ProjectEditModal'
 import { PersonColorLegend } from '../components/projects/PersonColorLegend'
-import { getUserColor } from '../utils/userColors'
+import { useColoresDeUsuarios } from '../hooks/useColoresDeUsuarios'
 import { tramoDePago } from '../utils/estadoPago'
 
 const ETAPAS_DISENADOR = ['Brief', 'Taxonomia', 'Diseno', 'AvanceDiseno', 'DisenoFinalizado']
@@ -41,6 +43,8 @@ export function VistaGlobalPage() {
   const isProgramador = roleName === 'Programador' || (isSupervisor && soloMios)
   const isDisenador = roleName === 'Diseñador'
 
+  const { colorDe } = useColoresDeUsuarios()
+
   const projects = useProjectsStore((s) => s.projects)
   const loading = useProjectsStore((s) => s.loading)
   const saving = useProjectsStore((s) => s.saving)
@@ -48,13 +52,19 @@ export function VistaGlobalPage() {
   const fetchProjects = useProjectsStore((s) => s.fetchProjects)
   const updateProject = useProjectsStore((s) => s.updateProject)
   const updateProjectResponsables = useProjectsStore((s) => s.updateProjectResponsables)
+  const fetchUsers = useUsersStore((s) => s.fetchUsers)
+  const fetchRoles = useRolesStore((s) => s.fetchRoles)
 
   const [mostrarByC, setMostrarByC] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
 
+  // Los usuarios y los roles son para los colores de la leyenda y para el
+  // modal de edición, que necesita a quién se le puede asignar.
   useEffect(() => {
     fetchProjects()
-  }, [fetchProjects])
+    fetchUsers()
+    fetchRoles()
+  }, [fetchProjects, fetchUsers, fetchRoles])
 
   const etapas = useMemo(
     () => (isDisenador ? ETAPAS_DISENADOR : ETAPAS_VISTA_GLOBAL),
@@ -78,6 +88,13 @@ export function VistaGlobalPage() {
     }
     return lista
   }, [projects, filtroAsignado, mostrarByC])
+
+  // Lo que de verdad se ve en las columnas: sin esto, alguien que ya no
+  // trabaja acá seguiría en la leyenda por un proyecto ya entregado.
+  const enPantalla = useMemo(
+    () => visibles.filter((p) => etapas.includes(p.estadoProyecto)),
+    [visibles, etapas],
+  )
 
   const columnas = useMemo(
     () =>
@@ -124,7 +141,7 @@ export function VistaGlobalPage() {
         </div>
       </header>
 
-      <PersonColorLegend mostrarPagos />
+      <PersonColorLegend mostrarPagos projects={enPantalla} />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -158,7 +175,7 @@ export function VistaGlobalPage() {
                     <p className="px-1 py-4 text-center text-xs text-slate-600">—</p>
                   ) : (
                     proyectos.map((project) => {
-                      const color = getUserColor(
+                      const color = colorDe(
                         esEtapaDiseno ? project.disenadorId : project.desarrolladorId,
                       )
                       // El fondo dice cuánto se cobró; el punto sigue siendo

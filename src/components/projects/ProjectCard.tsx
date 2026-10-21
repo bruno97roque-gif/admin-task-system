@@ -5,7 +5,7 @@ import { extractUser } from '../../utils/projectUsers'
 import { estadoProyectoClass, getEstadoProyectoLabel } from '../../utils/projectStatus'
 import { getTipoProyectoLabel } from '../../utils/projectType'
 import { grupoBadgeClass } from '../../utils/grupoColor'
-import { getUserColor } from '../../utils/userColors'
+import { useColoresDeUsuarios } from '../../hooks/useColoresDeUsuarios'
 import { TecnologiaIcon } from './TecnologiaIcon'
 import { TipoProyectoIcon } from './TipoProyectoIcon'
 
@@ -18,6 +18,7 @@ export function ProjectCard({
   columnUserId: number
   onSelect?: (project: Project) => void
 }) {
+  const { colorDe } = useColoresDeUsuarios()
   const pendientes = usePendientesStore((s) => s.resumen[clavePendientes(project.id, columnUserId)])
   const otrosUsuarios = project.usuarios
     .map(extractUser)
@@ -93,7 +94,7 @@ export function ProjectCard({
             Con:
           </span>
           {otrosUsuarios.map((u) => {
-            const color = getUserColor(u.id)
+            const color = colorDe(u.id)
             return (
               <span key={u.id} className="flex items-center gap-1">
                 {color && (

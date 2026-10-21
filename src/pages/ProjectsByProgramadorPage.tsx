@@ -17,7 +17,7 @@ import { useProjectsByProgramadorStore } from '../stores/projectsByProgramadorSt
 import { useProjectsAdminStore } from '../stores/projectsAdminStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
-import { getUsersByRoleName } from '../utils/assignableUsers'
+import { enElEquipo, getUsersByRoleName } from '../utils/assignableUsers'
 import { isProjectAssignee } from '../utils/projectUsers'
 import {
   ESTADO_PROYECTO_OPTIONS,
@@ -121,13 +121,6 @@ export function ProjectsByProgramadorPage() {
     if (mostrarByC) fetchCongelados()
   }, [mostrarByC, fetchCongelados])
 
-  const programadores = useMemo(() => {
-    if (isProgramador && authUser) {
-      return [authUserToAppUser(authUser)]
-    }
-    return getUsersByRoleName(users, roles, 'Programador')
-  }, [authUser, isProgramador, users, roles])
-
   // Los congelados se suman a las mismas columnas en vez de abrirse en una
   // ventana aparte; el id evita duplicar si alguno ya venía en el tablero.
   const proyectosVisibles = useMemo(() => {
@@ -135,6 +128,19 @@ export function ProjectsByProgramadorPage() {
     const yaEstan = new Set(projects.map((p) => p.id))
     return [...projects, ...congelados.filter((p) => !yaEstan.has(p.id))]
   }, [projects, congelados, mostrarByC])
+
+  // Quien se fue del equipo deja de tener columna, salvo que le hayan
+  // quedado proyectos: esos hay que poder verlos para traspasarlos.
+  const programadores = useMemo(() => {
+    if (isProgramador && authUser) {
+      return [authUserToAppUser(authUser)]
+    }
+    return enElEquipo(
+      getUsersByRoleName(users, roles, 'Programador'),
+      proyectosVisibles,
+      'Programador',
+    )
+  }, [authUser, isProgramador, users, roles, proyectosVisibles])
 
   const etapasVisibles = etapasDelTablero(mostrarDisenos)
 
@@ -273,7 +279,7 @@ export function ProjectsByProgramadorPage() {
         </Button>
       </div>
 
-      <PersonColorLegend />
+      <PersonColorLegend projects={proyectosVisibles} />
 
       {error && editingProject === null && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">

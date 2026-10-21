@@ -14,7 +14,7 @@ import { useProjectsStore } from '../stores/projectsStore'
 import { useReunionesStore } from '../stores/reunionesStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
-import { getUsersByRoleName, type AssignableRoleName } from '../utils/assignableUsers'
+import { enElEquipo, getUsersByRoleName, type AssignableRoleName } from '../utils/assignableUsers'
 import { cargaDeMiembro, type CargaMiembro } from '../utils/cargaMiembro'
 import type { AppUser, Project, Role } from '../types'
 import descansoGif from '../assets/descanso.gif'
@@ -74,7 +74,7 @@ function miembrosConCarga(
   roles: Role[],
   roleName: AssignableRoleName,
 ): MiembroConCarga[] {
-  return getUsersByRoleName(users, roles, roleName)
+  return enElEquipo(getUsersByRoleName(users, roles, roleName), activeProjects, roleName)
     .map((user) => ({ user, carga: cargaDeMiembro(activeProjects, roleName, user.id) }))
     .sort((a, b) => b.carga.total - a.carga.total || a.user.name.localeCompare(b.user.name, 'es'))
 }

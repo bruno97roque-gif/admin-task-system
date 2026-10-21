@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import type { Project } from '../../types'
+import type { AppUser, Project } from '../../types'
 import type { UpdateProjectRequest } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import { useRolesStore } from '../../stores/rolesStore'
@@ -129,8 +129,21 @@ export function ProjectEditModal({
     label: s.name,
   }))
 
-  const programadorOptions = toSelectOptions(getUsersByRoleName(users, roles, 'Programador'))
-  const disenadorOptions = toSelectOptions(getUsersByRoleName(users, roles, 'Diseñador'))
+  // Solo se ofrece gente activa, pero si el proyecto ya tiene a alguien que
+  // se fue hay que seguir mostrándolo o el select quedaría en blanco.
+  const sigueDisponible = (user: AppUser, actual: number | null | undefined) =>
+    user.active || user.id === actual
+
+  const programadorOptions = toSelectOptions(
+    getUsersByRoleName(users, roles, 'Programador').filter((u) =>
+      sigueDisponible(u, project?.desarrolladorId),
+    ),
+  )
+  const disenadorOptions = toSelectOptions(
+    getUsersByRoleName(users, roles, 'Diseñador').filter((u) =>
+      sigueDisponible(u, project?.disenadorId),
+    ),
+  )
 
   const buildUpdatePayload = (data: ProjectForm): UpdateProjectRequest => ({
     name: data.name.trim(),

@@ -13,7 +13,7 @@ import { useProjectsByDisenoStore } from '../stores/projectsByDisenoStore'
 import { useProjectsAdminStore } from '../stores/projectsAdminStore'
 import { useRolesStore } from '../stores/rolesStore'
 import { useUsersStore } from '../stores/usersStore'
-import { getUsersByRoleName } from '../utils/assignableUsers'
+import { enElEquipo, getUsersByRoleName } from '../utils/assignableUsers'
 import { isProjectAssignee } from '../utils/projectUsers'
 import { ETAPAS_DISENO, getEstadoProyectoOptions } from '../utils/projectStatus'
 import { type OrderMode } from '../utils/projectOrder'
@@ -101,16 +101,6 @@ export function ProjectsByDisenoPage() {
     if (mostrarByC) fetchCongelados()
   }, [mostrarByC, fetchCongelados])
 
-  const disenadores = useMemo(
-    () => {
-      if (isDisenador && authUser) return [authUserToAppUser(authUser)]
-
-      const allDisenadores = getUsersByRoleName(users, roles, 'Diseñador')
-      return allDisenadores
-    },
-    [authUser, isDisenador, roles, users],
-  )
-
   // Los congelados se suman a las mismas columnas en vez de abrirse en una
   // ventana aparte; el id evita duplicar si alguno ya venía en el tablero.
   const proyectosVisibles = useMemo(() => {
@@ -123,6 +113,18 @@ export function ProjectsByDisenoPage() {
       ),
     ]
   }, [projects, congelados, mostrarByC])
+
+  // Quien se fue del equipo deja de tener columna, salvo que le hayan
+  // quedado proyectos: esos hay que poder verlos para traspasarlos.
+  const disenadores = useMemo(() => {
+    if (isDisenador && authUser) return [authUserToAppUser(authUser)]
+
+    return enElEquipo(
+      getUsersByRoleName(users, roles, 'Diseñador'),
+      proyectosVisibles,
+      'Diseñador',
+    )
+  }, [authUser, isDisenador, roles, users, proyectosVisibles])
 
   const filteredProjects = useMemo(
     () =>
@@ -230,7 +232,7 @@ export function ProjectsByDisenoPage() {
         </Button>
       </div>
 
-      <PersonColorLegend />
+      <PersonColorLegend projects={proyectosVisibles} />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">

@@ -17,7 +17,7 @@ import { useSeguimientosStore } from '../../stores/seguimientosStore'
 import { useUsersStore } from '../../stores/usersStore'
 import { getUsersByRoleName, toSelectOptions } from '../../utils/assignableUsers'
 import { getProjectUserEntries } from '../../utils/projectUsers'
-import { getUserColor } from '../../utils/userColors'
+import { useColoresDeUsuarios } from '../../hooks/useColoresDeUsuarios'
 import { grupoTextClass } from '../../utils/grupoColor'
 import { projectMatchesSearch } from '../../utils/projectSearch'
 import { getTipoProyectoLabel, TIPO_PROYECTO_OPTIONS } from '../../utils/projectType'
@@ -130,6 +130,7 @@ export function ProjectsListView({
   const seguimientos = useSeguimientosStore((s) => s.seguimientos)
   const fetchSeguimientos = useSeguimientosStore((s) => s.fetchSeguimientos)
 
+  const { colorDe } = useColoresDeUsuarios()
   const users = useUsersStore((s) => s.users)
   const fetchUsers = useUsersStore((s) => s.fetchUsers)
 
@@ -168,13 +169,18 @@ export function ProjectsListView({
     label: s.name,
   }))
 
+  // Un proyecto nuevo solo se le puede dar a alguien que siga trabajando acá.
   const programadorOptions = useMemo(
-    () => toSelectOptions(getUsersByRoleName(users, roles, 'Programador')),
+    () =>
+      toSelectOptions(
+        getUsersByRoleName(users, roles, 'Programador').filter((u) => u.active),
+      ),
     [users, roles],
   )
 
   const disenadorOptions = useMemo(
-    () => toSelectOptions(getUsersByRoleName(users, roles, 'Diseñador')),
+    () =>
+      toSelectOptions(getUsersByRoleName(users, roles, 'Diseñador').filter((u) => u.active)),
     [users, roles],
   )
 
@@ -492,7 +498,7 @@ export function ProjectsListView({
                       return (
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           {entries.map((user) => {
-                            const color = getUserColor(user.id)
+                            const color = colorDe(user.id)
                             return (
                               <span key={user.id} className="inline-flex items-center gap-1">
                                 {color && (
